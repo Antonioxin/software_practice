@@ -1,0 +1,420 @@
+openapi: 3.1.0
+info:
+  title: WEMOVE 角色 A 身份与用户管理 API
+  version: 1.0.0
+  description: >-
+    覆盖成人注册、Cookie 会话、本人资料和管理员账户状态管理。
+    除 GET/HEAD/OPTIONS 外，客户端必须同时发送允许的 Origin 与 X-CSRF-Token。
+servers:
+  - url: http://localhost:8080/api/v1
+    description: 本地开发环境
+tags:
+  - name: Auth
+  - name: Account
+  - name: AdminUsers
+paths:
+  /auth/csrf:
+    get:
+      tags: [Auth]
+      summary: 获取当前会话的 CSRF 令牌
+      operationId: getCsrf
+      security: []
+      responses:
+        "200":
+          description: 令牌已创建或读取
+          headers:
+            Cache-Control: { schema: { type: string }, example: no-store }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CsrfEnvelope" }
+  /auth/registration-policy:
+    get:
+      tags: [Auth]
+      summary: 获取成人声明和当前同意版本
+      operationId: getRegistrationPolicy
+      security: []
+      responses:
+        "200":
+          description: 当前注册说明
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegistrationPolicyEnvelope" }
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 创建成年普通用户账户
+      operationId: registerAdultUser
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CsrfHeader"
+        - $ref: "#/components/parameters/OriginHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201":
+          description: 账户创建成功，注册操作不会自动登录
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActorEnvelope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Validation" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 登录并建立服务端会话
+      operationId: login
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CsrfHeader"
+        - $ref: "#/components/parameters/OriginHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: 登录成功；Set-Cookie 写入 HttpOnly 会话 Cookie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActorEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 注销并销毁当前会话
+      operationId: logout
+      parameters:
+        - $ref: "#/components/parameters/CsrfHeader"
+        - $ref: "#/components/parameters/OriginHeader"
+      responses:
+        "204": { description: 当前会话已销毁 }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: 获取当前有效身份与能力
+      operationId: getCurrentActor
+      responses:
+        "200":
+          description: 当前身份
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActorEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /account/profile:
+    patch:
+      tags: [Account]
+      summary: 更新本人必要联系资料
+      operationId: updateOwnProfile
+      parameters:
+        - $ref: "#/components/parameters/CsrfHeader"
+        - $ref: "#/components/parameters/OriginHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProfileRequest" }
+      responses:
+        "200":
+          description: 资料已更新
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActorEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "422": { $ref: "#/components/responses/Validation" }
+  /admin/users:
+    get:
+      tags: [AdminUsers]
+      summary: 查询用户账户
+      operationId: listUsers
+      parameters:
+        - { name: email, in: query, schema: { type: string } }
+        - { name: nickname, in: query, schema: { type: string } }
+        - { name: baseRole, in: query, schema: { $ref: "#/components/schemas/BaseRole" } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/AccountStatus" } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: 账户分页结果
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserListEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/users/{id}:
+    get:
+      tags: [AdminUsers]
+      summary: 查看账户详情和状态历史
+      operationId: getUserDetail
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: 账户详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserDetailEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/users/{id}/disable:
+    post:
+      tags: [AdminUsers]
+      summary: 停用普通用户并撤销其全部会话
+      operationId: disableUser
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/CsrfHeader"
+        - $ref: "#/components/parameters/OriginHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody: { $ref: "#/components/requestBodies/AccountCommand" }
+      responses:
+        "200":
+          description: 状态已改变；重放时返回 Idempotency-Replayed:true
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserSummaryEnvelope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Validation" }
+  /admin/users/{id}/restore:
+    post:
+      tags: [AdminUsers]
+      summary: 恢复普通用户；不会复活旧会话或经销身份
+      operationId: restoreUser
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/CsrfHeader"
+        - $ref: "#/components/parameters/OriginHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody: { $ref: "#/components/requestBodies/AccountCommand" }
+      responses:
+        "200":
+          description: 状态已恢复
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserSummaryEnvelope" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Validation" }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: WEMOVE_SESSION
+  parameters:
+    CsrfHeader:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: { type: string }
+    OriginHeader:
+      name: Origin
+      in: header
+      required: true
+      schema: { type: string, format: uri }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  requestBodies:
+    AccountCommand:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AccountCommand" }
+  responses:
+    Unauthenticated:
+      description: 未登录或会话已失效
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Forbidden:
+      description: 权限不足、账户停用或来源不允许
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: 资源不存在或不可访问
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Conflict:
+      description: 唯一性、版本、目标状态或幂等冲突
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Validation:
+      description: 请求字段校验失败
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    RateLimited:
+      description: 达到频率限制
+      headers:
+        Retry-After: { schema: { type: integer }, description: 建议等待秒数 }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    BaseRole: { type: string, enum: [USER, ADMIN] }
+    AccountStatus: { type: string, enum: [ACTIVE, DISABLED] }
+    DerivedIdentity: { type: string, enum: [USER, DEALER] }
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, nickname, password, confirmPassword, adultConfirmed, termsVersion, privacyVersion, termsAccepted, privacyAccepted]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        nickname: { type: string, minLength: 2, maxLength: 30 }
+        password: { type: string, format: password, minLength: 8, maxLength: 64 }
+        confirmPassword: { type: string, format: password }
+        adultConfirmed: { type: boolean, const: true }
+        termsVersion: { type: string }
+        privacyVersion: { type: string }
+        termsAccepted: { type: boolean, const: true }
+        privacyAccepted: { type: boolean, const: true }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, maxLength: 254 }
+        password: { type: string, format: password, maxLength: 64 }
+    ProfileRequest:
+      type: object
+      additionalProperties: false
+      required: [nickname]
+      properties:
+        nickname: { type: string, minLength: 2, maxLength: 30 }
+        phone: { type: [string, "null"], maxLength: 40, description: 服务端去除空格、短横线和括号后保存 }
+    AccountCommand:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, reason]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        reason: { type: string, minLength: 2, maxLength: 500 }
+    Actor:
+      type: object
+      required: [id, email, nickname, baseRole, accountStatus, derivedIdentity, capabilities, version]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        nickname: { type: string }
+        phone: { type: [string, "null"] }
+        baseRole: { $ref: "#/components/schemas/BaseRole" }
+        accountStatus: { $ref: "#/components/schemas/AccountStatus" }
+        derivedIdentity: { $ref: "#/components/schemas/DerivedIdentity" }
+        capabilities: { type: array, uniqueItems: true, items: { type: string } }
+        version: { type: integer, format: int64 }
+    UserSummary:
+      type: object
+      required: [id, email, nickname, baseRole, accountStatus, derivedIdentity, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        nickname: { type: string }
+        phone: { type: [string, "null"] }
+        baseRole: { $ref: "#/components/schemas/BaseRole" }
+        accountStatus: { $ref: "#/components/schemas/AccountStatus" }
+        derivedIdentity: { $ref: "#/components/schemas/DerivedIdentity" }
+        version: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StatusHistory:
+      type: object
+      required: [action, previousStatus, newStatus, reason, createdAt]
+      properties:
+        action: { type: string, enum: [DISABLE, RESTORE] }
+        previousStatus: { $ref: "#/components/schemas/AccountStatus" }
+        newStatus: { $ref: "#/components/schemas/AccountStatus" }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+    UserDetail:
+      type: object
+      required: [account, statusHistory]
+      properties:
+        account: { $ref: "#/components/schemas/UserSummary" }
+        statusHistory: { type: array, items: { $ref: "#/components/schemas/StatusHistory" } }
+    PageMeta:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    FieldProblem:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: { type: string }
+        code: { type: string }
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, detail, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+        requestId: { type: string, format: uuid }
+        errors: { type: array, items: { $ref: "#/components/schemas/FieldProblem" } }
+    CsrfEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [token, headerName]
+          properties:
+            token: { type: string }
+            headerName: { type: string, const: X-CSRF-Token }
+    RegistrationPolicyEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [adultStatement, termsVersion, termsPath, privacyVersion, privacyPath]
+          properties:
+            adultStatement: { type: string }
+            termsVersion: { type: string }
+            termsPath: { type: string }
+            privacyVersion: { type: string }
+            privacyPath: { type: string }
+    ActorEnvelope:
+      type: object
+      required: [data]
+      properties: { data: { $ref: "#/components/schemas/Actor" } }
+    UserSummaryEnvelope:
+      type: object
+      required: [data]
+      properties: { data: { $ref: "#/components/schemas/UserSummary" } }
+    UserDetailEnvelope:
+      type: object
+      required: [data]
+      properties: { data: { $ref: "#/components/schemas/UserDetail" } }
+    UserListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/UserSummary" } }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+security:
+  - sessionCookie: []
