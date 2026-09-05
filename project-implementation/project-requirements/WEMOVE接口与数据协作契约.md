@@ -39,7 +39,7 @@ OpenAPI 采用固定版本 **3.1.1**，用它描述 HTTP 操作、schema 和样�
 | 写成功 | 创建资源首次成功 201，并给 `Location`；读取/更新/业务命令 200；不统一包装成永远 200 |
 | 删除成功 | 200，`data` 为删除结果或最新购物车；本项目不混用 204 与带正文响应 |
 | 资源 ID | 非空不透明字符串，长度不超过 64；不得转成前端数值参与运算；订单号等展示编号与 ID 分开 |
-| 币种与金额 | `currency: "CNY"`；`unitPriceFen`、`totalFen` 等均为整数分，禁止同一字段混用元/分或浮点数 |
+| 币种与金额 | `currency: "CNY"`；单价/单笔 `unitPriceFen`、`totalFen` 等为有界整数分；总览累计 `netPaidFen` 为分整数字符串，见 9.2；禁止同一字段混用单位或类型 |
 | 时间 | 时间戳为 UTC ISO 8601 字符串，如 `2026-09-05T03:00:00.000Z`；展示固定 Asia/Shanghai |
 | 日期 | `YYYY-MM-DD`，如期望交付日；按上海日期校验，不把日期当 UTC 午夜反复换算 |
 | 空值 | 选填字段省略或 `null` 均表示未填写；PATCH 中省略表示不改，`null` 仅用于清空允许为空字段；空字符串不能冒充缺失值 |
@@ -221,7 +221,7 @@ E 维护主布局与注册接口，A 提供身份能力。各模块导出路由�
 
 商品主要输入：`sku,name,categoryId,summary,description,ageMin,ageMax,playType,scene,material,dimensions,packageContents,instructions,safetyNotes,mainImageId,imageIds,retailUnitPriceFen,dealerEnabled,dealerReferenceUnitPriceFen,minInquiryQuantity,leadTimeText`。规格/单位与各文本字段的 schema 由 B 按 SRS 3.4 明确，E 提供 imageId 引用校验。
 
-草稿允许缺发布必填项但已填值必须合法；SKU 首次赋值后不可改；启用经销业务必须补齐参考价、最小量、交期。商品公开详情库存只返回可售状态，精确库存用于经销目录、管理及合法交易反馈。
+草稿允许缺发布必填项但已填值必须合法；SKU 首次赋值后不可改；发布及已发布编辑时，启用经销业务的商品必须补齐参考价、最小量、交期，草稿不因此被强制补齐。商品公开详情库存只返回可售状态，精确库存用于经销目录、管理及合法交易反馈。
 
 ### 5.4 C：购物车与零售
 
@@ -231,7 +231,7 @@ E 维护主布局与注册接口，A 提供身份能力。各模块导出路由�
 | `POST /cart/items` | U-Own，K；productId、quantity，按同商品累加；每行 1—99、整车 ≤20 行 |
 | `PATCH /cart/items/{productId}`、`DELETE /cart/items/{productId}`、`DELETE /cart/items` | U-Own，V；PATCH 为设置新 quantity；修改/清空使用 cartVersion 检查 |
 | `POST /checkout-previews` | U-Own；无业务扣减，返回整车服务器预览、previewToken、cartVersion |
-| `POST /orders` | U-Own，K；previewToken、cartVersion、shippingAddress、remark；创建待付款订单 |
+| `POST /orders` | U-Own，K；previewToken、cartVersion、shippingAddress、remark；可选 clientTotalFen 仅为展示提示、不参与计价；创建待付款订单 |
 | `GET /orders`、`GET /orders/{id}` | U-Own；分页/状态筛选及本人快照详情 |
 | `POST /orders/{id}/mock-payments` | U-Own，K/V；outcome=SUCCESS/FAILURE；结果 mode=SIMULATED，按状态机处理 |
 | `POST /orders/{id}/cancel`、`/confirm-receipt` | U-Own，K/V；取消 reason 必填；确认收货无客户端状态赋值 |
@@ -244,7 +244,7 @@ E 维护主布局与注册接口，A 提供身份能力。各模块导出路由�
 
 | 操作 | 权限 / 关键输入与输出 |
 | --- | --- |
-| `GET /channels`、`GET /channels/{id}` | P；countryOrRegion、city；仅明确发布且关联合作有效的公开渠道 |
+| `GET /channels`、`GET /channels/{id}` | P；countryOrRegion、city；仅明确发布的渠道；无关联企业可独立发布，有关联企业时还须合作 ACTIVE |
 | `POST /dealer-applications` | U，K；首次申请；已有待审核/已获批或暂停资格者拒绝 |
 | `GET /dealer-applications`、`GET /dealer-applications/{id}` | U-Own；当前申请及历史版本/公开审核结果 |
 | `POST /dealer-applications/{id}/resubmit` | U-Own，K/V；仅驳回后重提，追加版本，不覆盖旧稿 |
@@ -270,6 +270,7 @@ E 维护主布局与注册接口，A 提供身份能力。各模块导出路由�
 | --- | --- |
 | `GET /site-settings`、`GET /home` | P；公开品牌、说明版本、联系信息；已启用 Banner、按序有效推荐商品与内容 |
 | `GET /articles`、`GET /articles/{id}`、`GET /faqs` | P；仅发布内容，草稿/下线直接请求 404；FAQ 支持分类/商品筛选 |
+| `GET /media/{id}/content` | P 只读取有当前公开发布引用的有效图片；A 可预览有效草稿图片；无公开引用且非管理员为 404 |
 | `GET /files`、`GET /files/{id}` | P/U/D/A 按逐条可见性过滤；type、productId；私有元数据无权不可见 |
 | `GET /files/{fileId}/versions/{downloadId}/content` | 二进制流；校验逻辑资料有效、当前下载版本、当前身份与合作；旧 downloadId 为 404 |
 | `GET /admin/site-settings`、`PATCH /admin/site-settings` | A；V；品牌/联系方式/说明及版本；不接收任意配置键 |
@@ -277,7 +278,7 @@ E 维护主布局与注册接口，A 提供身份能力。各模块导出路由�
 | `GET/POST /admin/articles`、`GET/PATCH /admin/articles/{id}` | A；创建 K，编辑 V；title、body、summary、关联商品与媒体 |
 | `GET/POST /admin/faqs`、`GET/PATCH /admin/faqs/{id}` | A；创建 K，编辑 V；question、answer、category、关联商品 |
 | `GET/POST /admin/banners`、`GET/PATCH /admin/banners/{id}` | A；创建 K，编辑 V；title、imageId、buttonText、targetUrl、sortOrder |
-| `POST /admin/{articles|faqs|banners}/{id}/publish`、`/unpublish` | A，K/V；花括号表示三组独立路径，不是任意资源名入口 |
+| `POST /admin/articles/{id}/publish`、`/unpublish`；faqs、banners 各有对应路径 | A，K/V；三组独立路径，不是任意资源名入口 |
 | `GET /admin/media`、`POST /admin/media`、`DELETE /admin/media/{id}` | A；上传 multipart；删除 V 并检查引用，上传失败不生成可见空记录 |
 | `GET /admin/files`、`GET /admin/files/{id}`、`POST /admin/files`、`PATCH /admin/files/{id}` | A；上传 PDF + 元数据；编辑 V；visibility=PUBLIC/DEALER/INTERNAL，权限变化审计 |
 | `POST /admin/files/{id}/replace`、`/publish`、`/unpublish` | A；replace 为 multipart/V，发布/下线 K/V；替换生成新下载标识 |
@@ -346,7 +347,8 @@ X-CSRF-Token: <当前会话令牌>
     "city": "上海市",
     "addressLine": "测试路 100 号（测试资料）"
   },
-  "remark": null
+  "remark": null,
+  "clientTotalFen": 100
 }
 ```
 
@@ -360,14 +362,14 @@ X-CSRF-Token: <当前会话令牌>
 4. 在并发保护下读取商品可售状态/当前价/库存。购物车变化返回 CART_CHANGED；价格变化返回 PRICE_CHANGED；给出重新预览/确认入口，不静默改价建单。
 5. 用可信零售价生成订单/明细/地址快照，移除本次结算购物车项、递增 cartVersion，写状态历史、审计与幂等结果，一起提交。
 
-本接口不接受 `totalFen` 作为请求字段；若篡改提交总额，统一未知字段规则返回 422，不能按篡改数计价。正常请求金额只按服务端计算为 14870 分。库存不足/下架失败不创建订单、不删购物车；下单成功不扣/预占库存。
+`clientTotalFen` 是明确声明的可选展示提示字段，类型为非负整数；服务端无论其取值如何都不使用它决定成交额。上例故意将其篡改为 100 分，服务器仍根据可信预览与当前单价计算为 14870 分并保存快照，满足 TC-15。是否改价以服务端保存的预览与当前价比较，不能因客户端报错总额就误判真实价格变化。库存不足/下架失败不创建订单、不删购物车；下单成功不扣/预占库存。
 
 ### 6.2 幂等规范
 
 **幂等**指相同逻辑请求重试不会增加业务效果，可写为 \(effect(f(f(s,k),k))=effect(f(s,k))\)。HTTP 重试次数可以是多次，业务效果必须是一次；禁用按钮只能减少点击，不能处理双标签页、断网重试和并发请求。
 
 - 本项目将 `Idempotency-Key` 作为自定义业务约定，取 UUID 格式；同一确认请求保存同一键，用户改了内容并重新确认才生成新键。
-- 创建订单/申请/工单/询价及清单标 K 的命令必须传键。按规范化后的完整语义请求计算摘要，保留数组顺序，密码不进行有损规范化；不得在日志打印原始敏感请求。
+- 创建订单/申请/工单/询价及清单标 K 的命令必须传键。摘要覆盖 HTTP 方法、路径参数中的具体资源 ID、有业务意义的查询参数与规范化请求体，保留数组顺序；operationId 只表示操作模板，不能替代目标资源 ID。同键用于另一个订单/商品时必须报冲突，不得重放另一资源的结果。密码不进行有损规范化；不得在日志打印原始敏感请求。
 - 数据库唯一键为 `(actorId,operationId,idempotencyKey)`；写结果与业务提交同事务完成。并发同键请求由唯一约束/事务协调，等待完成后返回结果；超过短等待预算返回 409 REQUEST_IN_PROGRESS，可带 Retry-After。
 - 同键同内容重放已成功结果返回 200，并设置 `Idempotency-Replayed: true`；资源 ID 与原结果一致。调用方随后 GET 详情获取可能已演进的当前状态。
 - 同键不同内容返回 409 IDEMPOTENCY_CONFLICT；状态版本不同也属于内容不同，不可悄悄更换 expectedVersion 重用原键。
@@ -415,6 +417,7 @@ X-CSRF-Token: <当前会话令牌>
 | D | `DealerAccess.requireActive(ctx, tx?)` → CompanyContext | D/E/B 的专属能力；检查账户与当前合作；企业身份由服务端得出 |
 | C | `Orders.requireOwnedReference(ctx, orderId)` → OrderReference | F；校验本人归属，返回最小关联投影，不把全部地址交给工单 |
 | E | `Assets.requireValidImages(tx, ids)` | B/E；发布/编辑前校验有效图片 |
+| E | `Assets.getVisibleImageMetadata(ctx, ids)` → ImageDTO 列表 | B/E；返回有权读取的图片元数据与统一 URL，字段见第 8 节 |
 | E | `Assets.replaceReferences(tx, sourceType, sourceId, ids, active)` | B/E；维护引用登记，与商品/内容修改同事务；删除检查同一登记 |
 | E | `Files.listVisible(ctx, filters)`、`Files.openCurrent(ctx, fileId, downloadId)` | B/D/E 页面；逐次授权与版本检查，返回可读流或通用错误 |
 | F | `Audit.append(tx, event)` | 所有域；写关键成功动作，最小必要字段，不独立提交 |
@@ -453,6 +456,8 @@ X-CSRF-Token: <当前会话令牌>
 采用其他锁算法也可，但须有 TC-17/19/20/23/28/34/35 的证明；不能仅以单人点击页面成功作为并发正确的证据。
 
 ## 8. 文件替换、引用与权限联动
+
+图片 DTO 统一为 `{id,url,altText,mimeType,width,height}`，url 指向 `/api/v1/media/{id}/content`，不含服务器存储路径。B/E 使用该 DTO 显示图片，不自行拼接存储目录。读取时依据当前引用登记判断公开可见性；管理员通过同一路径携带会话预览草稿，私人预览不缓存。删除后返回 404；公开引用全部下线后，未登录用户不能继续通过该入口读取图片。前端收到不可读结果显示占位，不持续重试失效地址。
 
 E 区分稳定的逻辑 `fileId` 与当前版本的 `downloadId`。PDF 替换保留逻辑关联，产生新 downloadId，原标识立即不再被业务入口下载。合作暂停后，旧页面中的私有链接再次请求也必须失败。
 
@@ -546,6 +551,6 @@ stock_{now}=stock_{initial}+\sum adjustments+\sum cancellationReturns-\sum succe
 - [ ] 订单库存、申请资格、渠道下线、成功审计没有分开提交。
 - [ ] 数据迁移有所有者、唯一键、引用保护、空库及升级验证。
 - [ ] 前端 Mock 与真实响应都通过相同 schema；Mock 成功不等于集成成功。
-- [ ] 上下游在同一 `main` 组合中通过有关测试，不只通过本模块测试。
+- [ ] 上下游在同一 `master` 组合中通过有关测试，不只通过本模块测试。
 
 优先以 TC-16/17/19/20/23 验证交易，TC-28/32 验证资格联动，TC-35/36 验证文件引用与失效，TC-11 验证跨用户隔离。完整责任和证据填写在[验收追踪表](WEMOVE需求责任与验收追踪表.md)，在没有执行前保持“未执行”。
