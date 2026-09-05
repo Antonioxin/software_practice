@@ -1,1 +1,5 @@
 .DS_Store
+/.idea/
+/partA/backend/target/
+/partA/frontend/node_modules/
+/partA/frontend/dist/

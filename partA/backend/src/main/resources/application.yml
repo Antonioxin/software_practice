@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: wemove-identity
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+  datasource:
+    url: "${DB_URL:jdbc:mysql://127.0.0.1:3306/wemove?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}"
+    username: ${DB_USERNAME:wemove_app}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  session:
+    store-type: jdbc
+    timeout: 30m
+    jdbc:
+      initialize-schema: never
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        name: WEMOVE_SESSION
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+      timeout: 30m
+wemove:
+  security:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
+  registration:
+    terms-version: "2026-09-05"
+    privacy-version: "2026-09-05"
+  bootstrap:
+    admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    admin-nickname: ${BOOTSTRAP_ADMIN_NICKNAME:系统管理员}
