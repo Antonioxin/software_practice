@@ -1,11 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { identityRoutes } from './features/identity/routes'
+import { catalogRoutes } from './features/catalog/routes'
 import { useSessionStore } from './stores/session'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', redirect: '/login' },
+    { path: '/', redirect: '/products' },
+    ...catalogRoutes,
     ...identityRoutes,
     { path: '/:pathMatch(.*)*', component: () => import('./pages/NotFoundPage.vue') },
   ],

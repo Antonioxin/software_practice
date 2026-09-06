@@ -23,9 +23,11 @@ async function signOut() {
           <span>WeMove</span>
         </RouterLink>
         <nav class="desktop-nav" aria-label="主导航">
+          <RouterLink to="/products">商品前台</RouterLink>
           <RouterLink v-if="!session.isAdmin" to="/account/profile">个人资料</RouterLink>
           <RouterLink v-if="session.isAdmin" to="/admin/users">用户管理</RouterLink>
-          <span class="integration-link" title="由其他成员模块接入">业务中心 · 待接入</span>
+          <RouterLink v-if="session.isAdmin" to="/admin/products">商品管理</RouterLink>
+          <RouterLink v-if="session.isAdmin" to="/admin/categories">分类管理</RouterLink>
         </nav>
         <div class="identity-actions">
           <span class="identity-name">{{ session.actor?.nickname }}</span>
@@ -36,8 +38,11 @@ async function signOut() {
         </div>
       </div>
       <nav v-if="mobileOpen" class="mobile-nav" aria-label="移动端导航">
+        <RouterLink to="/products">商品前台</RouterLink>
         <RouterLink v-if="!session.isAdmin" to="/account/profile">个人资料</RouterLink>
         <RouterLink v-if="session.isAdmin" to="/admin/users">用户管理</RouterLink>
+        <RouterLink v-if="session.isAdmin" to="/admin/products">商品管理</RouterLink>
+        <RouterLink v-if="session.isAdmin" to="/admin/categories">分类管理</RouterLink>
         <button type="button" @click="signOut">退出登录</button>
       </nav>
     </header>
