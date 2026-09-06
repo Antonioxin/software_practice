@@ -7,11 +7,11 @@ import { useSessionStore } from './stores/session'
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', redirect: '/products' },
+    { path: '/', component: () => import('./pages/HomePage.vue'), meta: { title: '首页' } },
     ...catalogRoutes,
     ...commerceRoutes,
     ...identityRoutes,
-    { path: '/:pathMatch(.*)*', component: () => import('./pages/NotFoundPage.vue') },
+    { path: '/:pathMatch(.*)*', component: () => import('./pages/NotFoundPage.vue'), meta: { title: '页面未找到' } },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })
@@ -21,7 +21,7 @@ router.beforeEach(async (to) => {
   await session.load()
   const capability = to.meta.capability as string | undefined
   if (capability && !session.actor) return { path: '/login', query: { redirect: to.fullPath } }
-  if (capability && !session.actor?.capabilities.includes(capability)) return { path: '/account/profile' }
+  if (capability && !session.actor?.capabilities.includes(capability)) return { path: '/' }
   if ((to.path === '/login' || to.path === '/register') && session.actor) {
     return session.isAdmin ? '/admin/users' : '/account/profile'
   }

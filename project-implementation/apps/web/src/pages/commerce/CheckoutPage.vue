@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PublicShell from '../../components/PublicShell.vue'
@@ -10,7 +11,6 @@ import { useSessionStore } from '../../stores/session'
 import { useCartStore } from '../../features/commerce/cartStore'
 import { formatCny } from '../../features/catalog/presentation'
 import type { Address, Order, Preview } from '../../features/commerce/types'
-import '../../features/commerce/style.css'
 
 const session = useSessionStore()
 const cart = useCartStore()
@@ -140,7 +140,7 @@ onBeforeUnmount(() => {
       <header class="commerce-page-head">
         <div>
           <p class="commerce-eyebrow">CHECKOUT / SIMULATED</p>
-          <h1 id="checkout-title">确认订单</h1>
+          <h1 id="checkout-title"><SketchIcon name="wallet" :size="44" />确认订单</h1>
           <p class="commerce-lede">确认地址与本次成交快照。下单不占用库存，模拟付款时才会再次检查库存。</p>
         </div>
         <div class="commerce-head-meta">

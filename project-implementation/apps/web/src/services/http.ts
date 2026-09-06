@@ -4,6 +4,9 @@ interface CsrfPayload { token: string; headerName: string }
 
 let csrf: CsrfPayload | null = null
 
+// Captured at application startup; ordinary router filters must not disable an active preview.
+export const isDevelopmentPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === '1'
+
 export class ApiProblem extends Error {
   constructor(public readonly problem: ProblemDetails) {
     super(problem.detail)
@@ -47,6 +50,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiE
 export async function apiWithMeta<T>(path: string, init: RequestInit = {}): Promise<{
   envelope: ApiEnvelope<T>; status: number; replayed: boolean; requestId: string | null
 }> {
+  if (import.meta.env.DEV && isDevelopmentPreview) {
+    const { handlePreviewRequest } = await import('../dev/preview')
+    return { envelope: handlePreviewRequest<T>(path, init), status: 200, replayed: false, requestId: 'development-preview' }
+  }
   const method = (init.method ?? 'GET').toUpperCase()
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json, application/problem+json')

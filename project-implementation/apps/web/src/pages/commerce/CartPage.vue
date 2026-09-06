@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { computed, onMounted, ref } from 'vue'
 import PublicShell from '../../components/PublicShell.vue'
 import ProductArtwork from '../../components/ProductArtwork.vue'
 import { useCartStore } from '../../features/commerce/cartStore'
 import { formatCny } from '../../features/catalog/presentation'
 import { api } from '../../services/http'
-import '../../features/commerce/style.css'
 
 const store = useCartStore()
 const error = ref('')
@@ -52,7 +52,7 @@ onMounted(load)
       <header class="commerce-page-head">
         <div>
           <p class="commerce-eyebrow">MY WEMOVE / CART</p>
-          <h1 id="cart-title">购物车</h1>
+          <h1 id="cart-title"><SketchIcon name="cart" :size="44" />购物车</h1>
           <p class="commerce-lede">整车结算，保留零售价格快照。运费、额外税费与优惠均为 ¥0.00。</p>
         </div>
         <div class="commerce-head-meta">
@@ -67,7 +67,7 @@ onMounted(load)
 
       <template v-if="store.cart">
         <div v-if="!store.cart.items.length" class="commerce-empty">
-          <span class="commerce-empty-mark" aria-hidden="true">＋</span>
+          <span class="commerce-empty-mark" aria-hidden="true"><SketchIcon name="cart" :size="52" /></span>
           <h2>购物车还是空的</h2>
           <p>从一件适合全家参与的商品开始，回到商品目录继续挑选。</p>
           <RouterLink class="primary-button compact" to="/products">继续选购 <span aria-hidden="true">→</span></RouterLink>
@@ -122,7 +122,7 @@ onMounted(load)
               </div>
               <div class="commerce-item-price"><span>单价</span><strong>{{ formatCny(item.unitPriceFen) }}</strong></div>
               <div class="commerce-item-subtotal"><span>小计</span><strong>{{ formatCny(item.subtotalFen) }}</strong></div>
-              <button class="commerce-remove-button" type="button" :disabled="busy" @click="change(item.productId)">移除</button>
+              <button class="commerce-remove-button" type="button" :disabled="busy" @click="change(item.productId)" :aria-label="'移除' + item.name"><SketchIcon name="trash" :size="25" /></button>
             </article>
           </section>
 

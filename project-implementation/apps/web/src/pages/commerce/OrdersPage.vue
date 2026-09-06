@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { onMounted, ref } from 'vue'
 import PublicShell from '../../components/PublicShell.vue'
 import SiteShell from '../../components/SiteShell.vue'
 import { readOrders } from '../../features/commerce/api'
 import { statusLabels, type OrderPage } from '../../features/commerce/types'
 import { formatCny } from '../../features/catalog/presentation'
-import '../../features/commerce/style.css'
 
 const props = withDefaults(defineProps<{ admin?: boolean }>(), { admin: false })
 const result = ref<OrderPage | null>(null)
@@ -73,7 +73,7 @@ onMounted(() => void load())
       <header v-if="!props.admin" class="commerce-page-head">
         <div>
           <p class="commerce-eyebrow">ORDERS / SIMULATED</p>
-          <h1 id="orders-title">我的订单</h1>
+          <h1 id="orders-title"><SketchIcon name="orders" :size="44" />我的订单</h1>
           <p class="commerce-lede">本期付款、退款和物流均为模拟；订单列表只展示接口返回的摘要。</p>
         </div>
         <RouterLink class="commerce-back-link" to="/products">← 返回商品目录</RouterLink>

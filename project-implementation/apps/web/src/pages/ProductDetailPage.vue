@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { useSessionStore } from '../stores/session'
 import { useCommandRecovery } from '../features/commerce/commandRecovery'
 import { useCartStore } from '../features/commerce/cartStore'
+import SketchIcon from '../components/SketchIcon.vue'
 import PublicShell from '../components/PublicShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
 import { formatAgeRange, formatCny } from '../features/catalog/presentation'
@@ -67,7 +68,7 @@ onMounted(load)
       <article v-else-if="product" class="product-detail">
         <section class="product-gallery">
           <ProductArtwork :name="product.name" :sku="product.sku" />
-          <div class="gallery-caption"><span>IMAGE REFERENCE</span><strong>{{ product.mainImageId || '等待媒体模块提供图片' }}</strong></div>
+          <div class="gallery-caption"><span>WEMOVE / PRODUCT</span><strong>商品图片准备中 · 当前为手绘示意</strong></div>
         </section>
         <section class="product-intro">
           <p class="detail-eyebrow">{{ product.category.name }} / {{ product.sku }}</p>
@@ -84,9 +85,9 @@ onMounted(load)
             <div><span>零售价格</span><strong>{{ formatCny(product.retailUnitPriceFen) }}</strong><small>含税规则以本期模拟流程为准，运费 ¥0.00</small></div>
             <label>数量<input v-model.number="quantity" type="number" min="1" max="99" /></label>
             <button v-if="!session.isAdmin" class="primary-button" type="button" :disabled="addCommand.busy.value || !product.purchasable || quantity < 1 || quantity > 99 || !Number.isInteger(quantity)" @click="addToCart">
-              {{ addCommand.pending.value ? '重试原加购请求' : product.purchasable ? '加入购物车' : '暂不可购买' }} <span>→</span>
+              {{ addCommand.pending.value ? '重试原加购请求' : product.purchasable ? '加入购物车' : '暂不可购买' }} <SketchIcon name="cart" :size="24" />
             </button>
-            <p>经销参考价仅在经销商专属目录显示，不会从此公开接口返回。</p>
+            <p>大宗采购可通过经销合作渠道咨询。</p>
           </div>
         </section>
         <section v-if="product.status === 'PUBLISHED'" class="product-story">

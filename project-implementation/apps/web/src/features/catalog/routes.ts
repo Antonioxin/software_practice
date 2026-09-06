@@ -17,9 +17,11 @@ export const catalogRouteRegistrations: CatalogRouteRegistration[] = [
   { routeId: 'catalog-admin-categories', path: '/admin/categories', layout: 'admin', requiredCapability: 'ADMIN_CATALOG_WRITE', loadPage: () => import('../../pages/AdminCategoriesPage.vue') },
 ]
 
+const pageTitles: Record<string, string> = {'catalog-products': '探索商品', 'catalog-product-detail': '商品详情', 'catalog-admin-products': '商品管理', 'catalog-admin-product-create': '新建商品', 'catalog-admin-product-edit': '编辑商品', 'catalog-admin-categories': '分类管理'}
+
 export const catalogRoutes: RouteRecordRaw[] = catalogRouteRegistrations.map((route) => ({
   name: route.routeId,
   path: route.path,
   component: route.loadPage,
-  meta: { layout: route.layout, capability: route.requiredCapability },
+  meta: { title: pageTitles[route.routeId], layout: route.layout, capability: route.requiredCapability },
 }))

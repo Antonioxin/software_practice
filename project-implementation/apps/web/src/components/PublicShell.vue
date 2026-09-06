@@ -1,68 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '../stores/session'
-
+import BrandMark from './BrandMark.vue'
+import SketchIcon from './SketchIcon.vue'
+import QuickLinksMenu from './QuickLinksMenu.vue'
+import SiteFooter from './SiteFooter.vue'
 const menuOpen = ref(false)
+const error = ref('')
 const session = useSessionStore()
+const route = useRoute()
 const router = useRouter()
-
+watch(() => route.fullPath, () => { menuOpen.value = false })
 async function signOut() {
-  await session.logout()
-  await router.replace('/products')
+  try { await session.logout(); await router.replace('/login') }
+  catch { error.value = '退出结果暂未确认，请重试。' }
 }
 </script>
-
 <template>
   <div class="catalog-site">
-    <a class="skip-link" href="#main-content">跳到主要内容</a>
-    <header class="catalog-header">
-      <div class="catalog-header-inner">
-        <RouterLink class="brand" to="/products">
-          <img src="/brand-logo.png" alt="WEMOVE SPORTS" />
-          <span>WeMove</span>
+    <header class="wm-header glass-panel">
+      <BrandMark />
+      <nav class="wm-navigation" aria-label="主导航">
+        <RouterLink to="/" exact-active-class="is-active"><SketchIcon name="home" />首页</RouterLink>
+        <RouterLink to="/products" active-class="is-active"><SketchIcon name="grid" />探索商品</RouterLink>
+        <RouterLink v-if="!session.isAdmin" to="/account/orders" active-class="is-active"><SketchIcon name="orders" />我的订单</RouterLink>
+        <RouterLink v-else to="/admin/products" active-class="is-active"><SketchIcon name="filter" />管理后台</RouterLink>
+      </nav>
+      <div class="wm-header-actions">
+        <QuickLinksMenu />
+        <RouterLink class="wm-account-button" :aria-label="session.actor ? '我的账户' : '登录或注册'" :to="session.actor ? (session.isAdmin ? '/admin/users' : '/account/profile') : '/login'">
+          <SketchIcon name="user" /><span>{{ session.actor ? session.actor.nickname : '登录 / 注册' }}</span>
         </RouterLink>
-        <nav class="catalog-nav" aria-label="主导航">
-          <RouterLink to="/products">全部商品</RouterLink>
-          <RouterLink v-if="session.actor && !session.isAdmin" to="/cart">购物车</RouterLink>
-          <RouterLink v-if="session.actor && !session.isAdmin" to="/account/orders">我的订单</RouterLink>
-          <RouterLink v-if="session.isAdmin" to="/admin/orders">订单管理</RouterLink>
-          <span>玩法指南</span>
-          <span>购买渠道</span>
-        </nav>
-        <div class="catalog-account">
-          <RouterLink v-if="!session.actor" to="/login">登录</RouterLink>
-          <RouterLink v-else :to="session.isAdmin ? '/admin/products' : '/account/profile'">
-            {{ session.isAdmin ? '管理后台' : session.actor.nickname }}
-          </RouterLink>
-          <button v-if="session.actor" type="button" @click="signOut">退出</button>
-          <button class="catalog-menu" type="button" :aria-expanded="menuOpen" aria-label="展开导航" @click="menuOpen = !menuOpen">
-            <span></span><span></span>
-          </button>
-        </div>
+        <button v-if="session.actor" class="wm-signout" type="button" @click="signOut">退出</button>
+        <button class="wm-menu-button wm-icon-button" type="button" aria-controls="public-mobile-menu" :aria-expanded="menuOpen" :aria-label="menuOpen ? '关闭导航' : '展开导航'" @click="menuOpen = !menuOpen"><SketchIcon :name="menuOpen ? 'close' : 'menu'" /></button>
       </div>
-      <nav v-if="menuOpen" class="catalog-mobile-nav" aria-label="移动端导航">
-        <RouterLink to="/products" @click="menuOpen = false">全部商品</RouterLink>
-          <RouterLink v-if="session.actor && !session.isAdmin" to="/cart">购物车</RouterLink>
-          <RouterLink v-if="session.actor && !session.isAdmin" to="/account/orders">我的订单</RouterLink>
-          <RouterLink v-if="session.isAdmin" to="/admin/orders">订单管理</RouterLink>
-        <RouterLink :to="session.actor ? '/account/profile' : '/login'" @click="menuOpen = false">
-          {{ session.actor ? '个人中心' : '登录账户' }}
-        </RouterLink>
+      <nav v-if="menuOpen" id="public-mobile-menu" class="wm-mobile-menu" aria-label="移动端导航">
+        <RouterLink to="/">首页</RouterLink><RouterLink to="/products">探索商品</RouterLink>
+        <RouterLink :to="session.isAdmin ? '/admin/orders' : '/account/orders'">{{ session.isAdmin ? '订单管理' : '我的订单' }}</RouterLink>
+        <RouterLink v-if="session.isAdmin" to="/admin/products">商品管理</RouterLink>
+        <RouterLink :to="session.actor ? (session.isAdmin ? '/admin/users' : '/account/profile') : '/login'">{{ session.actor ? '账户信息' : '登录 / 注册' }}</RouterLink>
+        <button v-if="session.actor" type="button" @click="signOut">退出登录</button>
       </nav>
     </header>
+    <p v-if="error" class="wm-shell-error" role="alert">{{ error }}</p>
     <main id="main-content"><slot /></main>
-    <footer class="catalog-footer">
-      <div><strong>WE MOVE, TOGETHER.</strong><span>把运动变成全家都愿意参与的游戏。</span></div>
-      <nav><RouterLink to="/products">商品</RouterLink><span>使用说明</span><span>隐私说明</span></nav>
-    </footer>
+    <SiteFooter />
   </div>
 </template>
 
 <style scoped>
-@media (min-width: 761px) and (max-width: 960px) {
-  .catalog-nav { gap: 16px; }
-  .catalog-nav a { white-space: nowrap; }
-  .catalog-nav span { display: none; }
+.wm-header-actions { min-width: 0; }
+/* Keep the shortcut, account and mobile navigation controls on screen at 320 px. */
+@media (max-width: 380px) {
+  .wm-header :deep(.wm-brand > span) { display: none; }
+  .wm-header :deep(.wm-brand) { gap: 0; }
 }
 </style>

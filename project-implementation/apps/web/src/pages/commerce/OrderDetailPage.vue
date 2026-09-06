@@ -10,7 +10,6 @@ import { readOrder } from '../../features/commerce/api'
 import { useCommandRecovery } from '../../features/commerce/commandRecovery'
 import { statusLabels, type Detail } from '../../features/commerce/types'
 import { formatCny } from '../../features/catalog/presentation'
-import '../../features/commerce/style.css'
 
 const props = withDefaults(defineProps<{ admin?: boolean }>(), { admin: false })
 const route = useRoute()
@@ -158,8 +157,9 @@ onMounted(() => void load())
   <component :is="props.admin ? SiteShell : PublicShell" :title="props.admin ? '订单详情' : undefined" :admin="props.admin" eyebrow="ORDER / SIMULATED">
     <section
       :class="['commerce-content commerce-detail-page', { 'commerce-page': !props.admin }]"
-      aria-labelledby="order-detail-title"
+      :aria-labelledby="props.admin ? 'order-detail-title' : 'own-order-title'"
     >
+      <h1 v-if="!props.admin" id="own-order-title" class="sr-only">订单详情</h1>
       <RouterLink class="commerce-back-link" :to="props.admin ? '/admin/orders' : '/account/orders'">← 返回订单列表</RouterLink>
       <p v-if="error" class="error-summary commerce-error" role="alert">{{ error }}</p>
 
