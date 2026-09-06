@@ -1,0 +1,29 @@
+{
+  "name": "wemove-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "element-plus": "2.9.7",
+    "pinia": "2.3.1",
+    "vue": "3.5.13",
+    "vue-router": "4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.10",
+    "@vitejs/plugin-vue": "5.2.3",
+    "@vue/test-utils": "2.4.6",
+    "jsdom": "26.0.0",
+    "typescript": "5.8.2",
+    "vite": "6.2.0",
+    "vitest": "3.0.8",
+    "vue-tsc": "2.2.8"
+  }
+}

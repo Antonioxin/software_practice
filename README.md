@@ -8,25 +8,27 @@
 
 | 项目 | 当前情况 |
 | --- | --- |
-| 项目阶段 | 需求与协作设计阶段；已有 SRS、分工、接口契约和验收追踪表 |
+| 项目阶段 | 需求与协作基线已建立；A、B 已进入集成实现阶段 |
 | 需求基线 | SRS V1.1，文档标记为“评审通过” |
-| 协作设计 | 建议执行稿；姓名、GitHub 账号、技术栈和实际日期需在启动时确定 |
-| 应用实现 | 尚无前端/后端应用代码、依赖清单、数据库迁移或自动化测试工作流 |
+| 协作设计 | 建议执行稿；姓名、GitHub 账号和实际日期仍需登记，当前技术栈见下文 |
+| 应用实现 | `project-implementation/apps/` 包含统一的前端与后端；接口契约、脚本、测试设计和文档分别归入专门目录，按业务模块保留贡献记录 |
 | 默认主线 | `master` |
-| 验证状态 | 业务实现与测试尚未执行；需求评审通过不代表软件已经实现 |
+| 验证状态 | A、B 已有各自验证记录；成员测试用例审核稿仍为待审核、未执行，整体验收以实际执行证据为准 |
 
 项目面向成年消费者和采购人员，首期完成商品与内容展示、账户权限、模拟零售交易、经销申请与询价、客户咨询及运营后台。支付、退款和发货均为**明确标识的模拟流程**；真实支付、正式经销订单、企业子账号等不属于本期范围。
 
-建议架构是一个前端应用、一个按业务划分模块的后端、一个关系型数据库。具体框架与版本在共同选型后确定。
+当前集成应用采用一个 Vue 3 + TypeScript 前端、一个按业务划分模块的 Java 21 + Spring Boot 后端，以及 MySQL 8 数据库，数据库迁移由 Flyway 管理。A、B 共用这套应用，后续模块在现有底座上接入。
 
 ## 第一次加入：按这个顺序阅读
 
 | 文档 | 解决的问题 |
 | --- | --- |
+| [工程入口与运行指南](project-implementation/README.md) | 源码、契约、脚本和测试放在哪里，如何启动和验证 |
 | [网站重构需求文档](project-implementation/project-requirements/WEMOVE网站重构需求文档.md) | 做什么、哪些不做、角色权限和业务规则是什么 |
 | [团队分工与协作规范](project-implementation/project-requirements/WEMOVE团队分工与协作规范.md) | 谁负责什么、模块如何组合、分支和评审怎么进行 |
 | [接口与数据协作契约](project-implementation/project-requirements/WEMOVE接口与数据协作契约.md) | 字段、接口、错误、状态、事务与数据库边界如何统一 |
 | [需求责任与验收追踪表](project-implementation/project-requirements/WEMOVE需求责任与验收追踪表.md) | 谁实现、谁复核、用什么证据证明完成 |
+| [成员测试用例审核总览](project-implementation/tests/cases/WEMOVE成员测试用例审核总览.md) | A—F 各自怎么测、跨成员流程怎么验证；当前为待审核、未执行的测试设计 |
 
 文档中 **FR** 是功能需求，**BR** 是业务规则，**NFR** 是质量要求，**TC** 是测试场景，**UC** 是业务用例。任务和 PR 应引用这些编号，例如“实现 FR-14，验证 TC-15、TC-16、TC-17”。
 
@@ -40,11 +42,38 @@ README 提供入门指引，详细定义由上述文档维护。发现不一致�
 | --- | --- |
 | [course-materials/](course-materials/) | 教师提供的网站重构要求、课程说明；原始资料保留在此 |
 | [project-implementation/ideation/](project-implementation/ideation/) | 早期构想；当前实施范围以 SRS 为准 |
+| [项目进度与流程资料](project-implementation/project_flowchart_view/) | 共享的甘特图 PDF 和可编辑 Excel 文件 |
+| [前端设计视觉参考](project-implementation/前端设计视觉参考/) | 共享的前端风格参考图片 |
 | [project-implementation/project-requirements/](project-implementation/project-requirements/) | 团队撰写的需求、分工、接口与验收文档 |
 | [references/](project-implementation/project-requirements/references/) | 需求文档的模板与参考资料 |
+| [project-implementation/apps/](project-implementation/apps/) | 统一应用源码：`web/` 为前端，`api/` 为后端；各业务模块在对应应用中实现 |
+| [project-implementation/contracts/openapi/](project-implementation/contracts/openapi/) | 按身份账户、商品库存等业务模块维护的 OpenAPI 契约 |
+| [project-implementation/scripts/smoke/](project-implementation/scripts/smoke/) | 身份账户和商品库存的 API 冒烟脚本 |
+| [project-implementation/docs/](project-implementation/docs/) | 模块设计与贡献记录、设计参考、验证截图 |
+| [project-implementation/tests/cases/](project-implementation/tests/cases/) | A—F 成员测试用例、跨成员集成用例及审核总览；执行前先审核 |
 | [AGENTS.md](AGENTS.md) | 仓库目录、文档和贡献约定，使用开发助手时同样遵守 |
 
-实施阶段计划增加 `apps/web/`、`apps/api/`、`contracts/`、`db/`、`tests/` 和 `docs/`；这些目录**目前尚未创建**。具体结构见协作规范，不要各自另建一套应用、登录系统或数据库启动方式。
+**目录按工程职责组织，成员按业务职责协作。** 前端、后端、接口契约和测试分别有稳定入口；成员归属由需求追踪表和模块文档记录。更换负责人时，代码位置无需随姓名或成员编号改变。所有模块共用现有应用和数据库迁移机制。
+
+| 工作 | 实际入口 |
+| --- | --- |
+| 前端页面与组件 | [apps/web/src/](project-implementation/apps/web/src/)；商品模块入口为 [features/catalog/](project-implementation/apps/web/src/features/catalog/) 及商品相关页面 |
+| 后端业务服务 | [apps/api/src/main/java/](project-implementation/apps/api/src/main/java/)；现有 Java 包名保持兼容，商品库存代码位于 [identity/catalog/](project-implementation/apps/api/src/main/java/com/wemove/identity/catalog/) |
+| 数据库迁移 | [db/migration/](project-implementation/apps/api/src/main/resources/db/migration/)；V1 为身份底座，V2 为商品与库存 |
+| 接口契约 | [身份账户 OpenAPI](project-implementation/contracts/openapi/identity.yaml)、[商品库存 OpenAPI](project-implementation/contracts/openapi/catalog.yaml) |
+| 自动化测试 | [后端测试](project-implementation/apps/api/src/test/)、前端 `src/` 中的 `*.spec.ts`；单元测试随源码维护 |
+| API 冒烟脚本 | [身份账户](project-implementation/scripts/smoke/identity-api.sh)、[商品库存](project-implementation/scripts/smoke/catalog-api.ps1) |
+| 页面素材与截图 | [前端公共素材](project-implementation/apps/web/public/)、[身份页面参考](project-implementation/docs/design/references/identity/)、[商品验证截图](project-implementation/docs/verification/catalog/) |
+
+### 写代码前先确认路径
+
+本仓库的应用代码统一放在 `project-implementation/` 中。**仓库根目录**是本 README 所在目录；**工程根目录**是 `project-implementation/`。因此工程说明中的 `apps/web/`，从仓库根目录定位时应写成 `project-implementation/apps/web/`。本文运行命令以仓库根目录为起点。
+
+- 前端统一进入 `project-implementation/apps/web/`，后端统一进入 `project-implementation/apps/api/`；不在仓库根目录另建应用，也不再按 `partA/`、`partB/` 等成员编号存放代码。
+- 新业务按 `identity`、`catalog`、`commerce`、`dealership`、`content`、`support`／`operations` 接入现有工程。具体页面、路由、Java 包、测试、迁移和文档位置见[新增工作存放约定](project-implementation/README.md#新增工作放在哪里)。
+- 从旧分支继续开发时，先核对[旧路径对照表](project-implementation/README.md#旧路径如何对应)，避免合并时恢复旧目录。成员分工记录在文档中，所有成员复用同一套应用入口、环境模板和依赖清单。
+
+完整目录规则与命令以[工程 README](project-implementation/README.md)为准；详细起点解释见[路径约定](project-implementation/README.md#路径约定先确认起点)。现有模块的设计、成员贡献和验收记录分别见[身份账户模块](project-implementation/docs/modules/identity/README.md)与[商品库存模块](project-implementation/docs/modules/catalog/README.md)。
 
 ## 六人如何分工
 
@@ -184,9 +213,35 @@ git pull --ff-only origin master
 
 ## 运行与验证
 
-目前可直接阅读文档，**尚无应用安装、启动或测试命令**。技术栈及工程骨架确定后，由 A 汇总全员已执行验证的环境要求、依赖安装、数据库初始化、启动、测试与重置命令，并更新本节。
+环境要求为 JDK 21、Maven 3.9+、Node.js 20+、npm 10+ 和本机 MySQL 8.0+。先按 [身份账户运行与验证手册](project-implementation/docs/modules/identity/运行与验证手册.md) 初始化数据库，并在 `project-implementation/.env` 配置本地环境变量；无配置文件时从同目录 `.env.example` 复制。PowerShell 启动和商品库存冒烟步骤见 [商品库存运行与验证手册](project-implementation/docs/modules/catalog/运行与验证手册.md)。
 
-当前文档检查包括：
+以下各代码块均从**仓库根目录**执行。启动后端：
+
+```bash
+set -a
+. ./project-implementation/.env
+set +a
+mvn -f project-implementation/apps/api/pom.xml spring-boot:run
+```
+
+另开终端，从仓库根目录安装前端依赖并启动开发服务：
+
+```bash
+npm --prefix project-implementation/apps/web ci
+npm --prefix project-implementation/apps/web run dev
+```
+
+前端默认地址为 `http://localhost:5173/products`，开发服务器将 `/api` 请求代理到 `http://localhost:8080`。已安装前端依赖后，执行自动化测试和生产构建：
+
+```bash
+mvn -f project-implementation/apps/api/pom.xml verify
+npm --prefix project-implementation/apps/web run test
+npm --prefix project-implementation/apps/web run build
+```
+
+上述命令是现有工程入口，执行结果应分别记录在 [身份账户验证记录](project-implementation/docs/modules/identity/验证记录.md) 和 [商品库存验证记录](project-implementation/docs/modules/catalog/验证记录.md)。自动化测试、API 冒烟和成员用例审核是不同环节；不能用部分检查通过替代全部业务验收。
+
+文档与改动范围检查包括：
 
 ```bash
 git status --short
@@ -194,7 +249,7 @@ git diff --check
 git diff --stat
 ```
 
-同时预览 Markdown，检查表格、相对链接、需求编号和前后文一致性。应用开发开始后，每个模块提供相应测试；重点验证权限、金额、状态、重复请求、并发、事务回滚和重启后的数据保留。完整标准见[验收追踪表](project-implementation/project-requirements/WEMOVE需求责任与验收追踪表.md)。
+同时预览 Markdown，检查表格、相对链接、需求编号和前后文一致性。每个模块随实现提供相应测试；重点验证权限、金额、状态、重复请求、并发、事务回滚和重启后的数据保留。完整标准见[验收追踪表](project-implementation/project-requirements/WEMOVE需求责任与验收追踪表.md)。
 
 PR 中不得提交 `.DS_Store`、临时文件、真实凭据、个人敏感信息或本地数据库。环境配置提交无秘密的示例，测试数据与业务数据分开。
 

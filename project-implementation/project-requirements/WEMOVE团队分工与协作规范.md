@@ -126,29 +126,28 @@ flowchart TB
 
 **稳定边界不等于冻结全部设计。** 只要对外契约和验收行为不变，模块内部重构无需全员批准。技术栈选型在 M0 完成：按成员熟悉程度、事务支持、测试便利和部署条件选定共同底座并固定版本；本规范不把尚未确定的框架写成既成事实。
 
-### 3.3 建议仓库结构
+### 3.3 工程目录约定
 
-以下为实施时创建的目录约定，当前并未生成应用骨架。
+当前采用共用 Vue 前端与 Spring Boot 后端，工程按运行单元和资料用途组织。下表除明确写出仓库根目录者外，路径均相对于 `project-implementation/`；姓名与成员编号记录在分工、模块设计和验收文档中。
 
 | 路径 | 内容与归属 |
 | --- | --- |
-| `course-materials/` | 课程原始资料，原位保留 |
-| `project-implementation/project-requirements/` | 需求、协作设计和追踪表 |
-| `apps/web/src/app/` | 前端装配、路由汇总，E 维护接口，业务成员注册路由 |
-| `apps/web/src/features/{module}/` | 各业务页面、局部状态、局部组件、接口适配 |
-| `apps/web/src/shared/` | 业务无关的 UI 与请求设施；E 管 UI，A 管请求/身份基础设施 |
-| `apps/api/src/modules/{module}/` | 各域公开服务、业务逻辑和数据访问 |
-| `apps/api/src/platform/` | 事务、认证入口、配置、错误、限流；A 维护 |
-| `contracts/openapi.yaml` | OpenAPI 汇总入口；A 维护引用，各域维护自己的子文件 |
-| `contracts/modules/{module}/` | 各域 HTTP 定义和请求/响应样例 |
-| `contracts/shared/` | 统一 ID、金额、分页、错误和枚举 |
-| `db/migrations/` | 全局有序、已应用后不可改写的迁移文件 |
-| `db/seeds/` | 按域组织的测试资料、独立初始化入口 |
-| `tests/contract/`、`tests/integration/`、`tests/e2e/` | 契约、真实数据库集成和浏览器业务流程测试 |
-| `docs/architecture/`、`docs/decisions/`、`docs/meetings/` | 模块设计/ER 图、架构决策记录、讨论结论 |
-| `.github/` | 工作流、PR/Issue 模板、CODEOWNERS；账号确定后配置 |
+| 仓库根目录 `course-materials/` | 课程原始资料，原位保留 |
+| `project-requirements/` | 需求、协作设计和追踪表；参考资料保留在 `references/` |
+| `apps/web/` | 唯一 Vue 前端及其依赖锁文件；`src/router.ts` 汇总路由，`src/features/` 按业务区分入口，`src/pages/` 保存页面 |
+| `apps/web/src/components/`、`services/`、`stores/` | 共用组件、请求设施和会话状态；按既有入口协作 |
+| `apps/api/` | 唯一 Spring Boot 后端，保持 Maven 的 `src/main/java`、`src/test/java` 标准结构 |
+| `apps/api/src/main/java/com/wemove/identity/` | 现有身份及公共设施；商品库存代码位于 `catalog/`。沿用现有 Java 包名，后续模块按业务边界接入 |
+| `apps/api/src/main/resources/db/migration/` | Flyway 的唯一迁移入口；全局有序，已应用后用新迁移修正；现有初始化资料随迁移管理 |
+| `contracts/openapi/` | 按业务保存 HTTP 契约，目前为 `identity.yaml` 与 `catalog.yaml`；尚无聚合文件或公共 schema 文件 |
+| `scripts/smoke/` | 身份与商品库存 API 冒烟脚本，使用专用测试数据 |
+| `tests/cases/` | 成员与跨成员集成测试设计，审核状态与执行结果分别记录 |
+| `apps/web/src/**/*.spec.ts`、`apps/api/src/test/java/` | 前后端现有自动化单元测试，随各自工程运行 |
+| `docs/modules/{module}/` | 按身份账户、商品库存等业务模块保存设计、运行、交付、审核及历史验证记录 |
+| `docs/design/`、`docs/verification/` | 设计参考和验证证据、截图 |
+| `.env.example`、`.env`、`.local/` | 环境模板、本机环境变量与临时验证资料；后两者不提交 |
 
-选型后可以调整语言专属目录，但须保持“按模块隔离、共享设施集中、契约独立”的原则，并同步仓库 AGENTS.md 与 README。禁止各人另外维护独立登录系统、顶层路由、数据库启动方式或依赖锁文件副本。
+保持“按模块隔离、共享设施集中、契约独立”的原则，并同步仓库 AGENTS.md 与 README。禁止各人另外维护独立登录系统、顶层路由、数据库启动方式或依赖锁文件副本。未来新增契约、集成或端到端自动化测试时，再创建 `tests/contract/`、`tests/integration/`、`tests/e2e/` 并记录实际命令；仓库根目录 `.github/` 的工作流、模板与 CODEOWNERS 仍待配置。
 
 ## 4. 从需求到实现的工作流
 
