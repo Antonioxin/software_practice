@@ -1,3 +1,4 @@
+import { clearCommands } from '../features/commerce/commandRecovery'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { api, resetCsrf } from '../services/http'
@@ -24,6 +25,7 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function login(email: string, password: string) {
+    clearCommands(); window.dispatchEvent(new Event('wemove:account-changed'))
     actor.value = (await api<Actor>('/auth/login', {
       method: 'POST', body: JSON.stringify({ email, password }),
     })).data
@@ -34,6 +36,7 @@ export const useSessionStore = defineStore('session', () => {
 
   async function logout() {
     try { await api<void>('/auth/logout', { method: 'POST' }) } finally {
+      clearCommands(); window.dispatchEvent(new Event('wemove:account-changed'))
       actor.value = null
       ready.value = true
       resetCsrf()
@@ -41,7 +44,7 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   function replace(next: Actor) { actor.value = next }
-  function clear() { actor.value = null; ready.value = true; resetCsrf() }
+  function clear() { clearCommands(); window.dispatchEvent(new Event('wemove:account-changed')); actor.value = null; ready.value = true; resetCsrf() }
   window.addEventListener('wemove:auth-invalid', clear)
 
   return { actor, ready, loading, isAdmin, load, login, logout, replace, clear }

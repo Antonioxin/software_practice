@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { identityRoutes } from './features/identity/routes'
+import { commerceRoutes } from './features/commerce/routes'
 import { catalogRoutes } from './features/catalog/routes'
 import { useSessionStore } from './stores/session'
 
@@ -8,6 +9,7 @@ export const router = createRouter({
   routes: [
     { path: '/', redirect: '/products' },
     ...catalogRoutes,
+    ...commerceRoutes,
     ...identityRoutes,
     { path: '/:pathMatch(.*)*', component: () => import('./pages/NotFoundPage.vue') },
   ],
@@ -24,3 +26,5 @@ router.beforeEach(async (to) => {
     return session.isAdmin ? '/admin/users' : '/account/profile'
   }
 })
+
+router.afterEach((to) => { if (to.meta.title) document.title = `${to.meta.title} · WEMOVE` })

@@ -1,20 +1,24 @@
 package wemove.catalog.service;
 
-import wemove.platform.api.ApiException;
-import wemove.catalog.domain.*;
-import wemove.catalog.platform.CatalogPort;
-import wemove.catalog.repository.*;
-import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import wemove.catalog.domain.*;
+import wemove.catalog.platform.CatalogPort;
+import wemove.catalog.repository.*;
+import wemove.platform.api.ApiException;
+
+import java.util.*;
+
 @Service
 public class CatalogIntegrationService implements CatalogPort {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
     private final ProductRepository products;
     private final InventoryBalanceRepository balances;
 
-    public CatalogIntegrationService(ProductRepository products, InventoryBalanceRepository balances) {
+    public CatalogIntegrationService(
+            ProductRepository products, InventoryBalanceRepository balances) {
         this.products = products;
         this.balances = balances;
     }
@@ -22,11 +26,20 @@ public class CatalogIntegrationService implements CatalogPort {
     @Override
     @Transactional(readOnly = true)
     public List<PublicProductProjection> getPublicProducts(Collection<UUID> productIds) {
-        return orderedIds(productIds).stream().map(products::findById).flatMap(Optional::stream)
-            .filter(product -> product.getStatus() == ProductStatus.PUBLISHED)
-            .map(product -> new PublicProductProjection(product.getId(), product.getSku(), product.getName(),
-                price(product.getRetailUnitPriceFen()), true,
-                stock(product.getId()) > 0)).toList();
+        return orderedIds(productIds).stream()
+                .map(products::findById)
+                .flatMap(Optional::stream)
+                .filter(product -> product.getStatus() == ProductStatus.PUBLISHED)
+                .map(
+                        product ->
+                                new PublicProductProjection(
+                                        product.getId(),
+                                        product.getSku(),
+                                        product.getName(),
+                                        price(product.getRetailUnitPriceFen()),
+                                        true,
+                                        stock(product.getId()) > 0))
+                .toList();
     }
 
     @Override
@@ -36,14 +49,26 @@ public class CatalogIntegrationService implements CatalogPort {
         Set<UUID> seen = new HashSet<>();
         List<RetailProductSnapshot> result = new ArrayList<>();
         for (RequestedItem item : items) {
-            if (item == null || item.productId() == null || item.quantity() < 1 || item.quantity() > 99 || !seen.add(item.productId())) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "商品明细包含无效或重复项目。");
+            if (item == null
+                    || item.productId() == null
+                    || item.quantity() < 1
+                    || item.quantity() > 99
+                    || !seen.add(item.productId())) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "商品明细包含无效或重复项目。");
             }
-            ProductEntity product = products.findById(item.productId()).orElseThrow(this::unavailable);
+            ProductEntity product =
+                    products.findById(item.productId()).orElseThrow(this::unavailable);
             int available = stock(product.getId());
-            result.add(new RetailProductSnapshot(product.getId(), product.getSku(), product.getName(),
-                price(product.getRetailUnitPriceFen()), item.quantity(), available,
-                product.getStatus() == ProductStatus.PUBLISHED));
+            result.add(
+                    new RetailProductSnapshot(
+                            product.getId(),
+                            product.getSku(),
+                            product.getName(),
+                            price(product.getRetailUnitPriceFen()),
+                            item.quantity(),
+                            available,
+                            product.getStatus() == ProductStatus.PUBLISHED));
         }
         return result;
     }
@@ -51,20 +76,94 @@ public class CatalogIntegrationService implements CatalogPort {
     @Override
     @Transactional(readOnly = true)
     public List<DealerProductProjection> getDealerProducts(Collection<UUID> productIds) {
-        return orderedIds(productIds).stream().map(products::findById).flatMap(Optional::stream)
-            .filter(product -> product.getStatus() == ProductStatus.PUBLISHED && product.isDealerEnabled()
-                && product.getDealerReferenceUnitPriceFen() != null && product.getMinInquiryQuantity() != null
-                && product.getLeadTimeText() != null)
-            .map(product -> new DealerProductProjection(product.getId(), product.getSku(), product.getName(),
-                price(product.getRetailUnitPriceFen()), product.getDealerReferenceUnitPriceFen(),
-                product.getMinInquiryQuantity(), stock(product.getId()), product.getLeadTimeText())).toList();
+        return orderedIds(productIds).stream()
+                .map(products::findById)
+                .flatMap(Optional::stream)
+                .filter(
+                        product ->
+                                product.getStatus() == ProductStatus.PUBLISHED
+                                        && product.isDealerEnabled()
+                                        && product.getDealerReferenceUnitPriceFen() != null
+                                        && product.getMinInquiryQuantity() != null
+                                        && product.getLeadTimeText() != null)
+                .map(
+                        product ->
+                                new DealerProductProjection(
+                                        product.getId(),
+                                        product.getSku(),
+                                        product.getName(),
+                                        price(product.getRetailUnitPriceFen()),
+                                        product.getDealerReferenceUnitPriceFen(),
+                                        product.getMinInquiryQuantity(),
+                                        stock(product.getId()),
+                                        product.getLeadTimeText()))
+                .toList();
     }
 
     private List<UUID> orderedIds(Collection<UUID> ids) {
         if (ids == null) return List.of();
-        return ids.stream().filter(Objects::nonNull).distinct().sorted(Comparator.comparing(UUID::toString)).toList();
+        return ids.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.comparing(UUID::toString))
+                .toList();
     }
-    private int stock(UUID id) { return balances.findById(id).map(balance -> balance.getQuantity()).orElse(0); }
-    private long price(Long value) { return value == null ? 0 : value; }
-    private ApiException unavailable() { return new ApiException(HttpStatus.CONFLICT, "PRODUCT_UNAVAILABLE", "商品不存在或已下架。"); }
+
+    @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public List<RetailProductSnapshot> lockRetailSnapshot(Collection<RequestedItem> items) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager
+                .isCurrentTransactionReadOnly())
+            throw new IllegalStateException("Retail snapshot requires a write transaction");
+        if (items == null || items.isEmpty()) return List.of();
+        Set<UUID> seen = new HashSet<>();
+        for (RequestedItem item : items) {
+            if (item == null
+                    || item.productId() == null
+                    || item.quantity() < 1
+                    || item.quantity() > 99
+                    || !seen.add(item.productId()))
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "商品明细包含无效或重复项目。");
+        }
+        List<RetailProductSnapshot> result = new ArrayList<>();
+        for (RequestedItem item :
+                items.stream()
+                        .sorted(Comparator.comparing(i -> i.productId().toString()))
+                        .toList()) {
+            ProductEntity product = products.findForUpdateById(item.productId()).orElse(null);
+            if (product == null) {
+                result.add(
+                        new RetailProductSnapshot(
+                                item.productId(), "", "商品不可用", 0, item.quantity(), 0, false));
+                continue;
+            }
+            entityManager.refresh(product, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            InventoryBalanceEntity balance =
+                    balances.findForUpdateByProductId(item.productId()).orElseThrow();
+            entityManager.refresh(balance, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            result.add(
+                    new RetailProductSnapshot(
+                            product.getId(),
+                            product.getSku(),
+                            product.getName(),
+                            price(product.getRetailUnitPriceFen()),
+                            item.quantity(),
+                            balance.getQuantity(),
+                            product.getStatus() == ProductStatus.PUBLISHED));
+        }
+        return result;
+    }
+
+    private int stock(UUID id) {
+        return balances.findById(id).map(balance -> balance.getQuantity()).orElse(0);
+    }
+
+    private long price(Long value) {
+        return value == null ? 0 : value;
+    }
+
+    private ApiException unavailable() {
+        return new ApiException(HttpStatus.CONFLICT, "PRODUCT_UNAVAILABLE", "商品不存在或已下架。");
+    }
 }

@@ -24,6 +24,9 @@ async function signOut() {
         </RouterLink>
         <nav class="catalog-nav" aria-label="主导航">
           <RouterLink to="/products">全部商品</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/cart">购物车</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/account/orders">我的订单</RouterLink>
+          <RouterLink v-if="session.isAdmin" to="/admin/orders">订单管理</RouterLink>
           <span>玩法指南</span>
           <span>购买渠道</span>
         </nav>
@@ -40,6 +43,9 @@ async function signOut() {
       </div>
       <nav v-if="menuOpen" class="catalog-mobile-nav" aria-label="移动端导航">
         <RouterLink to="/products" @click="menuOpen = false">全部商品</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/cart">购物车</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/account/orders">我的订单</RouterLink>
+          <RouterLink v-if="session.isAdmin" to="/admin/orders">订单管理</RouterLink>
         <RouterLink :to="session.actor ? '/account/profile' : '/login'" @click="menuOpen = false">
           {{ session.actor ? '个人中心' : '登录账户' }}
         </RouterLink>
@@ -52,3 +58,11 @@ async function signOut() {
     </footer>
   </div>
 </template>
+
+<style scoped>
+@media (min-width: 761px) and (max-width: 960px) {
+  .catalog-nav { gap: 16px; }
+  .catalog-nav a { white-space: nowrap; }
+  .catalog-nav span { display: none; }
+}
+</style>

@@ -380,7 +380,7 @@ X-CSRF-Token: <当前会话令牌>
 
 ### 6.3 乐观版本与状态机
 
-可并发编辑的资源返回正整数 `version`，每次有效修改加 1。V 命令传 `expectedVersion`（购物车为 cartVersion，申请审核为 applicationVersion）；资源存在且权限通过后，版本不符返回 409 VERSION_CONFLICT 和可读当前状态。可以用行锁、条件更新或组合实现，但版本和状态校验不能拆成无保护的两步。
+可并发编辑的新资源返回正整数 `version`，每次有效修改加 1。**2026-09-06 兼容注记：已实现的 A/B DTO 沿用数据库/JPA 的 0 起始版本，允许非负整数；C 的车与订单业务版本从 1 开始。不得在前端统一加减 1，不改写已应用 V1/V2；A/B 将来统一版本需独立兼容迁移。**V 命令传 `expectedVersion`（购物车为 cartVersion，申请审核为 applicationVersion）；资源存在且权限通过后，版本不符返回 409 VERSION_CONFLICT 和可读当前状态。可以用行锁、条件更新或组合实现，但版本和状态校验不能拆成无保护的两步。
 
 订单只允许：
 
@@ -554,3 +554,16 @@ stock_{now}=stock_{initial}+\sum adjustments+\sum cancellationReturns-\sum succe
 - [ ] 上下游在同一 `master` 组合中通过有关测试，不只通过本模块测试。
 
 优先以 TC-16/17/19/20/23 验证交易，TC-28/32 验证资格联动，TC-35/36 验证文件引用与失效，TC-11 验证跨用户隔离。完整责任和证据填写在[验收追踪表](WEMOVE需求责任与验收追踪表.md)，在没有执行前保持“未执行”。
+
+
+## 11. 角色 C 接入实施参数（2026-09-06）
+
+本节记录本轮实施选择，完整 HTTP schema 见 [commerce.yaml](../contracts/openapi/commerce.yaml)，不代表全组验收完成。
+
+- 购物车20行、每行1—99件；15分钟持久预览，随机令牌仅存摘要，预览只能消费一次。整车无选择项，DELETE 用必填 cartVersion 查询参数；地址 region 对所有地区选填，国家/城市自由文本2—100码点，电话按统一规则标准化。
+- 稳定操作标识、路径及规范化DTO摘要由公共 IdempotencyExecutor 处理。事务外协调入口先锁启用账户，再读/写幂等记录，然后车头或订单、按UUID字符串顺序逐项商品→库存。账户锁保守串行化同账户命令；不同账户库存竞争仍由商品/订单锁排序。MySQL单次锁等待2秒、最多3次整事务重试，超限409 REQUEST_IN_PROGRESS及Retry-After:2。
+- V4增加完成状态、schema版本、完成/过期时间与资源引用；V5是F所属的operations持久审计；V6是commerce表；V7扩大幂等响应容量并索引完整库存来源。完成结果目前长期保留，至少覆盖24小时；未提交占位绝不独立提交。旧记录保持原文，通过操作族及旧摘要算法适配；多个旧目标碰撞拒绝执行，需查询原结果。切换时停止旧服务，禁止混跑旧键空间。
+- JSON小数/字符串数字、未知字段及查询类型错误返回422；数字枚举与标量类型转换拒绝；损坏JSON语法仍400。A/B同步采用此输入边界，原版本值保持不变。
+- 成功订单审计经 wemove.operations.audit.DatabaseAuditAdapter 与交易同事务落库；包含requestId与不含地址的变更摘要。F拥有持久审计实现，公共AuditPort不依赖C。现阶段F尚无审计检索页面，不能把端口测试当作F整体完成。
+- CART_READ/CART_WRITE/ORDERS_READ/ORDERS_WRITE授予启用非管理员，ADMIN_ORDERS_READ/ADMIN_ORDERS_WRITE授予管理员。经销商个人购买同样走零售价。前端sessionStorage按账户保存未知命令，退出/失效清除；超过24小时先人工查询，不自动换键重发。
+- F指标必须加入同一数据库快照：待发货为当前全部PAID；建单数按创建UTC半开区间；净付款按区间内成功付款订单减截至快照的对应退款，使用精确十进制整数字符串。历史退款改变原付款日期净额，不采用区间收款减区间退款。
