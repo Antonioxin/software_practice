@@ -46,6 +46,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/registration-policy",
                     "/api/v1/auth/register", "/api/v1/auth/login", "/error").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                    "/api/v1/products/**", "/api/v1/categories", "/api/v1/product-options").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors
@@ -60,7 +62,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(WemoveProperties properties) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(properties.security().allowedOrigins().split(",")));
-        config.setAllowedMethods(java.util.List.of("GET", "POST", "PATCH", "OPTIONS"));
+        config.setAllowedMethods(java.util.List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(java.util.List.of("Content-Type", "X-CSRF-Token", "Idempotency-Key"));
         config.setExposedHeaders(java.util.List.of("X-Request-Id", "Idempotency-Replayed"));
         config.setAllowCredentials(true);

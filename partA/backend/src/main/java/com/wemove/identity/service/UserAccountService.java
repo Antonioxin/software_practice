@@ -168,7 +168,8 @@ public class UserAccountService {
         String derived = dealerIdentity.derivedIdentity(user.getId());
         Set<String> capabilities = new LinkedHashSet<>();
         if (user.getBaseRole() == BaseRole.ADMIN) {
-            capabilities.addAll(Set.of("ADMIN_USERS_READ", "ADMIN_USERS_WRITE"));
+            capabilities.addAll(Set.of("ADMIN_USERS_READ", "ADMIN_USERS_WRITE",
+                "ADMIN_CATALOG_READ", "ADMIN_CATALOG_WRITE"));
         } else {
             capabilities.addAll(Set.of("ACCOUNT_PROFILE_READ", "ACCOUNT_PROFILE_WRITE"));
             if ("DEALER".equals(derived)) capabilities.add("DEALER_ACCESS");

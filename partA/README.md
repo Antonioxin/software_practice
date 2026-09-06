@@ -1,6 +1,6 @@
-# WEMOVE 角色 A：身份与工程底座
+# WEMOVE 集成应用：角色 A 底座 + 角色 B 商品库存
 
-本目录是角色 A 的可运行纵向切片，覆盖 FR-09、FR-10、FR-11、FR-12、FR-31，并提供团队可复用的会话、CSRF、限流、幂等、统一错误和事务入口。
+本目录以角色 A 的可运行纵向切片为单一应用底座，现已接入角色 B 的商品、分类、价格和库存功能。A 覆盖 FR-09、FR-10、FR-11、FR-12、FR-31；B 覆盖 FR-03、FR-04、FR-05、FR-26、FR-27 与 BR-02 的模块边界。
 
 ## 目录
 
@@ -15,7 +15,7 @@
 2. 复制配置：`cp .env.example .env`，填写本地 MySQL 凭据并替换管理员初始密码。
 3. 加载环境变量后启动后端：`cd backend && mvn spring-boot:run`。
 4. 启动前端：`cd frontend && npm install && npm run dev`。
-5. 打开 `http://localhost:5173/login`。
+5. 打开 `http://localhost:5173/products`；登录管理员后可访问 `/admin/products` 与 `/admin/categories`。
 
 前端开发服务器将 `/api` 代理到 `http://localhost:8080`，浏览器使用同站 Cookie 会话。完整命令、测试账户和故障排查见 [运行与验证手册](docs/运行与验证手册.md)。
 
@@ -45,3 +45,4 @@ npm run build
 - [OpenAPI 契约](contracts/openapi.yaml)：11 条身份与账户管理路径。
 - `scripts/mysql-api-smoke.sh`：使用本地 MySQL 的完整身份 API 冒烟脚本。
 - `.superdesign/`：设计系统、页面清单和可恢复的设计工具元数据。
+- [角色 B 交付](../partB/README.md)：商品与库存设计、验收、运行手册、冒烟脚本及独立 OpenAPI 契约。

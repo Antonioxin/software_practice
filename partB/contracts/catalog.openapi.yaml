@@ -1,0 +1,567 @@
+openapi: 3.1.0
+info:
+  title: WEMOVE Catalog and Inventory API
+  version: 1.0.0
+  description: 角色 B 所有的商品、分类与库存 HTTP 契约。响应金额单位均为分，币种为 CNY。
+servers:
+  - url: /api/v1
+tags:
+  - name: Public catalog
+  - name: Admin catalog
+paths:
+  /products:
+    get:
+      tags: [Public catalog]
+      summary: 获取已发布商品列表
+      parameters:
+        - $ref: '#/components/parameters/Keyword'
+        - $ref: '#/components/parameters/CategoryId'
+        - name: age
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 18 }
+        - name: playType
+          in: query
+          schema: { $ref: '#/components/schemas/PlayType' }
+        - name: scene
+          in: query
+          schema: { $ref: '#/components/schemas/ProductScene' }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [recommended, priceAsc, priceDesc], default: recommended }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PublicPageSize'
+      responses:
+        '200':
+          description: 公开商品页，不包含经销字段
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageEnvelope'
+                  - type: object
+                    properties:
+                      data: { type: array, items: { $ref: '#/components/schemas/ProductCard' } }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /products/{id}:
+    get:
+      tags: [Public catalog]
+      summary: 获取公开商品详情
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: 已发布商品的完整公开详情，或已下架商品的有限详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties: { data: { $ref: '#/components/schemas/PublicProductDetail' } }
+        '404': { $ref: '#/components/responses/NotFoundProblem' }
+  /categories:
+    get:
+      tags: [Public catalog]
+      summary: 获取启用分类
+      responses:
+        '200':
+          description: 按顺序排列的启用分类
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties: { data: { type: array, items: { $ref: '#/components/schemas/Category' } } }
+  /product-options:
+    get:
+      tags: [Public catalog]
+      summary: 获取受控玩法和场景选项
+      responses:
+        '200':
+          description: 选项值和显示名称
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties: { data: { $ref: '#/components/schemas/ProductOptions' } }
+  /admin/products:
+    get:
+      tags: [Admin catalog]
+      summary: 查询后台商品
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Keyword'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ProductStatus' }
+        - $ref: '#/components/parameters/CategoryId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/AdminPageSize'
+      responses:
+        '200':
+          description: 包含草稿、上架与下架的后台商品页
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageEnvelope'
+                  - type: object
+                    properties: { data: { type: array, items: { $ref: '#/components/schemas/AdminProduct' } } }
+        '401': { $ref: '#/components/responses/UnauthorizedProblem' }
+        '403': { $ref: '#/components/responses/ForbiddenProblem' }
+    post:
+      tags: [Admin catalog]
+      summary: 创建商品草稿
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Csrf'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProductRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/AdminProductResponse' }
+        '200': { $ref: '#/components/responses/AdminProductReplayResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /admin/products/{id}:
+    get:
+      tags: [Admin catalog]
+      summary: 获取后台商品详情
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { $ref: '#/components/responses/AdminProductResponse' }
+        '404': { $ref: '#/components/responses/NotFoundProblem' }
+    patch:
+      tags: [Admin catalog]
+      summary: 替换商品可编辑资料
+      description: 请求体提供完整的可编辑表单；库存不在此边界。
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Csrf'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProductRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminProductResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /admin/products/{id}/publish:
+    post:
+      tags: [Admin catalog]
+      summary: 发布或重新上架商品
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Csrf'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminProductResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /admin/products/{id}/unpublish:
+    post:
+      tags: [Admin catalog]
+      summary: 下架商品
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Csrf'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminProductResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+  /admin/products/{id}/stock-adjustments:
+    post:
+      tags: [Admin catalog]
+      summary: 原子增减库存并记录流水
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Csrf'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direction, quantity, reason]
+              properties:
+                direction: { type: string, enum: [INCREASE, DECREASE] }
+                quantity: { type: integer, minimum: 1 }
+                reason: { type: string, minLength: 2, maxLength: 500 }
+      responses:
+        '200': { $ref: '#/components/responses/AdminProductResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /admin/products/{id}/stock-movements:
+    get:
+      tags: [Admin catalog]
+      summary: 查询库存流水
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/AdminPageSize'
+      responses:
+        '200':
+          description: 按创建时间倒序的库存流水
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageEnvelope'
+                  - type: object
+                    properties: { data: { type: array, items: { $ref: '#/components/schemas/StockMovement' } } }
+  /admin/categories:
+    get:
+      tags: [Admin catalog]
+      summary: 获取所有后台分类
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: 包含停用分类
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties: { data: { type: array, items: { $ref: '#/components/schemas/Category' } } }
+    post:
+      tags: [Admin catalog]
+      summary: 创建分类
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Csrf'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryWrite' }
+      responses:
+        '201': { $ref: '#/components/responses/CategoryResponse' }
+        '200': { $ref: '#/components/responses/CategoryResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+  /admin/categories/{id}:
+    patch:
+      tags: [Admin catalog]
+      summary: 更新分类
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Csrf'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CategoryWrite'
+                - type: object
+                  required: [expectedVersion]
+                  properties: { expectedVersion: { type: integer, minimum: 0 } }
+      responses:
+        '200': { $ref: '#/components/responses/CategoryResponse' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+    delete:
+      tags: [Admin catalog]
+      summary: 删除未被引用的分类
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Csrf'
+        - name: expectedVersion
+          in: query
+          required: true
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: 删除结果
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '409': { $ref: '#/components/responses/ConflictProblem' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: WEMOVE_SESSION
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Keyword:
+      name: keyword
+      in: query
+      schema: { type: string, maxLength: 100 }
+    CategoryId:
+      name: categoryId
+      in: query
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PublicPageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 12 }
+    AdminPageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    Csrf:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+  requestBodies:
+    VersionCommand:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [expectedVersion]
+            properties: { expectedVersion: { type: integer, minimum: 0 } }
+  responses:
+    AdminProductResponse:
+      description: 后台商品
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties: { data: { $ref: '#/components/schemas/AdminProduct' } }
+    AdminProductReplayResponse:
+      description: 幂等重放的既有商品
+      headers:
+        Idempotency-Replayed:
+          schema: { type: string, const: 'true' }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties: { data: { $ref: '#/components/schemas/AdminProduct' } }
+    CategoryResponse:
+      description: 分类
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties: { data: { $ref: '#/components/schemas/Category' } }
+    UnauthorizedProblem:
+      description: 未登录或会话失效
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    ForbiddenProblem:
+      description: 不是启用的管理员
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    NotFoundProblem:
+      description: 资源不存在或不可见
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    ConflictProblem:
+      description: 版本、状态、唯一性、关联或幂等冲突
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    ValidationProblem:
+      description: 字段或查询参数校验失败
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  schemas:
+    Envelope:
+      type: object
+      required: [data]
+      properties:
+        data: {}
+        meta: { type: [object, 'null'] }
+    PageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [meta]
+          properties: { meta: { $ref: '#/components/schemas/PageMeta' } }
+    PageMeta:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalItems: { type: integer }
+        totalPages: { type: integer }
+    ProductStatus: { type: string, enum: [DRAFT, PUBLISHED, UNLISTED] }
+    PlayType: { type: string, enum: [BALANCE, COORDINATION, THROWING, TEAM_PLAY, OUTDOOR_EXPLORATION] }
+    ProductScene: { type: string, enum: [INDOOR, OUTDOOR, BOTH] }
+    Category:
+      type: object
+      required: [id, name, sortOrder, enabled, version]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        sortOrder: { type: integer, minimum: 0 }
+        enabled: { type: boolean }
+        version: { type: integer, minimum: 0 }
+    CategoryWrite:
+      type: object
+      required: [name, sortOrder, enabled]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        description: { type: [string, 'null'], maxLength: 500 }
+        sortOrder: { type: integer, minimum: 0 }
+        enabled: { type: boolean }
+    ProductCard:
+      type: object
+      required: [id, sku, name, summary, category, ageMin, playType, scene, retailUnitPriceFen, currency, inStock, stockStatus]
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        summary: { type: string }
+        category: { $ref: '#/components/schemas/Category' }
+        ageMin: { type: integer }
+        ageMax: { type: [integer, 'null'] }
+        playType: { $ref: '#/components/schemas/PlayType' }
+        scene: { $ref: '#/components/schemas/ProductScene' }
+        mainImageId: { type: [string, 'null'] }
+        retailUnitPriceFen: { type: integer, minimum: 1 }
+        currency: { type: string, const: CNY }
+        inStock: { type: boolean }
+        stockStatus: { type: string, enum: [IN_STOCK, OUT_OF_STOCK] }
+    PublicProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProductCard'
+        - type: object
+          required: [imageIds, status, purchasable, availabilityMessage, updatedAt]
+          properties:
+            description: { type: [string, 'null'] }
+            material: { type: [string, 'null'] }
+            dimensions: { type: [string, 'null'] }
+            packageContents: { type: [string, 'null'] }
+            instructions: { type: [string, 'null'] }
+            safetyNotes: { type: [string, 'null'] }
+            imageIds: { type: array, items: { type: string }, maxItems: 12 }
+            status: { type: string, enum: [PUBLISHED, UNLISTED] }
+            purchasable: { type: boolean }
+            availabilityMessage: { type: string }
+            updatedAt: { type: string, format: date-time }
+    ProductWrite:
+      type: object
+      properties:
+        sku: { type: [string, 'null'], pattern: '^[A-Z0-9-]{3,40}$' }
+        name: { type: [string, 'null'], minLength: 2, maxLength: 100 }
+        categoryId: { type: [string, 'null'], format: uuid }
+        summary: { type: [string, 'null'], maxLength: 200 }
+        description: { type: [string, 'null'], maxLength: 10000 }
+        ageMin: { type: [integer, 'null'], minimum: 0, maximum: 18 }
+        ageMax: { type: [integer, 'null'], minimum: 0, maximum: 18 }
+        playType: { oneOf: [{ $ref: '#/components/schemas/PlayType' }, { type: 'null' }] }
+        scene: { oneOf: [{ $ref: '#/components/schemas/ProductScene' }, { type: 'null' }] }
+        material: { type: [string, 'null'], maxLength: 2000 }
+        dimensions: { type: [string, 'null'], maxLength: 2000 }
+        packageContents: { type: [string, 'null'], maxLength: 2000 }
+        instructions: { type: [string, 'null'], maxLength: 2000 }
+        safetyNotes: { type: [string, 'null'], maxLength: 2000 }
+        mainImageId: { type: [string, 'null'], maxLength: 64 }
+        imageIds: { type: array, items: { type: string, maxLength: 64 }, maxItems: 12, uniqueItems: true }
+        retailUnitPriceFen: { type: [integer, 'null'], minimum: 1, maximum: 99999999 }
+        dealerEnabled: { type: boolean }
+        dealerReferenceUnitPriceFen: { type: [integer, 'null'], minimum: 1, maximum: 99999999 }
+        minInquiryQuantity: { type: [integer, 'null'], minimum: 1, maximum: 9999 }
+        leadTimeText: { type: [string, 'null'], maxLength: 500 }
+        displayOrder: { type: integer, minimum: 0 }
+    CreateProductRequest:
+      allOf:
+        - $ref: '#/components/schemas/ProductWrite'
+        - type: object
+          properties: { initialStock: { type: integer, minimum: 0, default: 0 } }
+    UpdateProductRequest:
+      allOf:
+        - $ref: '#/components/schemas/ProductWrite'
+        - type: object
+          required: [expectedVersion]
+          properties: { expectedVersion: { type: integer, minimum: 0 } }
+    AdminProduct:
+      allOf:
+        - $ref: '#/components/schemas/ProductWrite'
+        - type: object
+          required: [id, imageIds, dealerEnabled, status, displayOrder, stock, stockVersion, version, createdAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            categoryName: { type: [string, 'null'] }
+            status: { $ref: '#/components/schemas/ProductStatus' }
+            stock: { type: integer, minimum: 0 }
+            stockVersion: { type: integer, minimum: 0 }
+            version: { type: integer, minimum: 0 }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    ProductOptions:
+      type: object
+      required: [playTypes, scenes]
+      properties:
+        playTypes: { type: array, items: { $ref: '#/components/schemas/Option' } }
+        scenes: { type: array, items: { $ref: '#/components/schemas/Option' } }
+    Option:
+      type: object
+      required: [value, label]
+      properties:
+        value: { type: string }
+        label: { type: string }
+    StockMovement:
+      type: object
+      required: [id, productId, direction, quantity, quantityBefore, quantityAfter, reason, sourceType, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        direction: { type: string, enum: [INCREASE, DECREASE] }
+        quantity: { type: integer, minimum: 0 }
+        quantityBefore: { type: integer, minimum: 0 }
+        quantityAfter: { type: integer, minimum: 0 }
+        reason: { type: string }
+        sourceType: { type: string }
+        sourceId: { type: [string, 'null'] }
+        actorId: { type: [string, 'null'], format: uuid }
+        createdAt: { type: string, format: date-time }
+    FieldViolation:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: { type: string }
+        code: { type: string }
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, detail, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code: { type: string }
+        requestId: { type: string }
+        errors: { type: array, items: { $ref: '#/components/schemas/FieldViolation' } }

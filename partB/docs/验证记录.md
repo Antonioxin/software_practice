@@ -1,0 +1,29 @@
+# 验证记录
+
+日期：2026-09-06（Asia/Shanghai）
+
+| 检查 | 环境 | 结果 |
+| --- | --- | --- |
+| 角色 A 前端基线复现 | Node.js 24.11.1 / npm 11.6.2 | 变更前现有 2 个测试通过，生产构建通过 |
+| B 前端类型检查 | `npm run typecheck` | 通过 |
+| B 前端单元测试 | `npm run test` | 通过；2 个测试文件、4 个用例，0 失败 |
+| B 前端生产构建 | `npm run build` | 通过；1471 个模块完成转换 |
+| Java 编译、单测、打包 | Maven 3.9.11 / Eclipse Temurin 21 容器 | `BUILD SUCCESS`；9 测试，0 失败，0 错误 |
+| 全新数据库迁移 | MySQL 8.4.11 / Flyway | V1、V2 均成功，最终 schema 版本 v2；Hibernate `validate` 通过 |
+| Catalog API 冒烟 | Spring Boot JAR + MySQL 8.4.11 | 通过：14 已发布、2 草稿隔离、缺货、下架、经销价隔离、管理员、库存、幂等、流水 |
+| Chromium 功能与视觉验收 | Docker 全栈 / 1440 × 1000、390 × 844 | 通过：公开筛选、缺货详情、商品管理、库存弹窗、流水、分类、商品编辑器；移动端无横向溢出 |
+
+## 发现并修复
+
+首次真实 MySQL 迁移在 V2 初始库存流水处报 `Unknown column 'id'`。原因是 `inventory_balances` 的主键名为 `product_id`，种子 `SELECT` 误写为 `id`。改为 `product_id` 后删除临时测试库，从空 schema 重跑并通过。
+
+浏览器验收时发现商品和分类管理页的 `el-dialog` 没有显式注册，导致 Vue 把弹窗当作未知组件。改为导入并使用 `ElDialog` 后重启前端开发容器复测，管理员页面控制台为 0 错误、0 警告。
+
+功能测试截图及场景对应关系见 [Part B 功能测试截图](../screenshots/README.md)。
+
+## 尚需团队联合登记
+
+- C 接入后的订单创建、付款并发扣减、已付款取消返还端到端结果。
+- D 接入后的经销身份与专属目录可见性。
+- E 接入后的真实图片／公开资料引用。
+- Edge 的 360、768、1440 px 手工视觉与键盘验收；Chromium 已完成 390、1440 px 视觉验收。
