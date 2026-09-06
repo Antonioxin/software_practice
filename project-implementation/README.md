@@ -39,10 +39,10 @@
 | [docs/verification/](docs/verification/) | 工程验证记录与模块验证截图 | 商品截图位于 `catalog/`；证据与对应验证记录相互链接 |
 | [project-requirements/](project-requirements/) | 需求、分工、接口协作与验收追踪文档 | 当前业务范围以 SRS 为准；原始参考文档留在 `references/` |
 | [ideation/](ideation/) | 早期构想 | 当前实施范围以需求基线为准 |
+| [project_flowchart_view/](project_flowchart_view/) | 项目进度与流程展示资料，含甘特图 PDF 和可编辑的 Excel 文件 | 随仓库共享，调整计划时同步维护展示稿与可编辑文件 |
+| [前端设计视觉参考/](前端设计视觉参考/) | 前端风格与视觉参考图片 | 随仓库共享；实际页面使用的素材放入 `apps/web/public/` |
 | `.env.example`、`.env` | 共享环境模板与本地配置 | 使用同一套后端环境配置；本地值不写入模板 |
 | `.local/`、`.superdesign/` | 本地运行产物、设计工具元数据 | 工具目录不承载业务源码；`.local/` 不纳入版本控制 |
-
-本机另有未纳入版本控制的 `project_flowchart_view/` 和 `前端设计视觉参考/` 补充资料，保持原位置；它们不是克隆仓库后的必备目录。
 
 前端单元测试继续放在源码附近的 `*.spec.ts` 中，后端单元测试放在 [apps/api/src/test/](apps/api/src/test/)。这样修改功能时可以同时找到测试；`tests/cases/` 则集中维护需要审核的业务验收设计。
 

@@ -42,6 +42,8 @@ README 提供入门指引，详细定义由上述文档维护。发现不一致�
 | --- | --- |
 | [course-materials/](course-materials/) | 教师提供的网站重构要求、课程说明；原始资料保留在此 |
 | [project-implementation/ideation/](project-implementation/ideation/) | 早期构想；当前实施范围以 SRS 为准 |
+| [项目进度与流程资料](project-implementation/project_flowchart_view/) | 共享的甘特图 PDF 和可编辑 Excel 文件 |
+| [前端设计视觉参考](project-implementation/前端设计视觉参考/) | 共享的前端风格参考图片 |
 | [project-implementation/project-requirements/](project-implementation/project-requirements/) | 团队撰写的需求、分工、接口与验收文档 |
 | [references/](project-implementation/project-requirements/references/) | 需求文档的模板与参考资料 |
 | [project-implementation/apps/](project-implementation/apps/) | 统一应用源码：`web/` 为前端，`api/` 为后端；各业务模块在对应应用中实现 |
