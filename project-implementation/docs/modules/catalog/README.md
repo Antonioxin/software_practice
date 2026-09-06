@@ -23,7 +23,7 @@
 ## 代码入口
 
 - 前端：[商品路由和展示逻辑](../../../apps/web/src/features/catalog/)；[商品页面](../../../apps/web/src/pages/ProductsPage.vue)、[商品详情](../../../apps/web/src/pages/ProductDetailPage.vue) 与同目录的商品管理页面。
-- 后端：[商品库存业务包](../../../apps/api/src/main/java/com/wemove/identity/catalog/)。
+- 后端：[商品库存业务包](../../../apps/api/src/main/java/wemove/catalog/)。
 - 数据库：[V2 商品库存迁移](../../../apps/api/src/main/resources/db/migration/V2__catalog_inventory.sql)。
 
 统一工程入口见 [工程说明](../../../README.md)，商品模块的 PowerShell 命令及验收步骤见 [运行手册](运行与验证手册.md)。

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: wemove-identity
+    name: wemove-api
   jackson:
     deserialization:
       fail-on-unknown-properties: true

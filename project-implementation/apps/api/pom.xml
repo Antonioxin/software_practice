@@ -9,7 +9,7 @@
         <version>3.5.0</version>
         <relativePath/>
     </parent>
-    <groupId>com.wemove</groupId>
+    <groupId>wemove</groupId>
     <artifactId>wemove-api</artifactId>
     <version>1.0.0</version>
     <name>WEMOVE API</name>
@@ -17,6 +17,11 @@
         <java.version>21</java.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

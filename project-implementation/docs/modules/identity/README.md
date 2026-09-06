@@ -5,7 +5,7 @@
 ## 代码与工程入口
 
 - [前端身份路由](../../../apps/web/src/features/identity/)：注册、登录、账户和管理页面的路由入口。
-- [后端身份与公共设施](../../../apps/api/src/main/java/com/wemove/identity/)：服务、权限、数据访问及跨模块端口。
+- [后端身份模块](../../../apps/api/src/main/java/wemove/identity/)：身份服务、权限与账户数据访问；共用能力位于 [platform](../../../apps/api/src/main/java/wemove/platform/)，全局配置位于 [config](../../../apps/api/src/main/java/wemove/config/)。
 - [数据库迁移](../../../apps/api/src/main/resources/db/migration/)：V1 身份底座及后续全局有序迁移。
 - [身份接口契约](../../../contracts/openapi/identity.yaml)：身份与账户 HTTP 定义。
 
