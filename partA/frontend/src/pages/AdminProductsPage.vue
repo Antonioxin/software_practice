@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElDialog, ElMessage, ElMessageBox } from 'element-plus'
 import SiteShell from '../components/SiteShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
@@ -126,19 +126,19 @@ onMounted(() => { load(); loadCategories() })
     </div>
     <nav v-if="meta.totalPages > 1" class="pagination"><button :disabled="meta.page <= 1" @click="load(meta.page - 1)">上一页</button><span>第 {{ meta.page }} / {{ meta.totalPages }} 页</span><button :disabled="meta.page >= meta.totalPages" @click="load(meta.page + 1)">下一页</button></nav>
 
-    <el-dialog v-model="stockOpen" title="调整库存" width="min(520px, 92vw)">
+    <ElDialog v-model="stockOpen" title="调整库存" width="min(520px, 92vw)">
       <p v-if="selected" class="dialog-copy">{{ selected.name || '未命名商品' }} 当前库存 <strong>{{ selected.stock }}</strong>。提交的是增减量，不会用旧页面值覆盖余额。</p>
       <form class="identity-form" @submit.prevent="adjustStock">
         <div class="field-pair"><label class="field"><span>方向</span><select v-model="stockForm.direction"><option value="INCREASE">增加</option><option value="DECREASE">减少</option></select></label><label class="field"><span>数量</span><input v-model.number="stockForm.quantity" type="number" min="1" required /></label></div>
         <label class="field"><span>调整原因</span><textarea v-model="stockForm.reason" minlength="2" maxlength="500" rows="3" required placeholder="例如：测试入库盘点调整"></textarea></label>
       </form>
       <template #footer><button class="secondary-button" @click="stockOpen = false">取消</button><button class="primary-button" :disabled="stockBusy || stockForm.quantity < 1 || stockForm.reason.trim().length < 2" @click="adjustStock">{{ stockBusy ? '正在提交…' : '确认调整' }}</button></template>
-    </el-dialog>
+    </ElDialog>
 
-    <el-dialog v-model="movementOpen" title="库存流水" width="min(760px, 94vw)">
+    <ElDialog v-model="movementOpen" title="库存流水" width="min(760px, 94vw)">
       <div v-if="movementLoading" class="state-panel compact-state"><span class="loader"></span></div>
       <div v-else-if="!movements.length" class="state-panel compact-state"><p>暂无流水</p></div>
       <div v-else class="movement-list"><article v-for="item in movements" :key="item.id"><strong :class="item.direction === 'INCREASE' ? 'positive' : 'negative'">{{ item.direction === 'INCREASE' ? '+' : '−' }}{{ item.quantity }}</strong><div><p>{{ item.reason }}</p><span>{{ item.quantityBefore }} → {{ item.quantityAfter }} · {{ item.sourceType }}</span></div><time>{{ time(item.createdAt) }}</time></article></div>
-    </el-dialog>
+    </ElDialog>
   </SiteShell>
 </template>

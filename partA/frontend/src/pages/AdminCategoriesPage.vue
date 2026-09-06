@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElDialog, ElMessage, ElMessageBox } from 'element-plus'
 import SiteShell from '../components/SiteShell.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
 import type { Category } from '../types'
@@ -82,13 +82,13 @@ onMounted(load)
       <button class="category-card category-add" type="button" @click="openCreate"><span>＋</span><strong>创建一个新分类</strong><small>单层分类 · 可排序 · 可停用</small></button>
     </div>
 
-    <el-dialog v-model="dialogOpen" :title="editing ? '编辑分类' : '新建分类'" width="min(540px, 92vw)">
+    <ElDialog v-model="dialogOpen" :title="editing ? '编辑分类' : '新建分类'" width="min(540px, 92vw)">
       <form class="identity-form" @submit.prevent="save">
         <label class="field"><span>分类名称</span><input v-model="form.name" minlength="2" maxlength="100" required /></label>
         <label class="field"><span>分类说明</span><textarea v-model="form.description" maxlength="500" rows="4"></textarea></label>
         <div class="field-pair"><label class="field"><span>显示顺序</span><input v-model.number="form.sortOrder" type="number" min="0" required /></label><label class="toggle-field"><input v-model="form.enabled" type="checkbox" /><span>启用公开筛选</span></label></div>
       </form>
       <template #footer><button class="secondary-button" @click="dialogOpen = false">取消</button><button class="primary-button" :disabled="busy || form.name.trim().length < 2" @click="save">{{ busy ? '正在保存…' : '保存分类' }}</button></template>
-    </el-dialog>
+    </ElDialog>
   </SiteShell>
 </template>
