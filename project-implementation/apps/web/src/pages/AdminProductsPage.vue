@@ -2,11 +2,15 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElDialog, ElMessage, ElMessageBox } from 'element-plus'
+import { useSessionStore } from '../stores/session'
+import { useCommandRecovery } from '../features/commerce/commandRecovery'
 import SiteShell from '../components/SiteShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
 import type { AdminProduct, Category, PageMeta } from '../types'
 
+const session = useSessionStore()
+const stockCommand = useCommandRecovery(() => session.actor?.id, 'catalog.adjustStock')
 const router = useRouter()
 const products = ref<AdminProduct[]>([])
 const categories = ref<Category[]>([])
@@ -70,15 +74,18 @@ async function adjustStock() {
   if (!selected.value) return
   stockBusy.value = true
   try {
-    await api<AdminProduct>(`/admin/products/${selected.value.id}/stock-adjustments`, {
-      method: 'POST', headers: { 'Idempotency-Key': newIdempotencyKey() }, body: JSON.stringify(stockForm),
-    })
+    await stockCommand.send<AdminProduct>(`/admin/products/${selected.value.id}/stock-adjustments`, { ...stockForm })
     ElMessage.success('库存已原子调整并写入流水')
     stockOpen.value = false
     await load(meta.value.page)
   } catch (cause) {
-    ElMessage.error(cause instanceof ApiProblem ? cause.problem.detail : '库存调整失败。')
+    ElMessage.error(cause instanceof Error ? cause.message : '结果暂未确认。')
   } finally { stockBusy.value = false }
+}
+
+async function retryStock() {
+  try { await stockCommand.retry(); ElMessage.success('原库存请求已确认'); await load(meta.value.page) }
+  catch (e) { ElMessage.error((e as Error).message) }
 }
 
 async function openMovements(product: AdminProduct) {
@@ -99,6 +106,7 @@ onMounted(() => { load(); loadCategories() })
 
 <template>
   <SiteShell title="商品与库存" eyebrow="OPERATIONS / CATALOG" admin>
+    <div v-if="stockCommand.pending.value" role="status"><p>有库存调整结果尚未确认，请恢复原请求。</p><button :disabled="stockCommand.busy.value" @click="retryStock">重试原库存调整</button></div>
     <section class="admin-stats catalog-admin-stats"><div><span>商品总数</span><strong>{{ meta.totalItems }}</strong><small>条记录</small></div><p>商品信息、两类价格与库存分别维护；普通编辑不会覆盖库存余额。</p><button class="light-button" type="button" @click="router.push('/admin/products/new')">＋ 新建商品</button></section>
     <section class="paper-section admin-filter catalog-admin-filter">
       <form @submit.prevent="load(1)">

@@ -41,6 +41,12 @@ async function toProblem(response: Response): Promise<ApiProblem> {
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiEnvelope<T>> {
+  return (await apiWithMeta<T>(path, init)).envelope
+}
+
+export async function apiWithMeta<T>(path: string, init: RequestInit = {}): Promise<{
+  envelope: ApiEnvelope<T>; status: number; replayed: boolean; requestId: string | null
+}> {
   const method = (init.method ?? 'GET').toUpperCase()
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json, application/problem+json')
@@ -51,8 +57,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiE
   }
   const response = await fetch(`/api/v1${path}`, { ...init, method, headers, credentials: 'include' })
   if (!response.ok) throw await toProblem(response)
-  if (response.status === 204) return { data: undefined as T }
-  return (await response.json()) as ApiEnvelope<T>
+  const envelope = response.status === 204 ? { data: undefined as T } : (await response.json()) as ApiEnvelope<T>
+  return { envelope, status: response.status, replayed: response.headers.get('Idempotency-Replayed') === 'true', requestId: response.headers.get('X-Request-Id') }
 }
 
 export function resetCsrf() { csrf = null }

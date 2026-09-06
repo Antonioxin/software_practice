@@ -24,6 +24,9 @@ async function signOut() {
         </RouterLink>
         <nav class="desktop-nav" aria-label="主导航">
           <RouterLink to="/products">商品前台</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/cart">购物车</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/account/orders">我的订单</RouterLink>
+          <RouterLink v-if="session.isAdmin" to="/admin/orders">订单管理</RouterLink>
           <RouterLink v-if="!session.isAdmin" to="/account/profile">个人资料</RouterLink>
           <RouterLink v-if="session.isAdmin" to="/admin/users">用户管理</RouterLink>
           <RouterLink v-if="session.isAdmin" to="/admin/products">商品管理</RouterLink>
@@ -39,6 +42,9 @@ async function signOut() {
       </div>
       <nav v-if="mobileOpen" class="mobile-nav" aria-label="移动端导航">
         <RouterLink to="/products">商品前台</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/cart">购物车</RouterLink>
+          <RouterLink v-if="session.actor && !session.isAdmin" to="/account/orders">我的订单</RouterLink>
+          <RouterLink v-if="session.isAdmin" to="/admin/orders">订单管理</RouterLink>
         <RouterLink v-if="!session.isAdmin" to="/account/profile">个人资料</RouterLink>
         <RouterLink v-if="session.isAdmin" to="/admin/users">用户管理</RouterLink>
         <RouterLink v-if="session.isAdmin" to="/admin/products">商品管理</RouterLink>

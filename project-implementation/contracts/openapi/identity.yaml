@@ -1,3 +1,6 @@
+# 2026-09-06 compatibility: A/B versions remain zero-based; C starts at 1.
+# Strict JSON scalar types / unknown fields / query conversion errors: 422; malformed JSON: 400.
+# K commands now use the shared transaction coordinator; legacy keys are retained and adapted.
 openapi: 3.1.0
 info:
   title: WEMOVE 角色 A 身份与用户管理 API

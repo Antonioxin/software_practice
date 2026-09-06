@@ -1,0 +1,8 @@
+{
+  "checkedAt": "2026-09-06T04:56:23.2347686Z",
+  "userEmail": "commerce-598c25cebaff4e698d42bcb1af13099e@example.test",
+  "completedOrderId": "94a8a382-99f2-4b1d-8bf6-51ebb35f6baf",
+  "cancelledOrderId": "aadc2770-e595-4aed-b36c-9b6904a71fa9",
+  "result": "PASS",
+  "mode": "SIMULATED"
+}

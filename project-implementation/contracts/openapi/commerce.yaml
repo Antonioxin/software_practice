@@ -1,0 +1,1719 @@
+openapi: 3.0.3
+info:
+  title: WEMOVE commerce 零售交易
+  version: 1.0.0
+  description: FR-13—18。整车结算、零售快照价、下单不预占库存、付款全单扣减、整单取消/模拟退款、整单模拟发货与本人收货。C版本从1开始，A/B沿用原0起始版本，不做前端偏移。
+servers:
+- url: /api/v1
+paths:
+  /cart:
+    get:
+      operationId: commerce.readCart
+      summary: commerce.readCart
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters: []
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: &id001
+                type: boolean
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CartView'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /cart/items:
+    post:
+      operationId: commerce.addCartItem
+      summary: commerce.addCartItem
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - &id002
+        name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: 从 /auth/csrf 获取实际 headerName/token；共用会话认证。
+      - &id006
+        name: Idempotency-Key
+        in: header
+        required: true
+        schema: &id003
+          type: string
+          format: uuid
+        description: 同账户/稳定操作共用UUID；未知结果保留原键、路径及规范化请求体。完成结果至少保留24小时。
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CartView'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddItem'
+    delete:
+      operationId: commerce.clearCart
+      summary: commerce.clearCart
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - &id005
+        name: cartVersion
+        in: query
+        required: true
+        schema: &id012
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CartView'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /cart/items/{id}:
+    patch:
+      operationId: commerce.updateCartItem
+      summary: commerce.updateCartItem
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - &id004
+        name: id
+        in: path
+        required: true
+        schema: *id003
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CartView'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItem'
+    delete:
+      operationId: commerce.deleteCartItem
+      summary: commerce.deleteCartItem
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id004
+      - *id005
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CartView'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /checkout-previews:
+    post:
+      operationId: commerce.previewCheckout
+      summary: commerce.previewCheckout
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PreviewView'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /orders:
+    post:
+      operationId: commerce.createOrder
+      summary: commerce.createOrder
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id006
+      responses:
+        '200': &id007
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Summary'
+                  meta:
+                    type: object
+                    nullable: true
+        '201': *id007
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrder'
+    get:
+      operationId: commerce.listOrders
+      summary: commerce.listOrders
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - &id008
+        name: page
+        in: query
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - &id009
+        name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 50
+          default: 20
+      - &id010
+        name: status
+        in: query
+        schema: &id014
+          type: string
+          enum:
+          - PENDING_PAYMENT
+          - PAID
+          - CANCELLED
+          - SHIPPED
+          - COMPLETED
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OrderPage'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /orders/{id}:
+    get:
+      operationId: commerce.readOrder
+      summary: commerce.readOrder
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /orders/{id}/cancel:
+    post:
+      operationId: commerce.cancelOwnOrder
+      summary: commerce.cancelOwnOrder
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id006
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cancel'
+  /admin/orders:
+    get:
+      operationId: commerce.adminListOrders
+      summary: commerce.adminListOrders
+      description: 仅启用管理员。 支付/退款/物流全为模拟。
+      parameters:
+      - *id008
+      - *id009
+      - *id010
+      - name: start
+        in: query
+        schema: &id011
+          type: string
+          format: date-time
+        description: UTC创建时间半开区间 [start,end)
+      - name: end
+        in: query
+        schema: *id011
+        description: UTC创建时间半开区间 [start,end)
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OrderPage'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /admin/orders/{id}:
+    get:
+      operationId: commerce.adminReadOrder
+      summary: commerce.adminReadOrder
+      description: 仅启用管理员。 支付/退款/物流全为模拟。
+      parameters:
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+  /admin/orders/{id}/cancel:
+    post:
+      operationId: commerce.cancelAdminOrder
+      summary: commerce.cancelAdminOrder
+      description: 仅启用管理员。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id006
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cancel'
+  /orders/{id}/mock-payments:
+    post:
+      operationId: commerce.mockPayment
+      summary: commerce.mockPayment
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id006
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payment'
+  /orders/{id}/confirm-receipt:
+    post:
+      operationId: commerce.confirmReceipt
+      summary: commerce.confirmReceipt
+      description: 仅启用普通用户/经销商，管理员不能个人购买；私人资源仅本人。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id006
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Receipt'
+  /admin/orders/{id}/mock-shipment:
+    post:
+      operationId: commerce.mockShipment
+      summary: commerce.mockShipment
+      description: 仅启用管理员。 支付/退款/物流全为模拟。
+      parameters:
+      - *id002
+      - *id006
+      - *id004
+      responses:
+        '200':
+          description: 成功（创建首次201；成功重放200并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema: *id001
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: 损坏的JSON语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: 会话失效或账户停用
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: 权限或CSRF拒绝
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: 不存在或非本人资源
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: CART_CHANGED / PRICE_CHANGED / PRODUCT_UNAVAILABLE / INSUFFICIENT_STOCK
+            / CHECKOUT_PREVIEW_EXPIRED / VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT
+            / REQUEST_IN_PROGRESS；后者带Retry-After:2
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 未知字段、严格类型或字段校验失败
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+      - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Shipment'
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: WEMOVE_SESSION
+  schemas:
+    AddItem:
+      type: object
+      additionalProperties: false
+      required:
+      - productId
+      - quantity
+      properties:
+        productId: *id003
+        quantity:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 99
+    UpdateItem:
+      type: object
+      additionalProperties: false
+      required:
+      - quantity
+      - cartVersion
+      properties:
+        quantity:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 99
+        cartVersion: *id012
+    ShippingAddress:
+      type: object
+      additionalProperties: false
+      required:
+      - recipient
+      - phone
+      - countryOrRegion
+      - city
+      - addressLine
+      properties:
+        recipient:
+          type: string
+          minLength: 2
+          maxLength: 50
+        phone:
+          type: string
+          description: 允许空格、连字符、括号；标准化后为可选加号和6—20位数字
+        countryOrRegion:
+          type: string
+          minLength: 2
+          maxLength: 100
+        region:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 100
+          description: 本期所有地区均选填
+        city:
+          type: string
+          minLength: 2
+          maxLength: 100
+        addressLine:
+          type: string
+          minLength: 5
+          maxLength: 200
+    CreateOrder:
+      type: object
+      additionalProperties: false
+      required:
+      - previewToken
+      - cartVersion
+      - shippingAddress
+      properties:
+        previewToken:
+          type: string
+          maxLength: 200
+        cartVersion: *id012
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        remark:
+          type: string
+          maxLength: 2000
+        clientTotalFen:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 仅兼容输入，服务端忽略其金额值，按可信预览重算
+    Payment:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - outcome
+      properties:
+        expectedVersion: *id012
+        outcome:
+          type: string
+          enum:
+          - SUCCESS
+          - FAILURE
+    Cancel:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - reason
+      properties:
+        expectedVersion: *id012
+        reason:
+          type: string
+          minLength: 2
+          maxLength: 500
+    Receipt:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      properties:
+        expectedVersion: *id012
+    Shipment:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - logisticsName
+      - trackingNumber
+      properties:
+        expectedVersion: *id012
+        logisticsName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        trackingNumber:
+          type: string
+          pattern: ^[A-Za-z0-9-]{3,50}$
+    Line:
+      type: object
+      additionalProperties: false
+      required:
+      - productId
+      - sku
+      - name
+      - unitPriceFen
+      - quantity
+      - subtotalFen
+      - valid
+      - reason
+      - priceChanged
+      - previousUnitPriceFen
+      properties:
+        productId: *id003
+        sku:
+          type: string
+        name:
+          type: string
+        unitPriceFen: &id013
+          type: integer
+          format: int64
+          minimum: 0
+        quantity:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 99
+        subtotalFen: *id013
+        valid: *id001
+        reason:
+          type: string
+          nullable: true
+        priceChanged: *id001
+        previousUnitPriceFen: *id013
+    CartView:
+      type: object
+      additionalProperties: false
+      required:
+      - cartVersion
+      - items
+      - totalFen
+      - canCheckout
+      - currency
+      properties:
+        cartVersion: *id012
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+        totalFen: *id013
+        canCheckout: *id001
+        currency:
+          type: string
+          enum:
+          - CNY
+    PreviewView:
+      type: object
+      additionalProperties: false
+      required:
+      - previewToken
+      - cartVersion
+      - expiresAt
+      - currency
+      - items
+      - subtotalFen
+      - shippingFen
+      - taxFen
+      - discountFen
+      - totalFen
+      properties:
+        previewToken:
+          type: string
+        cartVersion: *id012
+        expiresAt: *id011
+        currency:
+          type: string
+          enum:
+          - CNY
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+        subtotalFen: *id013
+        shippingFen: *id013
+        taxFen: *id013
+        discountFen: *id013
+        totalFen: *id013
+    Summary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - orderNumber
+      - status
+      - version
+      - currency
+      - totalFen
+      - mode
+      - createdAt
+      properties:
+        id: *id003
+        orderNumber: &id015
+          type: string
+        status: *id014
+        version: *id012
+        currency: &id016
+          type: string
+          enum:
+          - CNY
+        totalFen: *id013
+        mode: &id017
+          type: string
+          enum:
+          - SIMULATED
+        createdAt: *id011
+    Attempt:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - outcome
+      - amountFen
+      - simulationReference
+      - createdAt
+      - mode
+      properties:
+        id: *id003
+        outcome:
+          type: string
+          enum:
+          - SUCCESS
+          - FAILURE
+        amountFen: *id013
+        simulationReference:
+          type: string
+        createdAt: *id011
+        mode:
+          type: string
+          enum:
+          - SIMULATED
+    RefundView:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - amountFen
+      - simulationReference
+      - createdAt
+      - reason
+      - mode
+      properties:
+        id: *id003
+        amountFen: *id013
+        simulationReference:
+          type: string
+        createdAt: *id011
+        reason:
+          type: string
+        mode:
+          type: string
+          enum:
+          - SIMULATED
+    History:
+      type: object
+      additionalProperties: false
+      required:
+      - action
+      - fromStatus
+      - toStatus
+      - version
+      - reason
+      - createdAt
+      properties:
+        action:
+          type: string
+        fromStatus:
+          type: string
+          nullable: true
+        toStatus:
+          type: string
+        version: *id012
+        reason:
+          type: string
+          nullable: true
+        createdAt: *id011
+    Detail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - orderNumber
+      - status
+      - version
+      - currency
+      - totalFen
+      - mode
+      - createdAt
+      - subtotalFen
+      - shippingFen
+      - taxFen
+      - discountFen
+      - shippingAddress
+      - remark
+      - items
+      - paymentAttempts
+      - refunds
+      - history
+      - allowedActions
+      - logisticsName
+      - trackingNumber
+      - paidAt
+      - shippedAt
+      - completedAt
+      properties:
+        id: *id003
+        orderNumber: *id015
+        status: *id014
+        version: *id012
+        currency: *id016
+        totalFen: *id013
+        mode: *id017
+        createdAt: *id011
+        subtotalFen: *id013
+        shippingFen: *id013
+        taxFen: *id013
+        discountFen: *id013
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        remark:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+        paymentAttempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attempt'
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/RefundView'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/History'
+        allowedActions:
+          type: array
+          items:
+            type: string
+            enum:
+            - MOCK_PAYMENT
+            - CANCEL
+            - MOCK_SHIPMENT
+            - CONFIRM_RECEIPT
+        logisticsName:
+          type: string
+          nullable: true
+        trackingNumber:
+          type: string
+          nullable: true
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        shippedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+    OrderPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - page
+      - pageSize
+      - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Summary'
+        page:
+          type: integer
+          format: int64
+          minimum: 1
+        pageSize:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 50
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - code
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int64
+          minimum: 0
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+        requestId:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - code
+            - message
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+              message:
+                type: string

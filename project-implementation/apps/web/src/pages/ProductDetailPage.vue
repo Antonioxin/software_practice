@@ -2,12 +2,18 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useSessionStore } from '../stores/session'
+import { useCommandRecovery } from '../features/commerce/commandRecovery'
+import { useCartStore } from '../features/commerce/cartStore'
 import PublicShell from '../components/PublicShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
 import { formatAgeRange, formatCny } from '../features/catalog/presentation'
 import { api, ApiProblem } from '../services/http'
 import type { PublicProduct } from '../types'
 
+const session = useSessionStore()
+const cart = useCartStore()
+const addCommand = useCommandRecovery(() => session.actor?.id, 'addCartItem')
 const route = useRoute()
 const router = useRouter()
 const product = ref<PublicProduct | null>(null)
@@ -33,8 +39,15 @@ function back() {
   router.push({ path: '/products', query: route.query })
 }
 
-function addToCart() {
-  ElMessage.info('购物车由角色 C 模块接入；当前商品与数量已经准备好。')
+async function addToCart() {
+  if (!session.actor) { await router.push({ path: '/login', query: { redirect: route.fullPath } }); return }
+  if (session.isAdmin) return
+  try {
+    if (addCommand.pending.value) await addCommand.retry()
+    else if (product.value) await addCommand.send('/cart/items', { productId: product.value.id, quantity: quantity.value })
+    else return
+    cart.clear(); ElMessage.success('已加入购物车'); await router.push('/cart')
+  } catch (e) { ElMessage.error((e as Error).message) }
 }
 
 const playLabels: Record<string, string> = { BALANCE: '平衡能力', COORDINATION: '协调训练', THROWING: '投掷与瞄准', TEAM_PLAY: '团队游戏', OUTDOOR_EXPLORATION: '户外探索' }
@@ -46,6 +59,7 @@ onMounted(load)
 <template>
   <PublicShell>
     <div class="product-detail-page">
+      <div v-if="addCommand.pending.value && !session.isAdmin" role="status"><p>有加购请求结果尚未确认，可先查询购物车或恢复原请求。</p><button :disabled="addCommand.busy.value" @click="addToCart">使用原加购请求重试</button><RouterLink to="/cart">查询购物车</RouterLink></div>
       <button class="detail-back" type="button" @click="back">← 返回商品列表与当前筛选</button>
       <div v-if="loading" class="state-panel"><span class="loader"></span><p>正在加载商品详情…</p></div>
       <div v-else-if="missing" class="state-panel"><h1>没有找到这个商品</h1><p>链接可能已经失效，或商品仍处于草稿阶段。</p><RouterLink class="secondary-button" to="/products">返回商品列表</RouterLink></div>
@@ -69,8 +83,8 @@ onMounted(load)
           <div class="purchase-panel">
             <div><span>零售价格</span><strong>{{ formatCny(product.retailUnitPriceFen) }}</strong><small>含税规则以本期模拟流程为准，运费 ¥0.00</small></div>
             <label>数量<input v-model.number="quantity" type="number" min="1" max="99" /></label>
-            <button class="primary-button" type="button" :disabled="!product.purchasable || quantity < 1 || quantity > 99 || !Number.isInteger(quantity)" @click="addToCart">
-              {{ product.purchasable ? '加入购物车' : '暂不可购买' }} <span>→</span>
+            <button v-if="!session.isAdmin" class="primary-button" type="button" :disabled="addCommand.busy.value || !product.purchasable || quantity < 1 || quantity > 99 || !Number.isInteger(quantity)" @click="addToCart">
+              {{ addCommand.pending.value ? '重试原加购请求' : product.purchasable ? '加入购物车' : '暂不可购买' }} <span>→</span>
             </button>
             <p>经销参考价仅在经销商专属目录显示，不会从此公开接口返回。</p>
           </div>

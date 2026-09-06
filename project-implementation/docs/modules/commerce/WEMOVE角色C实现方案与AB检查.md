@@ -1,218 +1,203 @@
 # WEMOVE 角色 C 实现方案与 A/B 实现检查
 
-日期：2026-09-06。业务检查基线：`0157ab2`；路径已按远端 `932de37` 及本次 Java 根包重构更新。原检查记录保留，源码行号仅对应原基线。
+> 语境说明：本文保留2026-09-06方案编写轮次的判断；下文“本轮/未实现”属于该方案快照。本任务已依授权实施，当前进展与新测试结果见[验证记录](验证记录.md)。
 
-本文依据现有源码、SRS、接口契约及 A/B 验证记录制定实施建议。原检查仅做设计；后续包名重构不改变业务逻辑，C 尚未实现。代码中可确认的问题与尚未执行的运行验证分别记录。
+原方案状态：**方案待用户审核，未实现业务代码**。复核日期：2026-09-06。
 
-## 1. 结论与实现边界
+## 1. 主线、依据与建议
 
-**A/B 已形成 C 可复用的应用底座，但交易所需的锁定快照、幂等并发和库存返还核验仍需补齐。建议 C 直接接入当前单体应用。**
+本轮执行 `git fetch origin` 后，远端 `master` 为 `cb969283d5a0feb31f38571fb500e5443f5a3f5d`。GitHub PR API 确认 [PR #5](https://github.com/Antonioxin/software_practice/pull/5) 为 closed、merged=true，merged_at 为 `2026-09-06T03:55:22Z`，合并提交为上述主线，包含 `d6a3324`。当前干净工作区由 `932de37` 快进至该基线；没有自行合并 PR、提交或推送。
 
-- A 已实现注册、登录、账户资料、用户停用/恢复、Cookie 会话、CSRF、权限和统一错误，以及事务与身份端口。
-- B 已在同一应用中实现商品列表/详情、分类、商品管理、价格、库存调整与流水，并提供 `CatalogPort`、`InventoryPort`。
-- C 负责 FR-13—FR-18：持久化购物车、整车结算、订单、模拟付款、取消退款、模拟发货和本人收货；承担金额、状态机和交易一致性验证。
-- 普通用户与经销商均按零售价购买；管理员只管理订单，不发起个人加购、结算和付款。
-- 运费、额外税费、优惠均为 0；不接真实支付或物流，不拆单、不部分退款，不自动关闭待付款订单。
-- D/E/F 尚未接入的能力通过公开端口衔接；F 的真实审计是最终一致性验收依赖。
+已读取根 AGENTS、根 README、工程 README，以及 [SRS V1.1](../../../project-requirements/WEMOVE网站重构需求文档.md)、[接口协作契约](../../../project-requirements/WEMOVE接口与数据协作契约.md) §5.4/6/7/9/10、[验收追踪表](../../../project-requirements/WEMOVE需求责任与验收追踪表.md)、[成员 C 的 26 条测试设计](../../../tests/cases/成员C测试用例.md)及 [B 审核记录](../catalog/成员B完成情况审核.md)。SRS 已标记评审通过；接口设计、成员用例和本文仍待评审，不能当作已部署能力。
 
-参考：[SRS](../../../project-requirements/WEMOVE网站重构需求文档.md)、[接口契约](../../../project-requirements/WEMOVE接口与数据协作契约.md)、[验收追踪表](../../../project-requirements/WEMOVE需求责任与验收追踪表.md)。
+**建议先修公共交易边界，再按购物车→结算建单→付款取消→履约及 F 接口推进。** 目录重构已完成，但受保护快照、返还核验、并发幂等和持久化审计仍需实现。可以先写设计和隔离的 C 规则测试；不能绕过这些前置项宣布交易链路完成。
 
-## 2. A/B 检查结果
+业务范围为 FR-13—18，以及 F 所需订单引用与指标。普通用户、经销商均按零售价购买；管理员只能管理订单，不能个人购物。整车结算、整单退款/发货；下单不扣减或预占库存；付款使用订单快照价，但重新检查当前可售和库存，任一商品失败全单回滚。支付、退款、物流都明确为模拟，不采集真实支付信息。运费、额外税费和优惠均为 0；无待付款自动关闭、拆单、部分退款或发货后退款执行。
 
-### 2.1 可以复用的实现
+[原方案与历史检查](角色C原方案与历史检查.md)逐字保存上轮版本：业务检查始于 `0157ab2`，后来随 `932de37`/`d6a3324` 调整路径。其“本次测试”和行号只代表历史轮次；本轮结论以下列主线源码与方法名为准。
 
-| 范围 | 代码证据 | 对 C 的意义 |
+## 2. A/B 主线复核与修复边界
+
+### 2.1 已能复用的能力
+
+- [WemoveApplication](../../../apps/api/src/main/java/wemove/WemoveApplication.java) 位于 `wemove` 根包；A/B 平级，公共设施在 `wemove.platform`，全局配置在 `wemove.config`。C 分层骨架存在；D 只有根目录，本轮不扩展 D。
+- [IdentityService.requireActiveActor](../../../apps/api/src/main/java/wemove/identity/service/IdentityService.java) 每次读取当前账户状态；[SecurityConfig](../../../apps/api/src/main/java/wemove/config/SecurityConfig.java) 和 [http.ts](../../../apps/web/src/services/http.ts) 提供会话、CSRF、统一请求基础。C 仍需检查消费者角色、管理员角色和资源归属。
+- [SpringUnitOfWork.run](../../../apps/api/src/main/java/wemove/platform/SpringUnitOfWork.java) 使用 TransactionTemplate；[ProductRepository](../../../apps/api/src/main/java/wemove/catalog/repository/ProductRepository.java) 与 [InventoryBalanceRepository](../../../apps/api/src/main/java/wemove/catalog/repository/InventoryBalanceRepository.java) 已有排他行锁。B 库存服务按 UUID 字符串排序，商品后库存逐项获取锁。
+- [V2](../../../apps/api/src/main/resources/db/migration/V2__catalog_inventory.sql) 已有非负余额和 `(product_id,source_type,source_id)` 库存流水唯一约束。它们防重复效果，但不能替代订单状态锁和内容核验。
+
+### 2.2 仍成立的发现及最晚完成阶段
+
+P1/P2 是工程优先级，非 SRS 需求等级。表中是本轮静态复核；B 审核中的 HTTP 复现属于历史证据，本轮未重新运行。
+
+| 项目 | 主线证据与判断 | 责任及开发门槛 |
 | --- | --- | --- |
-| 单一应用 | [A README](../identity/README.md)、[B README](../catalog/README.md) | Vue 3 / TypeScript / Element Plus，Java 21 / Spring Boot / MySQL / Flyway；无需复制应用 |
-| 当前身份 | [IdentityService](../../../apps/api/src/main/java/wemove/identity/service/IdentityService.java) | 每次请求读取当前账户状态；C 再校验角色与订单归属 |
-| 请求安全 | [SecurityConfig](../../../apps/api/src/main/java/wemove/config/SecurityConfig.java)、[http.ts](../../../apps/web/src/services/http.ts) | 复用会话、CSRF、Problem Details、请求 ID 和幂等请求头 |
-| 事务 | [SpringUnitOfWork](../../../apps/api/src/main/java/wemove/platform/SpringUnitOfWork.java) | C 用例建立外层事务，B 的 Spring 事务调用加入同一事务 |
-| 商品写锁 | [ProductRepository](../../../apps/api/src/main/java/wemove/catalog/repository/ProductRepository.java)、[CatalogService](../../../apps/api/src/main/java/wemove/catalog/service/CatalogService.java) | 商品编辑和上下架已锁定商品，C 需通过 B 的受保护快照使用同一锁边界 |
-| 库存保护 | [InventoryService](../../../apps/api/src/main/java/wemove/catalog/service/InventoryService.java)、[V2 迁移](../../../apps/api/src/main/resources/db/migration/V2__catalog_inventory.sql) | 按商品 ID 排序扣减、商品/库存行锁、非负约束、业务流水唯一约束已具备 |
+| P1 结算快照未受保护 | [CatalogIntegrationService.getRetailSnapshot](../../../apps/api/src/main/java/wemove/catalog/service/CatalogIntegrationService.java) 仍普通 `findById`，`stock` 也普通读，输入循环未排序；readOnly 事务不会自动取得写保护 | B 在 C2 建单前提供事务内 `lockRetailSnapshot`；C1 加购数量检查也复用该保证。普通展示读可保留。验收必须并发改价/下架，不能只加 C 的外层事务 |
+| P1 取消返还信任调用数量 | [InventoryService.restoreForCancellation](../../../apps/api/src/main/java/wemove/catalog/service/InventoryService.java) 只以 exists 检查原扣减，按传入 quantity 返还；deduct/restore 已执行判断也只计输入集合命中数 | B 在 C3 前读取该订单完整扣减/返还流水，比较完整商品集合、数量、方向；原扣 1 返 2、漏项、额外项和异内容重试均拒绝，零额外写入。已下架商品仍可返还 |
+| P1 公共并发幂等缺失 | [IdempotencyRecordEntity](../../../apps/api/src/main/java/wemove/platform/idempotency/IdempotencyRecordEntity.java) 只有结果存储；[UserAccountService.changeStatus](../../../apps/api/src/main/java/wemove/identity/service/UserAccountService.java)、[CatalogService.replay/saveReplay](../../../apps/api/src/main/java/wemove/catalog/service/CatalogService.java) 和 InventoryService.adjust 仍先查、业务执行、末尾保存 | A 在 C1 的 K 命令前提供公开执行器、事务外重试/重放；唯一约束冲突不能直接当成业务 UNIQUE_CONFLICT。历史 B 并发是一次效果、其余冲突，并非已证实重复扣库存 |
+| P1 B operationId 含资源 | InventoryService.adjust 为 `catalog.adjustStock:<id>`；CatalogService.changePublication 使用 `catalog.publishProduct:<id>` / `catalog.unpublishProduct:<id>` | A/B 在公共幂等切换阶段一并修正；稳定模板标识，具体路径进入摘要。C 不复制旧实现，旧记录兼容见 §7 |
+| P1 成功审计只写日志 | [AuditPort](../../../apps/api/src/main/java/wemove/platform/AuditPort.java) 缺 requestId/changeSummary；[LoggingAuditAdapter.append](../../../apps/api/src/main/java/wemove/platform/LoggingAuditAdapter.java) 仅 log.info | A/F 在 C0 固定接口，F 的数据库适配器最迟 C2 事务验收前交付；失败要使业务回滚。可用假适配做隔离开发，不能用日志通过 TC-17/37 |
+| P2 能力与加购入口缺失 | UserAccountService.actor 无 C 能力；[ProductDetailPage.addToCart](../../../apps/web/src/pages/ProductDetailPage.vue) 仅提示；[router.ts](../../../apps/web/src/router.ts) 仅注册 A/B | 随 C1 由 A/B/C 接入能力、路由、商品按钮、PublicShell/SiteShell 及个人中心入口，不必阻塞规则设计 |
+| P2 业务版本契约差异 | [UserEntity](../../../apps/api/src/main/java/wemove/identity/domain/UserEntity.java) 直接暴露未设初值的 JPA version，B/V2 初始版本也为 0；总契约 §6.3 要求正整数 | C0 登记兼容：旧 A/B DTO 暂按原值不转换，C 独立业务 version 从 1 开始。A/B 版本统一另作迁移/兼容评审，不修改 V1/V2、不在前端统一加 1 |
+| P2 输入与错误边界差异 | [application.yml](../../../apps/api/src/main/resources/application.yml) 只显式禁止未知字段，未配置严格整数转换；[ApiExceptionHandler](../../../apps/api/src/main/java/wemove/platform/api/ApiExceptionHandler.java) 不可读 JSON/未知字段为 400，查询类型异常无专用映射 | A 在 C1 API 验收前提供严格数量/金额/版本类型和 422 字段错误；坏 JSON 语法仍 400。小数、字符串数字、未知字段按 C 用例拒绝，避免 DTO 转换后才校验；共享配置变更跑 A/B 回归 |
+| P2 库存页面未知结果换键 | [AdminProductsPage.adjustStock](../../../apps/web/src/pages/AdminProductsPage.vue) 每次提交生成新键，catch 显示失败；[http.ts](../../../apps/web/src/services/http.ts) 也没有命令恢复层且不返回成功响应头 | C1 建立可复用命令恢复状态，B 同步修库存入口；联合库存竞争/恢复验收前完成。扩展 HTTP 返回元数据须兼容原 api 调用方 |
 
-### 2.2 接入前应处理的问题
+B 历史审核中的分类响应旧版本、0 岁筛选、流水仅 20 条、LIKE 通配语义等也没有被包名重构修复。它们继续由 B 按原审核处理；不把这些后台/检索修复扩大为 C 的业务职责。分类修改缺 flush 属于 B API 版本修复；C 响应必须在 flush 后生成。CI 仍未配置，但不阻塞本轮方案评审。
 
-以下 P1 表示交易正确性或契约问题，P2 表示接入和交付缺口；不是已经复现全部并发故障的声明。
+账户并发边界也需 C0 明确：当前 requireActiveActor 是普通读。建议 A 提供事务内受保护的启用身份读取，使停用与交易有明确串行先后；身份锁应在幂等和业务锁之前获取，A 停用流程同样遵守，避免公共执行器插入后再反向取身份锁。交易先取得锁可先完成；停用先提交后交易必须拒绝。经销资格不决定零售价格，不需要锁 D 关系。
 
-| 优先级 | 发现与证据 | 影响及处理建议 |
-| --- | --- | --- |
-| P1 | `CatalogIntegrationService.getRetailSnapshot` 第 34—48 行使用普通 `findById`，库存也是普通读取，且未排序锁定 | C 创建订单时可能读完后遭遇改价/下架。由 B 增加事务内锁定快照端口，按统一商品 ID 顺序锁商品及库存，保持至 C 提交；不能只给 C 外层加 `@Transactional` 就视为解决 |
-| P1 | `InventoryService.restoreForCancellation` 第 111—131 行只检查扣减流水存在，按调用参数数量返还 | 原扣 1 件、传入 2 件也会返还 2 件，未满足“仅按原扣减记录返还”。B 应读取该订单完整原扣减明细，以原记录为权威并核对商品集合及数量；重复扣减/返还也应核对原始内容 |
-| P1 | A `changeStatus`、B `adjust` / `saveReplay` 都是先查幂等记录、执行业务、最后保存；没有公共幂等执行器 | 数据库唯一约束能让冲突事务回滚，但并发同键请求未保证重放成功结果，可能先遇版本冲突或 `UNIQUE_CONFLICT`。C 不应照搬；先补统一的并发协调及整事务重试/重放入口 |
-| P1 | B 的 `catalog.adjustStock:<productId>` 和发布操作把目标 ID 放进 operationId | 同键用于另一商品会变成另一去重作用域，不能按契约报同键异内容冲突。改为稳定 operationId，具体路径/资源 ID 纳入摘要；已有记录需要兼容策略，不能直接改名导致历史重试再次执行 |
-| P1 | [LoggingAuditAdapter](../../../apps/api/src/main/java/wemove/platform/LoggingAuditAdapter.java) 第 11 行只写日志；AuditEvent 缺 `requestId`、`changeSummary` | 日志不能随数据库事务回滚，也不能证明成功审计已持久化。通过 F 所有的 `AuditPort` 接入同事务数据库适配器；本地日志适配器只能用于开发，不能作为 TC-17/37 完成证据 |
-| P2 | `UserAccountService.actor` 第 171—175 行仅分配身份和商品相关能力；商品详情第 36—38 行加购只是消息提示 | 增加 C 能力、路由和导航；商品按钮调用 C 的统一购物车服务，未登录先登录再回原商品页 |
-| P2 | B 的 JPA `version` 和 V2 初值为 0，而总契约规定正整数版本 | 联调前明确现有 A/B 版本兼容口径，C 新资源使用从 1 开始的业务版本；不要在 C 前端统一加减 1，也不要直接改已应用 V1/V2 |
-| P2 | 原检查时根 README/AGENTS 仍称无应用；A 历史记录提到 CI，但未发现 `.github` 工作流 | 远端目录重组已更新入口并澄清 CI 未配置；CI 本身仍待落实 |
+## 3. 落盘路径和模块职责
 
-另一个重要边界：B 的库存去重检查在商品锁之前，不能替代 C 对订单的串行保护。C 必须先锁定订单再校验版本/状态，所有订单动作都走同一用例入口。
+以下路径均从仓库根目录开始，标注文件均为计划新增，不代表实现已存在。
 
-### 2.3 本次验证与证据边界
-
-- 已阅读 A/B 服务、端口、迁移、前端接入点、单测及验证脚本/文档。
-- 已执行 `project-implementation/apps/web` 的 `npm run test`：2 个测试文件、4 个用例通过。测试覆盖状态标签和商品展示辅助函数，不代表购物车/交易已验证。
-- 前端生产构建结果见本文末尾的补充记录。
-- 当前 PATH 无 `mvn`，仓库无 Maven Wrapper；Docker Desktop Linux 引擎连接失败。本次未运行后端 `mvn verify` 或真实 MySQL API 冒烟，未变更环境和业务数据库。
-- A 文档历史记录 4 个后端测试通过；B 文档历史记录集成后共 9 个后端测试及 MySQL API/浏览器验证通过。本次未复现这些历史结果。
-- 现有 B 测试验证字段规则与单个库存实体运算，没有订单服务、多商品事务回滚或交易竞争测试；C 必须补真实数据库证据。
-
-## 3. 工程组织与协作改动
-
-沿用最新统一工程：代码进入 `project-implementation/apps`，C 的设计与验收材料放入 `docs/modules/commerce`，契约和脚本分别进入工程的 `contracts/openapi` 与 `scripts/smoke`。Java 根包为 `wemove`，C 与 A/B 平级。下列是计划位置，尚不代表 C 已实现。
-
-```text
-project-implementation/apps/api/src/main/java/wemove/commerce/
-    api/          CartController、CheckoutController、OrderController、AdminOrderController、DTO
-    domain/       购物车、预览、订单、付款、退款、状态历史
-    repository/   C 自有数据访问、订单与车头行锁
-    service/      CartService、CheckoutService、OrderCommandService、OrderQueryService
-    platform/     OrdersPort、CommerceMetricsPort
-project-implementation/apps/web/src/features/commerce/
-    routes.ts、api.ts、types.ts、购物车缓存与命令重试状态
-project-implementation/apps/web/src/pages/
-    CartPage.vue、CheckoutPage.vue、OrdersPage.vue、OrderDetailPage.vue
-    AdminOrdersPage.vue、AdminOrderDetailPage.vue
-project-implementation/apps/api/src/main/resources/db/migration/
-    V<下一版本>__commerce_baseline.sql
-project-implementation/apps/api/src/test/java/wemove/commerce/
-project-implementation/contracts/openapi/commerce.yaml
-project-implementation/docs/modules/commerce/角色C模块设计.md、角色C验收追踪.md、运行与验证手册.md、验证记录.md
-project-implementation/scripts/smoke/commerce-api.ps1
-```
-
-本次包名重构新增 V3 撤销旧登录会话；C 从下一可用版本开始。若公共幂等/审计先新增迁移，C 顺延版本。所有升级新增迁移，不改已应用版本。
-
-协作改动分开评审：A 的公共幂等/能力/错误处理；B 的锁定快照和返还核验；F 的审计适配；C 的交易实现。C 只导入其他域公开端口与 DTO，不直接操作商品库存表，也不直接使用 A 幂等 repository。
-
-## 4. 数据设计
-
-| 表（建议名） | 关键字段和约束 |
+| 路径 | 职责 |
 | --- | --- |
-| `commerce_carts` | id、user_id 唯一、业务 version、更新时间；首次建车也必须处理并发唯一约束 |
-| `commerce_cart_items` | cart_id、product_id、quantity，(cart_id, product_id) 唯一，数量 1—99；最近确认价格用于提示变化，展示仍以当前价为准 |
-| `commerce_checkout_previews` | 不可猜测 token、user_id、cart_version、完整商品/数量/零售价快照、created_at、expires_at；15 分钟有效，重启后仍可验证 |
-| `commerce_orders` | id、唯一 order_number、user_id、状态、业务 version、币种、金额构成、完整收货快照、备注、模拟标识、各动作时间、发货信息 |
-| `commerce_order_items` | order_id、product_id、SKU/名称/零售单价/数量/小计快照，(order_id, product_id) 唯一 |
-| `commerce_payment_attempts` | order_id、结果、模拟交易标识、快照付款额、时间；允许多次失败；成功效果有数据库唯一约束 |
-| `commerce_refunds` | order_id 唯一、模拟退款标识、整单原付款额、时间、操作人 |
-| `commerce_order_history` | order_id、动作、前后状态、业务版本、操作人、原因、时间、request_id；每次有效动作仅一条 |
+| `project-implementation/apps/api/src/main/java/wemove/commerce/api/` | CartController、CheckoutController、OrderController、AdminOrderController、CommerceDtos；请求校验、权限入口、DTO，无任意状态写入 |
+| `project-implementation/apps/api/src/main/java/wemove/commerce/domain/` | Cart、CartItem、CheckoutPreview、Order、OrderItem、PaymentAttempt、Refund、OrderHistory 实体及金额/状态规则 |
+| `project-implementation/apps/api/src/main/java/wemove/commerce/repository/` | C 自有表、车头/订单行锁、归属过滤和聚合查询 |
+| `project-implementation/apps/api/src/main/java/wemove/commerce/service/` | CartService、CheckoutService、OrderCommandService、OrderQueryService；事务编排，通过 B 端口读商品/改库存 |
+| `project-implementation/apps/api/src/main/java/wemove/commerce/platform/` | OrdersPort、CommerceMetricsPort 及只读投影；由 C 服务实现，供 F 调用 |
+| `project-implementation/apps/web/src/features/commerce/` | api.ts、types.ts、routes.ts、cartStore.ts、commandRecovery.ts 与相邻 `*.spec.ts` |
+| `project-implementation/apps/web/src/pages/commerce/` | CartPage、CheckoutPage、OrdersPage、OrderDetailPage、AdminOrdersPage、AdminOrderDetailPage 的 `.vue` 文件 |
+| `project-implementation/apps/api/src/test/java/wemove/commerce/` | 规则与 MySQL 集成 `*Test.java`，共用 Maven 入口 |
+| `project-implementation/contracts/openapi/commerce.yaml` | 所有 C HTTP schema、K/V、权限、错误、示例；目前尚不存在 |
+| `project-implementation/scripts/smoke/commerce-api.ps1` | 独立测试库上的正常链路/恢复/并发脚本；记录启动条件和数据影响 |
+| `project-implementation/docs/modules/commerce/` | 本方案、后续运行与验证手册、角色C验收追踪、验证记录；证据进入 `project-implementation/docs/verification/commerce/` |
 
-订单上的成功付款引用/唯一成功记录可用于实现“一单一次成功”；不要对 `(order_id, outcome)` 简单加唯一约束，否则会禁止不同请求的多次失败记录。可选实现是付款表的可空成功订单键：仅 SUCCESS 填入 order_id 并加唯一约束，FAILURE 填空。
+只复用统一应用、pom、package.json、会话和迁移入口。C 不引用 A/B repository/entity，不直接写商品库存或幂等表；通过 `wemove.platform` 公共服务和 `wemove.catalog.platform` 端口调用。同一应用内 Java 调用参与同一事务，不通过 HTTP 调 B。公共执行器放 `wemove.platform.idempotency`；审计接口继续公共，持久化实现归 F。D 的 `wemove/dealership/` 仅根目录保持不动，不恢复任何 partA/partB/partC 目录。
 
-- 金额使用 Java `long`、MySQL `BIGINT`，单位分；用精确整数乘加并检查溢出。最大整单金额为 197,999,998,020 分。
-- 商品最多 20 行是跨行规则，在车头锁内检查；数据库负责行数量、唯一键、非负金额、引用完整性等约束。
-- 购物车及订单业务版本从 1 开始；购物车行的增删也更新车头版本。若另设 JPA `@Version` 作为内部锁版本，应与 API 业务版本清楚区分。
-- 用户列表索引 `(user_id, created_at, id)`，状态列表补相应复合索引；稳定按创建时间和 ID 倒序分页，每页 1—50。
-- 订单快照永不从用户资料或当前商品反向覆盖。后台不提供订单任意编辑接口。
+## 4. 数据库方案
 
-## 5. API、权限与页面
+主线迁移只有 V1、V2、V3。V3 是 [一次性旧登录会话撤销](../../../apps/api/src/main/resources/db/migration/V3__invalidate_legacy_principal_sessions.sql)，不是 C 表；本轮比较确认 PR #5 未改 V1/V2。**下一可用号为 V4**，尚未占号：建议公共幂等 V4、审计由 F 协调后续版本、C 使用届时下一个版本 `V<n>__commerce_baseline.sql`，实施前再次 fetch 并核对所有成员在途迁移。不得把旧方案的 V3 当 commerce 迁移，也不改已应用的 V1—V3。
 
-API 统一前缀 `/api/v1`，沿用契约 5.4 的路径，K 表示 UUID 幂等键，V 表示版本校验。
+统一 UUID 对应 BINARY(16)，UTC 时间 DATETIME(6)，金额 BIGINT 整数分，业务版本 BIGINT ≥1，文本 UTF-8。业务外键不级联删除用户、商品或历史订单；停用/下架只影响新动作。C 子表外键指向 C 父表，历史表不提供普通删除入口。
 
-| API | 主要实现 |
+| 表 | 字段、约束与索引 |
 | --- | --- |
-| `GET /cart` | 本人车、当前零售价、行有效性及原因、总额、cartVersion；下架/缺货行保留 |
-| `POST /cart/items`（K） | 同商品累加，检查合并后的数量、库存及 20 行上限 |
-| `PATCH /cart/items/{productId}`（V） | quantity 表示设置值，不是增量 |
-| `DELETE /cart/items/{productId}`、`DELETE /cart/items`（V） | 删除或清空；版本随请求传入，具体位置在 OpenAPI 固定 |
-| `POST /checkout-previews` | 整车有效才返回服务器预览、token、版本、金额与过期时间 |
-| `POST /orders`（K） | token、cartVersion、地址、备注；首次 201，同键成功重放 200 + `Idempotency-Replayed: true` |
-| `GET /orders`、`GET /orders/{id}` | 本人分页/状态筛选、完整快照、付款/退款/历史及 allowedActions |
-| `POST /orders/{id}/mock-payments`（K/V） | outcome 为 SUCCESS 或 FAILURE |
-| `POST /orders/{id}/cancel`、`/confirm-receipt`（K/V） | 取消原因必填；本人操作与状态限制 |
-| `GET /admin/orders`、`GET /admin/orders/{id}` | 管理员按状态/时间筛选和核对订单 |
-| `POST /admin/orders/{id}/cancel`、`/mock-shipment`（K/V） | 管理员整单取消或模拟发货，记录物流名称及运单号 |
+| commerce_carts | id PK、user_id FK users 且 UNIQUE、version 默认 1、updated_at；空车车头保留。首次写入创建车头，唯一冲突后整事务重新读取；GET 无车返回空车逻辑版本 1，不制造 GET 写入 |
+| commerce_cart_items | id PK、cart_id FK、product_id FK catalog_products、quantity CHECK 1—99、last_confirmed_unit_price_fen；UNIQUE(cart_id,product_id)。车头锁内保证 ≤20 行，所有增删改更新车头版本 |
+| commerce_checkout_previews | id PK、token_hash UNIQUE、user_id FK、cart_id FK、cart_version、snapshot_json（结构固定的完整行与金额）、created_at、expires_at；INDEX(expires_at)，INDEX(user_id,created_at)。随机不透明 token 原值只给当前用户，持久化摘要可在重启后验证；15 分钟有效 |
+| commerce_orders | id PK、order_number UNIQUE、user_id FK、preview_id UNIQUE/FK（消费过的预览永不再次建单）、status CHECK 五状态、version、currency 固定 CNY、mode 固定 SIMULATED、subtotal/shipping/tax/discount/total_fen；shipping 地址六字段与 remark 快照；created/paid/cancelled/shipped/completed_at、物流名/运单号、操作者。INDEX(user_id,created_at,id)、INDEX(user_id,status,created_at,id)、INDEX(status,created_at,id)、INDEX(created_at,id) |
+| commerce_order_items | id PK、order_id FK、product_id FK、sku/name/unit_price_fen/quantity/subtotal_fen 快照；UNIQUE(order_id,product_id)，CHECK 数量1—99、单价1—99999999、小计=单价×数量 |
+| commerce_payment_attempts | id PK、order_id FK、outcome SUCCESS/FAILURE、mode、amount_fen、simulation_reference UNIQUE、actor_id、created_at；success_order_id 可空且 UNIQUE，CHECK 仅 SUCCESS 时等于 order_id，FAILURE 必须为空；INDEX(order_id,created_at,id)、INDEX(outcome,created_at,order_id) |
+| commerce_refunds | id PK、order_id UNIQUE/FK、payment_attempt_id UNIQUE/FK、amount_fen、simulation_reference UNIQUE、mode、actor_id、reason、created_at；只保存成功整单模拟退款，金额由成功付款记录读取，不接收客户端退款额 |
+| commerce_order_history | id PK、order_id FK、action、from_status/to_status、order_version、actor_id、reason、request_id、created_at；UNIQUE(order_id,order_version)，INDEX(order_id,created_at,id)。创建记录版本1；合法 FAILURE 也递增版本并记录同状态历史 |
 
-所有入口调用 `IdentityPort` 检查当前启用状态；消费者端明确拒绝 ADMIN，查询按 actorId 限制归属。他人的私有订单统一 404。管理员权限不能只依赖页面按钮。
+表级 CHECK 验证非负金额、固定零费用和头部金额公式；跨行总和、退款等于成功付款额由持订单锁的服务核验。单订单上限 `99999999×99×20=197999998020` 分，Java 用 Math.multiplyExact/addExact，前端只展示，不用浮点金额回算成交额。内部 JPA @Version 若另设命名为 lockVersion，不替代 API business version；响应在 flush 后构建。
 
-建议新增能力名 `CART_READ`、`CART_WRITE`、`ORDERS_READ`、`ORDERS_WRITE`、`ADMIN_ORDERS_READ`、`ADMIN_ORDERS_WRITE`，由 A 和 C 写入共同契约后实现。用户拥有前四项，管理员拥有后两项。
+付款允许多次显式 FAILURE，所以不能 UNIQUE(order_id,outcome)。发货字段仅在订单 PAID→SHIPPED 时写一次，历史唯一键和订单锁保护，不设部分发货表。预览不存地址；未消费过期预览可清理，已被订单引用的预览按订单保留，不能因清理释放一次消费约束。订单、快照、支付、退款、状态历史长期保留，审计由 F 管理。
 
-页面路由：`/cart`、`/checkout`、`/account/orders`、`/account/orders/:id`、`/admin/orders`、`/admin/orders/:id`。复用 PublicShell/SiteShell，补桌面/移动端购物车、我的订单、订单管理入口。
+## 5. API、DTO 与前端交互
 
-- B 的加购按钮调用 C 的 `api.ts`；服务端是购物车权威，客户端成功后刷新/失效缓存；退出或账户切换清理缓存。
-- 结算显示全部金额构成、地址字段错误、价格变化再次确认；无效项保留且阻止整车提交。
-- 订单详情集成付款、取消、收货及历史，不必为每个动作另建页面；所有支付/退款/发货明确显示 SIMULATED 和“不发生真实扣款”。
-- 超时视为结果未知：保留原键和原请求，不自动改版本或换键重发；用同键恢复创建结果，再 GET 订单当前状态。已知版本/价格冲突则刷新并经用户再次确认后建立新命令。
-- 收货地址和发货字段逐项继承 SRS/契约限制；省州必填依据同一地区配置，取消原因 2—500 字符，备注最多 2000 字符。
+省略前缀 `/api/v1`。U=当前启用非管理员用户（包括经销身份），A=当前启用管理员；私人资源必须本人，其他人同不存在统一 404。K=UUID Idempotency-Key；V=最近读取的业务版本。所有写操作复用 CSRF，身份信息从会话取得，禁止 userId/role/status/price 等未定义字段。
 
-## 6. 事务、幂等与状态机
-
-### 6.1 公共幂等实现建议
-
-由 A 提供公开 `IdempotencyExecutor`，C 传入稳定 operationId、目标资源、规范化请求、业务回调和返回类型。规范化摘要包含 HTTP 方法、具体路径和业务参数；不只对 DTO 拼接字符串。
-
-一种可实施方案：在业务同一事务中插入唯一占位记录并立即 flush，取得执行权；随后完成业务，更新为成功结果后一起提交。占位未完成不得独立提交。此方案需要新增迁移支持执行状态及尚无结果的记录。
-
-并发唯一冲突必须让当前事务完整结束，再在新事务中重读原结果；不能在已标记回滚的 JPA 事务里继续操作。锁等待超出预算返回 `409 REQUEST_IN_PROGRESS`；死锁仅有界重试整个事务并保留原键。A 的异常映射需识别这些情形，避免统一变成 500 或普通唯一冲突。
-
-每次重放前重新鉴权并核对归属；成功订单创建的重放先于购物车非空、版本和预览有效性检查。结果至少保留 24 小时，订单动作的永久一次效果由状态和业务唯一键保证。
-
-### 6.2 创建订单
-
-1. 检查当前启用用户，进入公共幂等和外层事务；已完成同键请求直接重放。
-2. 验证预览归属与有效期，锁车头，比较 cartVersion、完整商品集合及数量。
-3. 调 B 锁定快照，核验当前上架、库存和预览价格；分别返回 `CART_CHANGED`、`PRICE_CHANGED`、`PRODUCT_UNAVAILABLE`、`INSUFFICIENT_STOCK` 等错误。
-4. 服务端计算金额，写待付款订单、商品及地址快照、初始历史；移除本次结算项，递增车头版本，保存幂等结果和成功审计。
-5. 一起提交。任一写失败全部回滚；不扣减、不预占库存。`clientTotalFen` 无论传什么合法值均不参与计价。
-
-### 6.3 付款、取消与履约
-
-| 原状态 | 动作 | 新状态 / 同事务效果 |
+| API | 权限/并发 | 请求与响应要点 |
 | --- | --- | --- |
-| PENDING_PAYMENT | 本人模拟失败 | 保持原状态，记录 FAILURE 和有效修改版本，不扣库存 |
-| PENDING_PAYMENT | 本人模拟成功 | 锁订单，再调 B 扣全单库存；付款成功、PAID、历史、幂等、审计一起提交 |
-| PENDING_PAYMENT | 本人/管理员取消 | CANCELLED，记录原因，不动库存 |
-| PAID | 本人/管理员取消 | CANCELLED，B 按原扣减返还一次，整单模拟退款与历史一起提交 |
-| PAID | 管理员模拟发货 | SHIPPED，保存模拟物流与操作人，不动库存 |
-| SHIPPED | 本人确认收货 | COMPLETED，不动库存 |
-| CANCELLED / COMPLETED | 状态写入 | 拒绝；同键已成功命令仍按授权重放 |
+| GET /cart | U | cartVersion、items、当前零售价/数量/行小计、valid/reason、priceChanged、canCheckout；下架/不足项保留，不静默剔除 |
+| POST /cart/items | U/K | productId、quantity（累加）；返回更新车及版本，同商品累计 ≤99、≤可售库存、≤20行 |
+| PATCH /cart/items/{productId} | U/V | quantity 为绝对值，cartVersion 放 JSON；锁车后校验库存与数量，返回更新车 |
+| DELETE /cart/items/{productId}、DELETE /cart/items | U/V | cartVersion 作为必填查询参数（避免 DELETE body）；返回更新车。无实际变化不递增版本，版本过旧仍冲突 |
+| POST /checkout-previews | U | 无选择项请求，读取整车；返回 previewToken、cartVersion、expiresAt、currency、完整行和金额构成；空/无效车拒绝 |
+| POST /orders | U/K | previewToken、cartVersion、shippingAddress、remark?、clientTotalFen?；首次201，重放200；id/orderNumber/status/version/currency/totalFen/mode/createdAt |
+| GET /orders、GET /orders/{id} | U/本人 | 列表 page≥1、pageSize 1—50、status?，默认20；详情为完整不可变快照、尝试/退款/历史、allowedActions |
+| POST /orders/{id}/mock-payments | U/K/V | expectedVersion、outcome=SUCCESS/FAILURE；金额由订单读取；返回操作后的订单和本次尝试摘要 |
+| POST /orders/{id}/cancel | U/K/V | expectedVersion、reason；返回订单及可能产生的模拟退款摘要 |
+| POST /orders/{id}/confirm-receipt | U/K/V | 仅 expectedVersion；只允许本人已发货订单 |
+| GET /admin/orders、GET /admin/orders/{id} | A | 分页、status、start/end（UTC [start,end)，过滤创建时间）；详情含履约所需地址 |
+| POST /admin/orders/{id}/cancel | A/K/V | expectedVersion、reason；与本人取消共用领域规则 |
+| POST /admin/orders/{id}/mock-shipment | A/K/V | expectedVersion、logisticsName、trackingNumber；一次整单发货 |
 
-每次动作都在订单行锁内检查 expectedVersion 和合法状态。付款使用订单快照价，但必须检查当前可售状态和库存。库存不足等业务拒绝整体回滚；显式 FAILURE 是合法的模拟失败记录，与系统故障回滚区分。
+DTO 名建议为 CartView/CartItemView、CheckoutPreviewView、CreateOrderRequest、ShippingAddress、OrderSummary/OrderDetail、MockPaymentRequest、CancelOrderRequest、ShipmentRequest。返回 ApiEnvelope，错误沿用 Problem Details（code/requestId/errors）；409 区分 CART_CHANGED、PRICE_CHANGED、PRODUCT_UNAVAILABLE、INSUFFICIENT_STOCK、VERSION_CONFLICT、STATE_CONFLICT、IDEMPOTENCY_CONFLICT、REQUEST_IN_PROGRESS；预览失效建议 CHECKOUT_PREVIEW_EXPIRED，需写入 OpenAPI。不可见预览统一404。422 指明字段，401 失效会话，403 动作无权限。库存问题可列出本人本次商品 ID，不泄露他人资源。
 
-同键同内容重放不新增记录；新键对不允许状态执行动作返回 `STATE_CONFLICT`，并发陈旧版本返回 `VERSION_CONFLICT`。失败模拟会使版本变化，下一次成功付款须读取新版本并使用新键。
+地址字段为 recipient/phone/countryOrRegion/region/city/addressLine。收件人 2—50 码点，国家/城市为受控值或2—100，详细地址5—200；电话移除允许的空格、连字符和括号后匹配可选加号及6—20数字。省州是否必填用共同地区配置，非空 region 建议2—100。remark 最多2000，reason 2—500；物流名2—50，运单号3—50且只含字母/数字/连字符。严格校验 JSON 数值类型和未知字段，不能把小数或字符串转为整数后通过。
 
-锁顺序统一为：必要身份状态 → 幂等 → 车头/订单 → 按 ID 排序的商品与库存 → 附属记录/审计。C/B 使用相同数据库、事务管理器与线程，不另开事务提交库存，不在事务中发 HTTP 请求调用 B。
+新增能力建议 CART_READ/CART_WRITE/ORDERS_READ/ORDERS_WRITE（U），ADMIN_ORDERS_READ/ADMIN_ORDERS_WRITE（A），由 A/C 同步契约与 session DTO。路由依次为 `/cart`、`/checkout`、`/account/orders`、`/account/orders/:id`、`/admin/orders`、`/admin/orders/:id`，全部注册到现有 router，能力提示不能替代后端校验。
 
-## 7. 给 F 的最小接口
+页面采用已有 PublicShell/SiteShell；桌面和移动导航、个人中心同步接入。商品按钮调用统一 Cart API；游客登录后回原商品页再次确认，管理员隐藏购买动作并由后端拒绝。服务端购物车为权威，操作后失效缓存，退出/切换账户清缓存。整车无勾选结算，失效项可移除；改价显示新旧价并重新预览确认，不自动创建订单。地址错误保留输入，显示零运费/零税费/零优惠。列表含空态、筛选和详情；详情按 allowedActions 展示操作、历史和模拟说明。取消、发货、收货有确认步骤，成功后重新 GET；F 咨询入口只在 F 路由可用时启用。
 
-- `OrdersPort.requireOwnedReference(ctx, orderId)`：返回订单 ID、编号及必要状态的最小投影，验证本人归属；不把完整地址交给工单。
-- `CommerceMetricsPort.read(start, end)`：待发货总量、区间创建订单数、区间模拟净成交额；参与 F 的同一只读数据库快照。
-- `netPaidFen` 返回整数分字符串。口径为区间内成功付款订单原额，减这些订单截至统计时已退款额；不是“区间付款减区间退款”。
-- 保留 F 售后咨询入口接入位置；F 未实现时不指向不存在的可提交页面。
+## 6. 可信预览、事务和状态机
 
-## 8. 开发顺序与完成判据
+### 6.1 预览与建单
 
-以下阶段按依赖顺序推进，每阶段拆成可独立评审的小增量；不以工期估算代替完成证据。
+预览在短事务内锁车头，再经 B 受保护端口读取全车商品及库存，核验并服务端精确计价，保存绑定用户/版本/完整内容的预览。没有库存预占；释放锁后库存仍可能变化。15分钟是待评审设计参数，不是订单超时。
 
-| 阶段 | 交付物 | 完成判据 |
+建单顺序：认证/授权及输入格式 → 公共幂等执行权或已完成结果重放 → 锁车头，校验预览归属/有效期、车版本/完整商品数量 → B 锁定快照 → 比较预览零售价与当前价、当前可售与库存 → 重新计算金额 → 写订单与商品/地址快照、历史、消费预览关联 → 移除本次整车项并递增版本 → 同事务成功审计及幂等结果 → flush/提交。clientTotalFen 合法但被篡改为100，仍应得到14870分，不能拿客户端总额判断改价。
+
+建单等待期间的新加购和改量由同车头锁排序：加购先提交使旧预览 CART_CHANGED；建单先提交后新加的商品仍保留。失败不删车、不留半份订单；首次创建绝不扣库存。成功重放在车是否为空、预览是否过期等业务条件之前进行。预览一单唯一约束进一步防换键/去重期后误复用，不能取代24小时成功结果重放。
+
+### 6.2 状态及同事务效果
+
+| 原状态 | 合法动作/操作者 | 新状态与原子写入 |
 | --- | --- | --- |
-| C0 接入基线 | OpenAPI、数据库方案；A 公共幂等、B 受保护快照/返还核验、能力与审计对接约定 | 端口契约可调用；同键并发、数量不匹配和快照锁测试通过；正式审计未到位时明确仅可开发 |
-| C1 购物车 | 车头/明细迁移、API、页面、商品加购入口 | TC-13；重复加购、数量/库存/20 行边界、重登录、两用户隔离 |
-| C2 结算建单 | 持久预览、可信金额、订单快照、清车事务、订单列表/详情 | TC-14—17、TC-21；篡改合计仍 14870 分，同键仅一单，失败不清车 |
-| C3 模拟支付和取消 | 状态机、支付尝试、退款、B 库存联动 | TC-18—22；竞争库存不为负，整单回滚，取消仅返还一次 |
-| C4 履约与 F 接口 | 后台列表/详情、模拟发货、本人收货、订单引用与统计 | TC-23—24；发货/取消竞争只产生合法结果；本人归属与统计口径正确 |
-| C5 联合验收 | 自动化/浏览器证据、运行手册、追踪表、讨论结论 | TC-11、13—24、34、37、40 相关部分，全部关键交易测试及 A/B 回归通过 |
+| PENDING_PAYMENT | 模拟失败/U本人 | 状态不变，新增 FAILURE 尝试、版本+1、历史/幂等/审计；不扣库存 |
+| PENDING_PAYMENT | 模拟成功/U本人 | PAID；按快照金额写唯一成功尝试，B 检查当前 PUBLISHED 和全部库存后扣减，版本/历史/幂等/审计一起提交 |
+| PENDING_PAYMENT | 取消/U本人或A | CANCELLED；原因/版本/历史/幂等/审计，无退款、无库存变动 |
+| PAID | 取消/U本人或A | CANCELLED；B 依原扣减完整返还、整单模拟退款、版本/历史/幂等/审计全部提交 |
+| PAID | 模拟发货/A | SHIPPED；物流名/运单号/操作者/时间、版本/历史/幂等/审计；库存不变 |
+| SHIPPED | 确认收货/U本人 | COMPLETED；版本/时间/历史/幂等/审计；库存不变 |
+| CANCELLED、COMPLETED | 无新写动作 | 新键拒绝；已成功同键命令经当前授权仍可重放原结果 |
 
-## 9. 必须执行的测试
+订单命令先取得同一订单行锁，核对归属、expectedVersion、状态，再执行。不同键同版本竞争至多一方生效；同键成功重放不再次校验旧版本。已付后新键再 SUCCESS/FAILURE 均 STATE_CONFLICT，不新增尝试。显式 FAILURE 是完成的业务操作，与库存不足/系统异常导致整个事务回滚不同。
 
-沿用现有正式入口：前端 `npm run test`、`npm run build`，后端 `mvn verify`。新增测试应让该入口实际执行；若使用 `*IT` 命名，需配置 Maven Failsafe，不能仅放文件就声称已覆盖。
+付款先成功，旧版本取消冲突；用户读取新版本并重新确认后仍可合法取消。PAID 取消与发货竞争只可有一种结果：取消/返还/退款全部成立，或发货/原库存全部成立。已下架只阻止新付款，不阻止已付取消的原量返还。付款不因当前零售价变化重新计价。
 
-| 类型 | 场景与断言 |
-| --- | --- |
-| 规则单测 | 金额 2990×3+5900=14870、最大整单金额、数量/地址边界、合法与非法状态迁移 |
-| MySQL 集成 | 从空库跑全部迁移、从 V2 升级、真实 Spring 事务及约束、重启后购物车/订单/预览保留 |
-| 幂等 | 并发同键建单、同键异内容/异订单冲突、成功清车后重放、预览过期后成功结果重放、旧键在停用后不能访问 |
-| 同订单竞争 | 同单两次支付、支付与取消、取消与发货；检查订单、付款/退款、全部库存流水、历史、幂等、审计一致 |
-| 库存竞争 | 库存 1 的两用户付款、付款与后台减库存/下架竞争、多商品反向输入；至多一个有效扣减且余额非负 |
-| 故障注入 | 清车后、首项扣库存后、退款/历史/幂等/审计写入失败；核对全部相关表回滚，注入只在测试配置启用 |
-| 权限 | 未登录、停用、普通用户访问后台、管理员加购/结算/付款、交叉用户订单查询及动作、CSRF 缺失 |
-| 快照与返还 | 建单后商品改名改价仍保留原订单；下架后可取消已付款单；扣 1 返 2、漏项、异明细重试被拒绝且无额外效果 |
-| 浏览器 | 加购→结算→付款失败→成功→发货→收货；另走付款后取消；改价再次确认、超时原键恢复、移动端及键盘操作 |
+### 6.3 锁顺序与库存端口修订
 
-并发测试用同步屏障在不同连接/事务上同时提交，保留请求、响应及数据库前后值；不以串行循环代替竞争。测试使用隔离 MySQL 库，勿在日常业务库执行写入冒烟。F 的 TC-37 完整验收仍需其他域加入，C 只提交本域证据。
+统一：必要账户状态 → 幂等执行权 → 车头或订单 → 按 `UUID.toString()` 升序逐商品取“商品锁→该商品库存锁” → 附属表/审计。不要一条路径先锁所有库存、另一条先锁商品。建单只需车头，不锁已有订单；支付只需订单，不反向锁车。B 编辑/上下架、人工库存调整与 C 使用同一商品/库存锁。
 
-## 10. 本次交付检查补充
+B 建议新增 `lockRetailSnapshot(items)`，要求调用方已有读写事务（MANDATORY 或等价断言），返回当前 SKU/名称/零售价/数量/库存/可售投影，持锁至外层提交；缺失商品按 ID 给出不可售结果，不让普通展示读替代建单检查。库存扣减/返还端口也明确必须参与 C 外层事务，禁止 REQUIRES_NEW、异步线程或外部 HTTP 提前提交。
 
-- `npm run build` 通过，包含 `vue-tsc --noEmit` 类型检查和 Vite 生产构建，1471 个模块完成转换。
-- 本文相对链接全部可解析，无行尾空白；`git diff --check` 通过。本文为新文件，另行扫描了其正文，避免仅依赖不包含未跟踪文件的 diff 检查。
-- 以上为原方案检查结果；后续包名迁移与验证另见 [根包重构验证记录](../../verification/Java根包重构验证记录.md)。
+扣减/返还在订单锁保护下读取该 sourceId 的**完整**原流水，不仅查输入项。首次扣减后唯一流水留存；重复调用必须全量匹配后无操作，部分历史作为一致性错误拒绝。返还先核对原扣减集合和数量，写入量取原记录，再在相同商品锁内核查已返还集合，完整匹配才无操作；部分返还/额外项均回滚报错。C 永远从订单快照提供 items，不能让客户端指定库存明细。B 不可反向获取 C 订单锁；它的公开协议要声明订单串行化由调用方负责。
+
+真实 MySQL 下同一事务中先做普通读再锁读，不能使用持久化上下文中旧实体构建快照；受保护查询需确保读取刷新后的数据库状态并验证。死锁/锁超时只能在整事务回滚后有界重试原命令，不能从第二件商品继续。
+
+## 7. 公共幂等与结果未知恢复
+
+A 提供 `IdempotencyExecutor` 作为事务外协调入口，内部每次尝试通过 UnitOfWork 建立新事务；C 传入稳定 operationId、目标资源、规范化请求及业务回调。建议 `commerce.addCartItem/createOrder/mockPayment/cancelOwnOrder/cancelAdminOrder/mockShipment/confirmReceipt`。摘要覆盖方法、具体路径/业务查询和规范化请求体（含版本）；JSON 对象键稳定排序，数组保留顺序，原始敏感体不写日志。same key 改目标/地址/版本均冲突。
+
+具体执行方案：事务内先受保护读取身份，插入唯一 `(actor,operation,key)` 占位并 flush；取得执行权后业务执行，更新完成响应，与业务和审计一起提交。占位绝不单独提交；新增执行状态、可空待完成响应/状态码、completedAt/expiresAt、结果schema版本与资源引用，迁移将旧行标为已完成。并发唯一键等待者在冲突事务完整退出后新事务重新鉴权、读取已提交结果；原执行回滚则可竞争执行。不能捕获唯一异常后继续用 rollback-only 的 EntityManager，也不能用 MySQL REPEATABLE READ 旧快照查不到结果便断言未执行。
+
+只将幂等唯一键冲突转重放，其他唯一约束不能吞掉。建议单次锁等待预算2秒、死锁至多3次整事务尝试，耗尽返回409 REQUEST_IN_PROGRESS/可理解并发冲突和 Retry-After；具体参数在 C0 压测前确认。已提交响应丢失时不自动判断失败。所有完成 K 结果至少保存完成时间后24小时；模拟 FAILURE 也是完成结果。系统回滚不保存成功占位；本期不缓存业务拒绝，环境改变后重新确认使用新键。
+
+B 历史 operationId 兼容不能简单改名/清表。建议迁移旧键为稳定模板并把旧资源标识纳入版本化摘要；若同 actor/key 在多个资源已有历史结果，不能任意挑一个响应，应保留 legacy 记录和对应冲突标记，新入口阻止该键再次产生效果并要求查询现有结果。过渡期须有明确旧摘要校验适配、碰撞清单与回放测试；停止旧版本后一次切换，不能混跑两套去重空间。V3 保留幂等数据，不能借撤销会话规避此兼容。
+
+前端每次用户确认固定 `{actorId,operation,path,key,body,version,startedAt}`；发送中/结果未知不生成新键、不换版本、不修改原体。网络错误、超时、非明确业务拒绝的5xx提示“结果暂未确认”，提供原请求重试和列表/详情查询；同键成功重放200并带 Idempotency-Replayed:true，随后GET当前订单。409 REQUEST_IN_PROGRESS 保留原命令，其他已知冲突刷新并重新确认。PATCH/DELETE 未标K，未知结果先读车对照原绝对目标与版本，不用新版本静默重做。
+
+建议 sessionStorage 按账户隔离短期保存待恢复命令，完成/退出清除，不持久保存会话凭据；涉及地址的原请求仅用于当前会话恢复，不用长期 localStorage。跨会话无原请求时通过订单列表人工核对，不盲目另建单。超过去重期的未知加购等可重复动作禁止自动重发；创建还可依预览唯一关联核查，已有订单动作靠永久状态/唯一约束防重复效果。C1 与 B 共享该恢复模式，但不强迫其他 HTTP 调用全部改成自动重试。
+
+## 8. 给 F 的端口
+
+`OrdersPort.requireOwnedReference(ActorContext ctx, UUID orderId)` 返回 `{id,orderNumber,status}` 最小投影；先当前身份再本人归属，不存在/他人统一404，不返回地址或付款详情。历史取消/完成订单可关联咨询；管理员工单处理按 F 已授权的工单上下文读取其最小关联信息，不扩大此“本人”方法为任意订单查询。
+
+`CommerceMetricsPort.read(start,end)` 必须加入 F 的同一只读事务/数据库快照，不另开事务；调用上下文由 F 管理且仅管理员仪表盘可达。返回 `pendingShipmentCount`（当前全部PAID，与区间无关）、`createdOrderCount`（创建时间落在UTC [start,end)，所有状态）、`netPaidFen`（成功付款在区间内订单原付款额减这些订单截至该快照已完成退款额，十进制整数分字符串）。F 统一生成 asOf；以 BigDecimal/精确SQL聚合后转整数字符串，不能用可能溢出的 long 累加长时间汇总。空值返回0/"0"，start必须早于end。
+
+9月5日付100元、6日退款，重查5日净额为0；不是区间收款减区间退款。两域联测半开时间边界、取消/付款并发时同一快照、待发货总量及无数据；F 的 TC-37 完整通过仍需其他域，不以 C 指标单独代替。
+
+## 9. 分阶段执行和验收
+
+| 阶段 | 可执行交付顺序 | 门槛及用例 |
+| --- | --- | --- |
+| C0 公共边界 | 再fetch确认迁移号；A/B/C/F评审 OpenAPI/DTO、身份锁、幂等和审计接口；A提供执行器与严格输入，B提供快照/库存核验及旧键兼容方案 | 同键同体并发能重放、异资源冲突；锁快照改价等待/冲突可解释；扣1返2/漏项不写。可先写隔离规则，未通过不接交易持久化 |
+| C1 购物车 | C迁移车头/明细，API与页面；能力/商品加购/导航/命令恢复共同接入 | T-C-01—04、数量严格类型、20/21行、99/100、重登录/重启、账户隔离；B未知结果换键修复联测 |
+| C2 结算建单 | 预览/订单/明细/历史迁移，可信计价、清车事务、本人查询页；F持久审计到位 | T-C-05—10、12、24—26；14870及最大金额、改价再次确认、创建失败不清车、过期预览成功重放、并发新加购不丢 |
+| C3 付款取消 | 支付尝试/退款，订单状态机，B同事务扣减返还 | T-C-11、13—21、26；最后一件、同单竞争、人工调整/下架竞争、第一项后故障全回滚；退款与原扣减精确对应 |
+| C4 履约/F | 管理员列表/详情/模拟发货、本人收货；OrdersPort/MetricsPort与F联调 | T-C-20、22—24；取消/发货只有合法终态，管理员不能代收，指标半开区间及历史退款口径准确 |
+| C5 联合交付 | MySQL空库/升级/恢复证据、A/B回归、浏览器、运行手册、用例审核执行记录 | TC-11、13—24、34、37、40及相关TC-38/39/41；用例按执行人、版本、环境、时间和证据逐条登记 |
+
+每阶段使用现有 Maven verify 和前端 test/build 入口。集成测试用 `*Test` 纳入 Surefire；若改用 `*IT`，先配置 Failsafe，不能只放文件。MySQL 测试必须真正启用 Flyway：从空库执行全部迁移，从有登录会话及A/B数据的V2升级经V3到最新，以及现有V3到新增版本；核对旧会话撤销、V1/V2校验和、业务/幂等数据保留。不用 H2 模拟替代 MySQL 锁与迁移验收。
+
+并发采用独立会话/连接与屏障，至少覆盖同键建单、同单不同键付款、最后1件、付款/取消、取消/发货、反向商品输入、后台调整/下架。各竞争建议复位后10轮，核对订单/支付/退款/全部库存/历史/幂等/审计的前后值，而非只看响应。故障注入点包括订单头后、清车后、首商品扣减/返还后、支付/退款/历史/幂等/审计写入；失败无任何部分效果，移除故障原键恢复一次。注入只在隔离测试配置开放。
+
+前端验证390/768/1440宽、键盘、两浏览器及模拟标识；覆盖正常收货与已付取消两条链路，响应已丢/请求未到两种未知恢复。性能按追踪表：本人订单预热后20次至少19次≤1秒，购物车5次至少4次≤3秒可操作，由F汇总。26条成员设计仍全部未执行；历史单测通过不改变其状态。
+
+## 10. 评审待定项与本轮验证边界
+
+需要用户/团队审核的设计选择：
+
+1. 采用本文15分钟持久预览、预览一次消费约束、DELETE查询版本，以及具体DTO/能力名/错误码；业务上的整车、零售价、无预占、整单退款和模拟范围已经固定。
+2. A/B/F公共边界负责人及交付顺序，尤其旧幂等记录碰撞兼容、身份锁、F数据库审计最晚C2到位；C初期测试替身不算正式验收。
+3. A/B旧0起始版本的契约兼容注记、严格转换对旧调用方的影响；实施时同时更新协作契约及OpenAPI，本文不擅自改已部署语义。
+4. 地区配置来源/无省州样本、幂等等待与重试预算、sessionStorage短期恢复策略，以及隔离MySQL/可控时钟/故障屏障测试环境。
+
+本轮实际执行：fetch、Git提交/祖先与PR API合并状态核对、工作区快进、源码/契约静态检查、V1/V2与重构前差异检查；仅修改文档，完成Markdown相对链接/表格结构和diff空白检查。未运行应用、npm测试/构建、Maven、MySQL升级、冒烟、并发或浏览器业务验收。
+
+历史证据另见 [Java根包重构验证记录](../../verification/Java根包重构验证记录.md)：9项后端单测+1项H2应用集成、4项前端测试及构建通过；H2禁用Flyway且非真实MySQL升级。原B审核有HTTP复现记录，本文只确认对应代码仍存在，不冒充本轮重现。交付状态仍为“方案待审核”，不登记业务实现完成。

@@ -62,9 +62,9 @@ async function save() {
     </div>
 
     <section class="business-links">
-      <header><p>MY RECORDS</p><h2>本人业务记录</h2><span>入口已按团队契约预留，由对应成员模块接入真实数据。</span></header>
+      <header><p>MY RECORDS</p><h2>本人业务记录</h2><span>查看个人订单，付款与履约均为课程模拟流程。</span></header>
       <div class="link-grid">
-        <div><strong>零售订单</strong><span>C · commerce</span><em>待接入</em></div>
+        <div><RouterLink to="/account/orders"><strong>零售订单 →</strong></RouterLink><span>查看付款、退款与物流记录</span><RouterLink to="/cart">我的购物车</RouterLink></div>
         <div><strong>我的咨询</strong><span>F · support</span><em>待接入</em></div>
         <div><strong>经销申请</strong><span>D · dealership</span><em>待接入</em></div>
         <div><strong>经销询价</strong><span>D · dealership</span><em>待接入</em></div>

@@ -54,7 +54,7 @@ Java 根包统一为 `wemove`，`identity`、`catalog` 及后续 `commerce` 等�
 | --- | --- | --- | --- |
 | 身份与账户 | [identity.yaml](contracts/openapi/identity.yaml) | [模块索引](docs/modules/identity/README.md)、[运行与验证手册](docs/modules/identity/运行与验证手册.md)、[验证记录](docs/modules/identity/验证记录.md) | A |
 | 商品与库存 | [catalog.yaml](contracts/openapi/catalog.yaml) | [模块索引](docs/modules/catalog/README.md)、[运行与验证手册](docs/modules/catalog/运行与验证手册.md)、[验证记录](docs/modules/catalog/验证记录.md) | B |
-| 零售交易（目录骨架） | 尚未实现 | [模块索引与方案](docs/modules/commerce/README.md) | C |
+| 零售交易 | [commerce.yaml](contracts/openapi/commerce.yaml) | [模块索引](docs/modules/commerce/README.md)、[实现方案与 A/B 检查](docs/modules/commerce/WEMOVE角色C实现方案与AB检查.md) | C |
 | 经销合作（仅根目录） | 尚未实现 | [后端模块根目录](apps/api/src/main/java/wemove/dealership/)；待 D 自行细分 | D |
 
 商品前端逻辑入口见 [apps/web/src/features/catalog/](apps/web/src/features/catalog/)，商品后端入口见 [apps/api/src/main/java/wemove/catalog/](apps/api/src/main/java/wemove/catalog/)。其余成员的需求归属和接入边界见[验收追踪表](project-requirements/WEMOVE需求责任与验收追踪表.md)。
@@ -130,11 +130,11 @@ npm --prefix project-implementation/apps/web run build
 | 模块设计、运行和交付记录 | `docs/modules/<业务域>/` | 添加或更新模块 `README.md`，在本文件的模块索引中登记 |
 | 验证截图、测试用例 | `docs/verification/<业务域>/`、`tests/cases/` | 证据链接对应记录；用例审核状态与执行结果分别维护 |
 
-业务域沿用分工文档：A 为 `identity`，B 为 `catalog`，C 为 `commerce`，D 为 `dealership`，E 为 `content`，F 按职责使用 `support` 和 `operations`。**成员编号用于分工，业务域用于代码和模块资料命名；不再创建 `partA/`、`partB/`、`partC/` 等成员目录。** 当前 `identity`、`catalog` 已有实现；C 保留后端分层、前端业务/页面、后端测试及验收证据目录骨架，等待后续实现；D 仅保留后端 `wemove/dealership/` 根目录，由负责人自行细分。空目录用 `.gitkeep` 保留，不代表业务已经实现。E/F 仍为后续接入约定。
+业务域沿用分工文档：A 为 `identity`，B 为 `catalog`，C 为 `commerce`，D 为 `dealership`，E 为 `content`，F 按职责使用 `support` 和 `operations`。**成员编号用于分工，业务域用于代码和模块资料命名；不再创建 `partA/`、`partB/`、`partC/` 等成员目录。** 当前 `identity`、`catalog` 已有实现；C 已接入后端分层、前端业务/页面、后端测试及验收证据，实施与实际验证见零售交易模块索引；D 仅保留后端 `wemove/dealership/` 根目录，由负责人自行细分。空目录用 `.gitkeep` 保留，不代表业务已经实现。E/F 仍为后续接入约定。
 
 后端启动类为根包 `wemove` 下的 `WemoveApplication`，默认组件、实体、仓库与配置属性扫描覆盖全部子包。A 的代码只放在 `wemove.identity`；B 在 `wemove.catalog`；C 使用 `wemove.commerce`。不再将其他业务嵌套在 `identity` 下。公共 HTTP 响应/异常位于 `wemove.platform.api`，幂等存储位于 `wemove.platform.idempotency`，全局请求过滤器位于 `wemove.platform.security`。
 
-以新增“购物车页面”为例，下面是接入位置示例，尚未创建这些文件：
+以已接入的“购物车页面”为例，后续模块沿用以下接入方式：
 
 1. 页面放在 `apps/web/src/pages/commerce/CartPage.vue`。
 2. 在 `apps/web/src/features/commerce/routes.ts` 引用该页面；从这个路由文件出发，相对导入路径为 `../../pages/commerce/CartPage.vue`。

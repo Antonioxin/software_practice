@@ -1,0 +1,21 @@
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.06 s -- in wemove.ApplicationIntegrationTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in wemove.catalog.domain.InventoryBalanceEntityTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in wemove.catalog.service.CatalogRulesTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.976 s -- in wemove.commerce.CommerceMigrationMySqlTest
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 83.72 s -- in wemove.commerce.CommerceMySqlTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in wemove.commerce.CommerceRulesTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in wemove.identity.domain.UserEntityTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in wemove.platform.InMemoryRateLimitServiceTest
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:55 min
+[INFO] Finished at: 2026-09-06T13:27:55+08:00
+[INFO] ------------------------------------------------------------------------
+ Test Files  3 passed (3)
+      Tests  9 passed (9)
+   Start at  13:23:16
+   Duration  2.03s (transform 335ms, setup 0ms, collect 575ms, tests 33ms, environment 2.46s, prepare 480ms)
+
+dist/assets/index-B81RZqJP.js                                                113.75 kB │ gzip: 44.73 kB
+✓ built in 4.72s
