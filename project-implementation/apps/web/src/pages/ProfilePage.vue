@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, watchEffect } from 'vue'
 import { ElMessage } from 'element-plus'
+import SketchIcon from '../components/SketchIcon.vue'
 import SiteShell from '../components/SiteShell.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { api, ApiProblem } from '../services/http'
@@ -64,10 +65,10 @@ async function save() {
     <section class="business-links">
       <header><p>MY RECORDS</p><h2>本人业务记录</h2><span>查看个人订单，付款与履约均为课程模拟流程。</span></header>
       <div class="link-grid">
-        <div><RouterLink to="/account/orders"><strong>零售订单 →</strong></RouterLink><span>查看付款、退款与物流记录</span><RouterLink to="/cart">我的购物车</RouterLink></div>
-        <div><strong>我的咨询</strong><span>F · support</span><em>待接入</em></div>
-        <div><strong>经销申请</strong><span>D · dealership</span><em>待接入</em></div>
-        <div><strong>经销询价</strong><span>D · dealership</span><em>待接入</em></div>
+        <div><SketchIcon name="orders" :size="32" /><RouterLink to="/account/orders"><strong>零售订单 →</strong></RouterLink><span>查看付款、退款与物流记录</span><RouterLink to="/cart">我的购物车</RouterLink></div>
+        <div><SketchIcon name="chat" :size="32" /><strong>我的咨询</strong><span>咨询记录</span><em>待接入</em></div>
+        <div><SketchIcon name="ticket" :size="32" /><strong>经销申请</strong><span>经销合作</span><em>待接入</em></div>
+        <div><SketchIcon name="wallet" :size="32" /><strong>经销询价</strong><span>经销合作</span><em>待接入</em></div>
       </div>
     </section>
   </SiteShell>

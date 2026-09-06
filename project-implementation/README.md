@@ -1,6 +1,6 @@
 # WEMOVE 工程入口
 
-这里是 WEMOVE 的统一实现目录，包含一个 Vue 3 + TypeScript 前端、一个 Java 21 + Spring Boot 后端，以及契约、脚本、文档和测试设计。当前已接入身份账户和商品库存模块，后续业务继续接入这套应用。
+这里是 WEMOVE 的统一实现目录，包含一个 Vue 3 + TypeScript 前端、一个 Java 21 + Spring Boot 后端，以及契约、脚本、文档和测试设计。当前已接入身份账户、商品库存和零售交易模块，后续业务继续接入这套应用。
 
 **目录按工程职责划分，业务归属按模块记录。** 前端和后端分别是可构建、可运行的应用；身份账户、商品库存等业务由各应用内部的代码共同实现。成员姓名、分工和贡献放在[团队协作规范](project-requirements/WEMOVE团队分工与协作规范.md)及[验收追踪表](project-requirements/WEMOVE需求责任与验收追踪表.md)中维护，代码位置不随负责人变化。
 
@@ -57,7 +57,22 @@ Java 根包统一为 `wemove`，`identity`、`catalog` 及后续 `commerce` 等�
 | 零售交易 | [commerce.yaml](contracts/openapi/commerce.yaml) | [模块索引](docs/modules/commerce/README.md)、[实现方案与 A/B 检查](docs/modules/commerce/WEMOVE角色C实现方案与AB检查.md) | C |
 | 经销合作（仅根目录） | 尚未实现 | [后端模块根目录](apps/api/src/main/java/wemove/dealership/)；待 D 自行细分 | D |
 
+初版公共界面及无需后端的只读预览见[静态界面与开发预览](docs/modules/content/静态界面与开发预览.md)，覆盖现有 17 条业务路由。开发环境可访问 `http://localhost:5173/?preview=1`。
+
 商品前端逻辑入口见 [apps/web/src/features/catalog/](apps/web/src/features/catalog/)，商品后端入口见 [apps/api/src/main/java/wemove/catalog/](apps/api/src/main/java/wemove/catalog/)。其余成员的需求归属和接入边界见[验收追踪表](project-requirements/WEMOVE需求责任与验收追踪表.md)。
+
+## 查看团队共享前端（无需后端）
+
+拉取包含本次前端更新的分支后，使用 Node.js 20+、npm 10+，从仓库根目录执行：
+
+```bash
+npm --prefix project-implementation/apps/web ci
+npm --prefix project-implementation/apps/web run dev
+```
+
+打开[首页预览](http://localhost:5173/?preview=1&role=guest&state=normal)或[商品目录预览](http://localhost:5173/products?preview=1&role=guest&state=normal)。页面底部的预览工具条可切换账户、购物车、订单与后台等场景；如果 5173 已占用，请使用启动输出中的实际端口。预览使用仓库内的统一样例数据，适合对照界面；保存、注册和下单等业务写入不会执行。真实业务联调请按下节启动后端，并使用不含 `preview=1` 的地址。
+
+悠哉、Caveat、Barlow Condensed 的网页字体、品牌图片和手绘图标已随 [apps/web/public/assets/](apps/web/public/assets/) 提交，浏览器直接从本地开发服务加载，不需要在操作系统安装字体、不依赖外部字体服务，也不需要运行素材生成脚本。原始字体、组件图片及许可说明保留在[字体参考](前端设计视觉参考/fonts/)与[视觉组件](前端设计视觉参考/视觉组件/)中。请保留完整素材目录，中文字体的补充分块用于显示后端返回的不同文字。
 
 ## 本地启动
 
@@ -87,7 +102,7 @@ npm --prefix project-implementation/apps/web ci
 npm --prefix project-implementation/apps/web run dev
 ```
 
-访问 `http://localhost:5173/products` 浏览商品，或访问 `/register` 注册账户。前端开发服务器将 `/api` 代理到 `http://localhost:8080`。管理员登录后可访问 `/admin/products` 和 `/admin/categories`。
+访问 `http://localhost:5173/` 打开首页，或访问 `/products` 浏览商品、`/register` 注册账户。前端开发服务器将 `/api` 代理到 `http://localhost:8080`。管理员登录后可访问 `/admin/products` 和 `/admin/categories`。
 
 ## 构建与验证
 
@@ -103,7 +118,7 @@ npm --prefix project-implementation/apps/web run build
 
 | 检查 | 当前内容 | 如何解读结果 |
 | --- | --- | --- |
-| 自动化单元测试 | 前端 4 项、后端 9 项单测及应用集成测试 | 验证已有局部逻辑；结果以本次命令输出为准 |
+| 自动化单元测试 | 前端单元测试、页面挂载检查及后端单测与应用集成测试 | 验证已有局部逻辑；结果以本次命令输出为准 |
 | API 冒烟 | 身份账户与商品库存两个脚本 | 均需测试数据库；身份脚本从已打包 JAR 自行启动后端，商品脚本访问已运行的应用；步骤与数据影响见各模块运行手册 |
 | 成员与集成验收设计 | [审核总览](tests/cases/WEMOVE成员测试用例审核总览.md)中的 159 条用例 | 当前待审核、未执行；单元测试通过不改变这些用例的审核或执行状态 |
 
