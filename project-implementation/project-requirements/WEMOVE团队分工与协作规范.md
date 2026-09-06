@@ -137,7 +137,7 @@ flowchart TB
 | `apps/web/` | 唯一 Vue 前端及其依赖锁文件；`src/router.ts` 汇总路由，`src/features/` 按业务区分入口，`src/pages/` 保存页面 |
 | `apps/web/src/components/`、`services/`、`stores/` | 共用组件、请求设施和会话状态；按既有入口协作 |
 | `apps/api/` | 唯一 Spring Boot 后端，保持 Maven 的 `src/main/java`、`src/test/java` 标准结构 |
-| `apps/api/src/main/java/com/wemove/identity/` | 现有身份及公共设施；商品库存代码位于 `catalog/`。沿用现有 Java 包名，后续模块按业务边界接入 |
+| `apps/api/src/main/java/wemove/` | 统一应用根包；`identity/`、`catalog/`、`commerce/` 等业务平级，公共设施在 `platform/`，全局配置在 `config/` |
 | `apps/api/src/main/resources/db/migration/` | Flyway 的唯一迁移入口；全局有序，已应用后用新迁移修正；现有初始化资料随迁移管理 |
 | `contracts/openapi/` | 按业务保存 HTTP 契约，目前为 `identity.yaml` 与 `catalog.yaml`；尚无聚合文件或公共 schema 文件 |
 | `scripts/smoke/` | 身份与商品库存 API 冒烟脚本，使用专用测试数据 |

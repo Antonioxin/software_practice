@@ -58,7 +58,7 @@ README 提供入门指引，详细定义由上述文档维护。发现不一致�
 | 工作 | 实际入口 |
 | --- | --- |
 | 前端页面与组件 | [apps/web/src/](project-implementation/apps/web/src/)；商品模块入口为 [features/catalog/](project-implementation/apps/web/src/features/catalog/) 及商品相关页面 |
-| 后端业务服务 | [apps/api/src/main/java/](project-implementation/apps/api/src/main/java/)；现有 Java 包名保持兼容，商品库存代码位于 [identity/catalog/](project-implementation/apps/api/src/main/java/com/wemove/identity/catalog/) |
+| 后端业务服务 | [apps/api/src/main/java/](project-implementation/apps/api/src/main/java/)；根包为 `wemove`，身份与商品库存平级；商品库存代码位于 [catalog/](project-implementation/apps/api/src/main/java/wemove/catalog/) |
 | 数据库迁移 | [db/migration/](project-implementation/apps/api/src/main/resources/db/migration/)；V1 为身份底座，V2 为商品与库存 |
 | 接口契约 | [身份账户 OpenAPI](project-implementation/contracts/openapi/identity.yaml)、[商品库存 OpenAPI](project-implementation/contracts/openapi/catalog.yaml) |
 | 自动化测试 | [后端测试](project-implementation/apps/api/src/test/)、前端 `src/` 中的 `*.spec.ts`；单元测试随源码维护 |

@@ -1,6 +1,6 @@
 # 成员 B 完成情况审核
 
-目录整理说明（2026-09-06）：实现、文档和本机证据随模块移入 `project-implementation/`；本报告仅更新当前路径，原审核提交、发现和结论保持不变。
+目录整理说明（2026-09-06）：实现、文档和本机证据随模块移入 `project-implementation/`；源码链接已同步为平级的 `wemove.catalog`。本报告行号对应原审核提交，包声明与导入调整后可能偏移；原发现和结论保持不变。
 
 审核日期：2026-09-06。审核提交：`0157ab2`（PR #3），比较基线：`b83e7b5`。范围为 B 的三个提交 `6b45ce6`、`cc664c1`、`3f19fc4`，共 63 个文件，主要业务代码接入 `project-implementation` 的共同应用。
 
@@ -12,7 +12,7 @@
 
 ### R1 · P1：取消返还相信调用方数量，没有按原扣减记录恢复
 
-- 位置：[InventoryService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/InventoryService.java)，第 118—130 行，实际增量取值在第 128 行。
+- 位置：[InventoryService.java](../../../apps/api/src/main/java/wemove/catalog/service/InventoryService.java)，第 118—130 行，实际增量取值在第 128 行。
 - 复现：商品库存为 10，同一订单先调用 `deductForPayment(orderId, [(productId, 1)])`，再调用 `restoreForCancellation(orderId, [(productId, 99)])`。
 - **真实 MySQL 结果：库存依次为 10 → 9 → 108；扣减流水数量 1，返还流水数量 99。** 正确结果应为恢复至 10，或者拒绝与原扣减明细不符的返还请求。
 - 原因：只通过 `existsByProductIdAndSourceTypeAndSourceId` 确认存在扣减，未读取原扣减数量，直接将 `item.quantity()` 加回。
@@ -34,7 +34,7 @@
 
 ### R3 · P2：小数金额、年龄和库存被静默截断后保存
 
-- 位置：[CatalogDtos.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/api/CatalogDtos.java)，第 44—49、71—74 行；库存表单确认逻辑见 `AdminProductsPage.vue` 第 132—135 行。
+- 位置：[CatalogDtos.java](../../../apps/api/src/main/java/wemove/catalog/api/CatalogDtos.java)，第 44—49、71—74 行；库存表单确认逻辑见 `AdminProductsPage.vue` 第 132—135 行。
 - **真实 HTTP 复现：**创建草稿提交 `{"ageMin":3.9,"retailUnitPriceFen":100.9,"initialStock":1.5}`，返回 201，保存为年龄 3、价格 100 分、库存 1。库存调整提交 `quantity:1.5` 返回 200，库存从 10 变为 11。
 - 原因：整数 DTO 在当前 Jackson 配置下接受小数并截断，业务校验看到的已经是整数。库存确认按钮位于表单外并直接调用提交函数，也没有整数检查，不能依赖浏览器表单步长限制。
 - 修复方向：服务端禁止小数强制转整数，明确返回字段错误；前端库存输入使用 `Number.isInteger` 校验。
@@ -42,7 +42,7 @@
 
 ### R4 · P2：同一幂等键换商品仍执行成功
 
-- 位置：[InventoryService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/InventoryService.java)，第 50—53 行；上下架同类问题见 [CatalogService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/CatalogService.java) 第 182—185 行。
+- 位置：[InventoryService.java](../../../apps/api/src/main/java/wemove/catalog/service/InventoryService.java)，第 50—53 行；上下架同类问题见 [CatalogService.java](../../../apps/api/src/main/java/wemove/catalog/service/CatalogService.java) 第 182—185 行。
 - **真实 HTTP 复现：**同管理员使用同一个 UUID 和相同增加 2 件的请求体，先对商品 A 操作，再对商品 B 操作，两次均返回 200，B 库存也增加 2。
 - 原因：资源 ID 被拼进 `operationId`，两个商品成为两个独立去重空间。
 - 期望：第二次返回 `409 IDEMPOTENCY_CONFLICT`。接口契约 6.2 明确 operationId 只表示操作模板，资源 ID 应进入请求摘要。
@@ -50,7 +50,7 @@
 
 ### R5 · P2：并发同键请求返回唯一性冲突，而不是成功重放
 
-- 位置：[InventoryService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/InventoryService.java)，第 52—64 行。
+- 位置：[InventoryService.java](../../../apps/api/src/main/java/wemove/catalog/service/InventoryService.java)，第 52—64 行。
 - **真实 HTTP 复现：**8 个并发请求，对同商品、同键、同请求体增加 2 件；1 个返回 200，7 个返回 `409 UNIQUE_CONFLICT`。库存总共只增加 2 件。
 - 原因：各请求在取商品锁之前检查幂等记录，等待者获得锁后没有重新协调幂等结果，直到写入唯一约束时才失败回滚。
 - 修复方向：并发同键请求等待完成后重放已成功结果；超过等待预算可返回契约规定的 `REQUEST_IN_PROGRESS`，不能报告为新操作的唯一性失败。
@@ -58,7 +58,7 @@
 
 ### R6 · P2：分类更新响应携带旧版本
 
-- 位置：[CatalogService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/CatalogService.java)，第 240—244 行。
+- 位置：[CatalogService.java](../../../apps/api/src/main/java/wemove/catalog/service/CatalogService.java)，第 240—244 行。
 - **真实 HTTP 复现：**创建分类版本 0；PATCH 修改成功后响应仍为 0；重新 GET 已为 1。直接使用 PATCH 返回的版本继续修改，返回 409。
 - 原因：在 JPA 将版本递增写入数据库之前，已构造不可变响应 DTO。
 - 修复方向：构造响应前 flush，返回修改后的版本；增加连续两次更新的接口测试。
@@ -82,14 +82,14 @@
 
 ### R9 · P2：非法查询类型被当成服务内部错误
 
-- 位置：[PublicCatalogController.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/api/PublicCatalogController.java)，第 20—26 行；需与 A 的统一异常处理协同修复。
+- 位置：[PublicCatalogController.java](../../../apps/api/src/main/java/wemove/catalog/api/PublicCatalogController.java)，第 20—26 行；需与 A 的统一异常处理协同修复。
 - **真实 HTTP 复现：**`/products?page=abc`、`age=3.5`、`categoryId=bad` 均返回 `500 INTERNAL_ERROR`，提示服务暂时不可用。
 - 期望：接口契约 2.2 规定非法查询类型或范围返回 422 并指出问题字段。
 - 修复方向：为请求参数类型转换异常补充统一映射；有效参数校验已在控制器内，转换失败发生在进入控制器之前。
 
 ### R10 · P2：特殊关键词被解释为通配符
 
-- 位置：[CatalogService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/CatalogService.java)，第 55—56 行；后台查询第 118—119 行同样存在。
+- 位置：[CatalogService.java](../../../apps/api/src/main/java/wemove/catalog/service/CatalogService.java)，第 55—56 行；后台查询第 118—119 行同样存在。
 - **真实 HTTP 复现：**搜索 `%` 或 `_` 返回全部已发布商品，而测试数据的名称和 SKU 不包含这两个字符。
 - 原因：用户关键词直接拼入 SQL LIKE 模式，没有将 `%`、`_` 等作为字面字符转义。
 - 修复方向：转义 LIKE 通配字符并明确 escape 字符，保留既有参数绑定。
@@ -97,7 +97,7 @@
 
 ## 2. C 接入前还需补齐的保证
 
-[CatalogIntegrationService.java](../../../apps/api/src/main/java/com/wemove/identity/catalog/service/CatalogIntegrationService.java) 第 32—46 行的 `getRetailSnapshot` 使用普通 `findById`，未锁定商品，也没有在写订单时核验版本的配套机制。`@Transactional(readOnly=true)` 只是事务设置，不会自动阻止其他事务修改价格或上下架状态。
+[CatalogIntegrationService.java](../../../apps/api/src/main/java/wemove/catalog/service/CatalogIntegrationService.java) 第 32—46 行的 `getRetailSnapshot` 使用普通 `findById`，未锁定商品，也没有在写订单时核验版本的配套机制。`@Transactional(readOnly=true)` 只是事务设置，不会自动阻止其他事务修改价格或上下架状态。
 
 接口契约 7.1、7.3 要求快照在受保护读取边界内核验，价变与结算创建保护同一商品记录。当前实现不能单独提供这一保证。B 应与 C 选择有序行锁或版本校验方案，并完成“读取商品后另一事务改价／下架”的联合测试。
 
