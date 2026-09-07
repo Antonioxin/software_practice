@@ -119,7 +119,11 @@ class DealershipWorkflowIntegrationTest {
         mvc.perform(get("/api/v1/channels?countryOrRegion=中国&city=上海市"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))
-                .andExpect(jsonPath("$.data.items[0].name").value("测试独立渠道"));
+                .andExpect(jsonPath("$.data.items[0].name").value("测试独立渠道"))
+                .andExpect(jsonPath("$.data.items[0].companyId").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.data.items[0].published").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.data.items[0].version").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.data.items[0].updatedAt").doesNotHaveJsonPath());
     }
 
     private Cookie login(String email, String password) throws Exception {

@@ -198,6 +198,15 @@ public final class DealershipDtos {
             String website,
             UUID companyId) {}
 
+    public record PublicChannelView(
+            UUID id,
+            String name,
+            String countryOrRegion,
+            String city,
+            String address,
+            String phone,
+            String website) {}
+
     public record ChannelView(
             UUID id,
             String name,

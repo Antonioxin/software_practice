@@ -1,7 +1,7 @@
 import { api, newIdempotencyKey } from '../../services/http'
-import type { Channel, Company, DealerApplication, DealerProduct, Inquiry, PageResult } from './types'
+import type { Channel, Company, DealerApplication, DealerProduct, Inquiry, PageResult, PublicChannel } from './types'
 
-export const getChannels = async (query = '') => (await api<PageResult<Channel>>(`/channels${query ? `?${query}` : ''}`)).data
+export const getChannels = async (query = '') => (await api<PageResult<PublicChannel>>(`/channels${query ? `?${query}` : ''}`)).data
 export const getApplications = async (admin = false, query = '') => (await api<PageResult<DealerApplication>>(`${admin ? '/admin' : ''}/dealer-applications${query ? `?${query}` : ''}`)).data
 export const getApplication = async (id: string, admin = false) => (await api<DealerApplication>(`${admin ? '/admin' : ''}/dealer-applications/${id}`)).data
 export const createApplication = async (body: unknown) => (await api<DealerApplication>('/dealer-applications', { method: 'POST', headers: { 'Idempotency-Key': newIdempotencyKey() }, body: JSON.stringify(body) })).data

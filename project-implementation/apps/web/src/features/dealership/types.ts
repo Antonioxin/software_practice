@@ -35,9 +35,12 @@ export interface Company {
   cooperationEmail: string; website?: string | null; cooperationStatus: CooperationStatus; internalNote?: string | null
   version: number; createdAt: string; updatedAt: string
 }
-export interface Channel {
+export interface PublicChannel {
   id: string; name: string; countryOrRegion: string; city: string; address: string; phone: string
-  website?: string | null; companyId?: string | null; published: boolean; version: number; updatedAt: string
+  website?: string | null
+}
+export interface Channel extends PublicChannel {
+  companyId?: string | null; published: boolean; version: number; updatedAt: string
 }
 
 export const applicationLabels: Record<string, string> = { PENDING: '待审核', APPROVED: '已通过', REJECTED: '已驳回' }

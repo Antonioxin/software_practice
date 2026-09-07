@@ -3,10 +3,10 @@ import { onMounted, ref } from 'vue'
 import BrandMark from '../../components/BrandMark.vue'
 import PublicShell from '../../components/PublicShell.vue'
 import { getChannels } from '../../features/dealership/api'
-import type { Channel } from '../../features/dealership/types'
+import type { PublicChannel } from '../../features/dealership/types'
 import '../../features/dealership/style.css'
 
-const channels = ref<Channel[]>([])
+const channels = ref<PublicChannel[]>([])
 const country = ref('')
 const city = ref('')
 const loading = ref(true)

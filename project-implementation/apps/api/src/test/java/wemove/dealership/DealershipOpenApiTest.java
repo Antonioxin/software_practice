@@ -18,5 +18,15 @@ class DealershipOpenApiTest {
                 .contains("/channels", "/dealer-applications", "/dealer/catalog",
                         "/inquiries", "/admin/dealer-applications/{id}/review",
                         "/admin/companies/{id}/suspend", "/admin/channels/{id}/publish");
+
+        Map<?, ?> components = (Map<?, ?>) document.get("components");
+        Map<?, ?> schemas = (Map<?, ?>) components.get("schemas");
+        Map<?, ?> publicChannel = (Map<?, ?>) schemas.get("PublicChannel");
+        Map<?, ?> publicProperties = (Map<?, ?>) publicChannel.get("properties");
+        java.util.Set<String> publicPropertyNames = publicProperties.keySet().stream()
+                .map(Object::toString).collect(java.util.stream.Collectors.toSet());
+        assertThat(publicChannel.get("additionalProperties")).isEqualTo(false);
+        assertThat(publicPropertyNames).contains("id", "name", "countryOrRegion", "city", "address", "phone", "website")
+                .doesNotContain("companyId", "published", "version", "updatedAt");
     }
 }

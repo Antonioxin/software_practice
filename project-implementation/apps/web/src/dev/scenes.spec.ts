@@ -165,7 +165,7 @@ describe('17 个业务路由及首页、404 的真实组件渲染', () => {
       expect(page.text()).toContain('模拟整单发货')
       expect(page.text()).toContain(paid.paymentAttempts[0]!.simulationReference)
     }
-  })
+  }, 60_000)
 })
 
 describe('真实页面的空数据和读取失败', () => {

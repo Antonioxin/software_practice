@@ -339,11 +339,11 @@ public class DealershipService implements DealershipMetricsPort {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ChannelView> publicChannels(String country, String city, int page, int pageSize) {
+    public PageResult<PublicChannelView> publicChannels(String country, String city, int page, int pageSize) {
         page(page, pageSize);
         String c = blank(country);
         String cityValue = blank(city);
-        return new PageResult<>(repository.publicChannels(c, cityValue, (page - 1) * pageSize, pageSize).stream().map(this::channelView).toList(),
+        return new PageResult<>(repository.publicChannels(c, cityValue, (page - 1) * pageSize, pageSize).stream().map(this::publicChannelView).toList(),
                 page, pageSize, repository.countPublicChannels(c, cityValue));
     }
 
@@ -355,12 +355,12 @@ public class DealershipService implements DealershipMetricsPort {
     }
 
     @Transactional(readOnly = true)
-    public ChannelView publicChannel(UUID id) {
+    public PublicChannelView publicChannel(UUID id) {
         DealerChannel channel = repository.channel(id, false);
         if (!channel.published) throw DealershipRules.notFound();
         if (channel.companyId != null && !"ACTIVE".equals(repository.company(channel.companyId, false).cooperationStatus))
             throw DealershipRules.notFound();
-        return channelView(channel);
+        return publicChannelView(channel);
     }
 
     @Transactional(readOnly = true)
@@ -599,6 +599,11 @@ public class DealershipService implements DealershipMetricsPort {
     private ChannelView channelView(DealerChannel c) {
         return new ChannelView(c.id, c.name, c.countryOrRegion, c.city, c.address, c.phone,
                 c.website, c.companyId, c.published, c.version, c.updatedAt);
+    }
+
+    private PublicChannelView publicChannelView(DealerChannel c) {
+        return new PublicChannelView(c.id, c.name, c.countryOrRegion, c.city, c.address, c.phone,
+                c.website);
     }
 
     private void audit(UUID actor, String action, String type, UUID id, String reason, Instant at) {

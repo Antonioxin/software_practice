@@ -49,7 +49,7 @@ public class DealershipController {
     }
 
     @GetMapping("/channels")
-    public ApiEnvelope<PageResult<ChannelView>> publicChannels(
+    public ApiEnvelope<PageResult<PublicChannelView>> publicChannels(
             @RequestParam(required = false) String countryOrRegion,
             @RequestParam(required = false) String city,
             @RequestParam(defaultValue = "1") int page,
@@ -58,7 +58,7 @@ public class DealershipController {
     }
 
     @GetMapping("/channels/{id}")
-    public ApiEnvelope<ChannelView> publicChannel(@PathVariable UUID id) {
+    public ApiEnvelope<PublicChannelView> publicChannel(@PathVariable UUID id) {
         return ApiEnvelope.of(dealership.publicChannel(id));
     }
 

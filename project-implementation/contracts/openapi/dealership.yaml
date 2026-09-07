@@ -23,7 +23,7 @@ paths:
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
       responses:
-        '200': { $ref: '#/components/responses/ChannelPage' }
+        '200': { $ref: '#/components/responses/PublicChannelPage' }
   /channels/{id}:
     get:
       tags: [Channels]
@@ -31,7 +31,7 @@ paths:
       security: []
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
-        '200': { $ref: '#/components/responses/Channel' }
+        '200': { $ref: '#/components/responses/PublicChannel' }
         '404': { $ref: '#/components/responses/Problem' }
   /dealer-applications:
     post:
@@ -258,6 +258,8 @@ components:
     Problem: { description: RFC 9457 Problem Details, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     Application: { description: 申请详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/Application' } } } } } }
     Inquiry: { description: 询价详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/Inquiry' } } } } } }
+    PublicChannel: { description: 公开渠道详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/PublicChannel' } } } } } }
+    PublicChannelPage: { description: 公开渠道分页, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/PublicChannelPage' } } } } } }
     Channel: { description: 渠道详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/Channel' } } } } } }
     ChannelPage: { description: 渠道分页, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/ChannelPage' } } } } } }
   schemas:
@@ -352,9 +354,21 @@ components:
         closeReason: { type: [string, 'null'] }
         items: { type: array, items: { type: object } }
         history: { type: array, items: { type: object } }
+    PublicChannel:
+      type: object
+      additionalProperties: false
+      required: [id, name, countryOrRegion, city, address, phone]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        countryOrRegion: { type: string }
+        city: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        website: { type: [string, 'null'], format: uri }
     Channel:
       type: object
-      required: [id, name, countryOrRegion, city, address, phone, published, version]
+      required: [id, name, countryOrRegion, city, address, phone, published, version, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -366,6 +380,8 @@ components:
         companyId: { type: [string, 'null'], format: uuid }
         published: { type: boolean }
         version: { type: integer }
+        updatedAt: { type: string, format: date-time }
+    PublicChannelPage: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/PublicChannel' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } }
     ChannelPage: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Channel' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } }
     ApplicationPageEnvelope: { type: object, properties: { data: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Application' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } } } }
     InquiryPageEnvelope: { type: object, properties: { data: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Inquiry' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } } } }
