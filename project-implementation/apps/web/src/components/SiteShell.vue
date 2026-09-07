@@ -44,11 +44,11 @@ async function signOut() {
 </script>
 <template>
   <div :class="['site-root', 'wm-portal', { 'wm-admin': admin }]">
-    <header class="wm-header glass-panel">
+    <header class="wm-header">
       <BrandMark /><span class="wm-portal-label">{{ session.isAdmin ? 'WORKSPACE / 管理工作台' : 'MY SPACE / 个人中心' }}</span>
       <div class="wm-header-actions">
         <RouterLink class="wm-account-button" to="/products" aria-label="返回商店"><SketchIcon name="arrow-left" /><span>返回商店</span></RouterLink>
-        <span class="wm-persona"><SketchIcon name="user" />{{ session.actor?.nickname }}</span>
+        <span class="wm-persona"><SketchIcon name="user" /><span class="wm-persona-name">{{ session.actor?.nickname }}</span></span>
         <button class="wm-signout" type="button" @click="signOut">退出</button>
         <button class="wm-menu-button wm-icon-button" type="button" aria-controls="workspace-navigation" :aria-expanded="mobileOpen" aria-label="展开工作台导航" @click="mobileOpen = !mobileOpen"><SketchIcon :name="mobileOpen ? 'close' : 'menu'" /></button>
       </div>

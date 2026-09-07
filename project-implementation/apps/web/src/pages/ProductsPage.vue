@@ -4,12 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import SketchIcon from '../components/SketchIcon.vue'
 import PublicShell from '../components/PublicShell.vue'
 import { buildCatalogQuery, formatAgeRange, formatCny } from '../features/catalog/presentation'
+import { productIllustrationSrc } from '../features/catalog/productImages'
 import { api, ApiProblem } from '../services/http'
 import type { Category, PageMeta, ProductCard, ProductOptions } from '../types'
 
 const route = useRoute()
 const router = useRouter()
 const products = ref<ProductCard[]>([])
+const failedIllustrations = ref(new Set<string>())
 const categories = ref<Category[]>([])
 const options = ref<ProductOptions>({ playTypes: [], scenes: [] })
 const meta = ref<PageMeta>({ page: 1, pageSize: 12, totalItems: 0, totalPages: 0 })
@@ -104,6 +106,14 @@ function tileColor(product: ProductCard) {
   const index = [...product.sku].reduce((sum, character) => sum + character.charCodeAt(0), 0)
   return tileColors[index % tileColors.length]
 }
+function illustrationSrc(product: ProductCard) {
+  const src = productIllustrationSrc(product.sku)
+  return src && !failedIllustrations.value.has(src) ? src : null
+}
+function illustrationFailed(sku: string) {
+  const src = productIllustrationSrc(sku)
+  if (src) failedIllustrations.value.add(src)
+}
 
 onMounted(loadReferenceData)
 watch(() => route.query, loadProducts, { immediate: true })
@@ -158,12 +168,21 @@ watch(() => route.query, loadProducts, { immediate: true })
         <div v-else-if="error" class="shop-state" role="alert"><SketchIcon name="help" :size="66" /><h2>暂时无法取得商品</h2><p>{{ error }}</p><button class="shop-state-action" type="button" @click="loadProducts">重新加载</button></div>
         <div v-else-if="!products.length" class="shop-state"><SketchIcon name="search" :size="66" /><h2>未找到符合条件的商品</h2><p>试试减少筛选条件，或返回全部商品。</p><button class="shop-state-action" type="button" @click="clearFilters">查看全部商品</button></div>
         <div v-else class="shop-grid" aria-label="商品列表">
-          <RouterLink v-for="product in products" :key="product.id" class="shop-tile" :style="{ backgroundColor: tileColor(product) }" :to="{ path: `/products/${product.id}`, query: route.query }">
-            <div class="shop-tile-top"><span>{{ product.category.name }}</span><span>{{ formatAgeRange(product.ageMin, product.ageMax) }}</span></div>
-            <div class="shop-tile-art" aria-hidden="true"><SketchIcon name="package" :size="128" /><span>商品示意</span></div>
-            <h3 class="shop-name-label"><span>{{ product.name }}</span><SketchIcon name="arrow-left" class="arrow-forward" :size="24" /></h3>
-            <p class="shop-product-summary">{{ product.summary }}</p>
-            <div class="shop-tile-bottom"><div><span :class="{ 'shop-out-of-stock': !product.inStock }">{{ product.inStock ? '有货' : '暂时缺货' }}</span><span class="shop-sku">SKU {{ product.sku }}</span></div><strong>{{ formatCny(product.retailUnitPriceFen) }}</strong></div>
+          <RouterLink v-for="(product, index) in products" :key="product.id" class="shop-tile" :to="{ path: `/products/${product.id}`, query: route.query }">
+            <div class="shop-polaroid">
+              <div class="shop-photo-window" :style="{ backgroundColor: tileColor(product) }">
+                <img v-if="illustrationSrc(product)" class="shop-product-image" :src="illustrationSrc(product) ?? undefined" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" :loading="index < 2 ? 'eager' : 'lazy'" decoding="async" @error="illustrationFailed(product.sku)" />
+                <div v-else class="shop-photo-placeholder" aria-hidden="true"><SketchIcon name="package" :size="128" /><span>商品示意</span></div>
+              </div>
+              <img class="shop-polaroid-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
+              <h3 class="shop-name-label" :title="product.name"><span>{{ product.name }}</span></h3>
+            </div>
+            <div class="shop-product-info">
+              <p v-if="illustrationSrc(product)" class="shop-image-note">AI 商品示意 · 非实拍</p>
+              <div class="shop-tile-top"><span>{{ product.category.name }}</span><span>{{ formatAgeRange(product.ageMin, product.ageMax) }}</span></div>
+              <p class="shop-product-summary">{{ product.summary }}</p>
+              <div class="shop-tile-bottom"><div><span :class="{ 'shop-out-of-stock': !product.inStock }">{{ product.inStock ? '有货' : '暂时缺货' }}</span><span class="shop-sku">SKU {{ product.sku }}</span></div><strong>{{ formatCny(product.retailUnitPriceFen) }}</strong></div>
+            </div>
           </RouterLink>
         </div>
         <nav v-if="!loading && !error && meta.totalPages > 1" class="shop-pagination" aria-label="商品分页">
@@ -179,7 +198,7 @@ watch(() => route.query, loadProducts, { immediate: true })
 <style scoped>
 .shop-layout { --shop-yellow: #ffe72c; --shop-ink: #242a26; display: grid; grid-template-columns: 250px minmax(0, 1fr); width: min(1440px, calc(100% - 48px)); margin: 28px auto 54px; background: #fff; color: var(--shop-ink); }
 .shop-directory { min-width: 0; background: var(--shop-yellow); }
-.shop-directory-inner { position: sticky; top: 118px; max-height: calc(100dvh - 138px); overflow-y: auto; padding: 35px 27px; scrollbar-width: thin; scrollbar-color: #242a2655 transparent; }
+.shop-directory-inner { position: sticky; top: calc(var(--header-height) + 20px); max-height: calc(100dvh - var(--header-height) - 40px); overflow-y: auto; padding: 35px 27px; scrollbar-width: thin; scrollbar-color: #242a2655 transparent; }
 .shop-heading p { margin: 0 0 17px; font: 600 15px/1.4 var(--font-display); letter-spacing: 1.2px; }
 .shop-heading h1 { margin: 0 0 16px; font: 500 36px/1.35 var(--font-body); letter-spacing: -1px; }
 .shop-heading > span { display: block; font-size: 16px; line-height: 1.9; }
@@ -214,19 +233,25 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-toolbar > div > span { font-size: 14px; color: #62685e; }
 .shop-toolbar label { display: flex; align-items: center; gap: 12px; font-size: 14px; white-space: nowrap; }
 .shop-toolbar select { width: 155px; min-height: 42px; border: 0; border-bottom: 1px solid #a0a79c; border-radius: 0; padding: 8px 2px; background: transparent; color: var(--shop-ink); font-size: 15px; }
-.shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 0; }
-.shop-tile { display: flex; flex-direction: column; min-width: 0; min-height: 480px; padding: 26px 30px 25px; color: var(--shop-ink); text-decoration: none; }
-.shop-tile:focus-visible { position: relative; z-index: 1; outline: 3px solid #294c91; outline-offset: -5px; }
+.shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 48px 32px; padding: 30px 32px 48px; background: #f2f1ec; }
+.shop-tile { display: flex; flex-direction: column; min-width: 0; width: 100%; max-width: 460px; justify-self: center; container-type: inline-size; color: var(--shop-ink); text-decoration: none; }
+.shop-tile:focus-visible { outline: 3px solid #294c91; outline-offset: 6px; border-radius: 3px; }
+.shop-polaroid { position: relative; isolation: isolate; width: 100%; aspect-ratio: 1149 / 1369; }
+.shop-polaroid-paper { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Coordinates follow the supplied 1149 × 1369 PNG. The window extends 3px under the paper edge. */
+.shop-photo-window { position: absolute; left: 11.9234%; top: 9.1308%; width: 76.5013%; height: 66.7641%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; overflow: hidden; }
+.shop-product-image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.shop-photo-placeholder { display: flex; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.shop-photo-window .sketch-icon { width: 34%; height: auto; max-width: 128px; }
+.shop-photo-placeholder > span { color: #3f493e; font-size: 12px; letter-spacing: 1px; }
+.shop-name-label { position: absolute; z-index: 2; left: 13.0548%; top: 78.8897%; width: 74.4125%; height: 13.0022%; display: flex; align-items: center; justify-content: center; margin: 0; font: 400 25px/1.25 var(--font-hand); font-size: clamp(16px, 6cqi, 28px); text-align: center; }
+.shop-name-label > span { min-width: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.shop-product-info { display: flex; flex-direction: column; flex: 1; padding: 5px 7% 0; }
+.shop-image-note { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .shop-tile-top { display: flex; align-items: start; justify-content: space-between; gap: 16px; font-size: 14px; line-height: 1.6; }
 .shop-tile-top > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .shop-tile-top > span:last-child { flex-shrink: 0; }
-.shop-tile-art { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 215px; padding: 30px 0 24px; }
-.shop-tile-art .sketch-icon { width: 120px; height: 120px; }
-.shop-tile-art > span { color: #3f493e; font-size: 12px; letter-spacing: 1px; }
-.shop-name-label { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 70px; margin: 0; padding: 16px 23px; background: var(--shop-yellow); font: 500 25px/1.5 var(--font-body); }
-.shop-name-label > span { min-width: 0; overflow-wrap: anywhere; }
-.shop-tile:hover .shop-name-label { background: #fff; }
-.shop-product-summary { margin: 17px 0 20px; font-size: 15px; line-height: 1.8; color: #3f493e; overflow-wrap: anywhere; }
+.shop-product-summary { margin: 12px 0 18px; font-size: 15px; line-height: 1.8; color: #3f493e; overflow-wrap: anywhere; }
 .shop-tile-bottom { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 13px; border-top: 1px solid #242a262b; }
 .shop-tile-bottom > div { display: grid; gap: 5px; min-width: 0; font-size: 14px; }
 .shop-sku { color: #3f493e; font: 500 13px/1.4 var(--font-display); overflow-wrap: anywhere; }
@@ -241,10 +266,7 @@ watch(() => route.query, loadProducts, { immediate: true })
 @media (max-width: 1150px) {
   .shop-layout { grid-template-columns: 220px minmax(0, 1fr); }
   .shop-directory-inner { padding: 30px 22px; }
-  .shop-tile { min-height: 430px; padding: 23px; }
-  .shop-name-label { padding: 14px 16px; font-size: 22px; }
-  .shop-tile-art { min-height: 185px; }
-  .shop-tile-art .sketch-icon { width: 96px; height: 96px; }
+  .shop-grid { gap: 40px 24px; padding: 25px 24px 40px; }
   .shop-toolbar { gap: 16px; padding: 18px 23px; }
 }
 @media (max-width: 900px) {
@@ -257,10 +279,8 @@ watch(() => route.query, loadProducts, { immediate: true })
   .shop-toolbar { flex-wrap: wrap; gap: 10px; }
   .shop-toolbar > div { width: 100%; justify-content: space-between; }
   .shop-toolbar label { margin-left: auto; }
-  .shop-tile { padding: 20px 17px; min-height: 410px; }
+  .shop-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .shop-tile-top { flex-wrap: wrap; gap: 4px; font-size: 13px; }
-  .shop-name-label { padding: 12px; font-size: 21px; gap: 8px; }
-  .shop-name-label .sketch-icon { width: 19px; height: 19px; }
   .shop-product-summary { font-size: 14px; }
 }
 @media (max-width: 700px) {
@@ -285,19 +305,14 @@ watch(() => route.query, loadProducts, { immediate: true })
   .shop-toolbar h2 { font-size: 22px; }
   .shop-toolbar label { gap: 8px; }
   .shop-toolbar select { width: 140px; }
-  .shop-tile { min-height: 410px; padding: 20px 18px; }
-  .shop-name-label { font-size: 21px; }
+  .shop-grid { padding: 24px 18px 36px; }
   .shop-state { min-height: 380px; padding: 38px 22px; }
   .shop-state h2 { font-size: 22px; }
   .shop-pagination { gap: 10px; padding: 20px; font-size: 13px; }
 }
 @media (max-width: 520px) {
-  .shop-grid { grid-template-columns: minmax(0, 1fr); }
-  .shop-tile { min-height: 440px; padding: 24px; }
+  .shop-grid { gap: 36px; padding: 20px 12px 32px; }
   .shop-tile-top { font-size: 14px; }
-  .shop-tile-art { min-height: 190px; }
-  .shop-tile-art .sketch-icon { width: 115px; height: 115px; }
-  .shop-name-label { min-height: 65px; font-size: 24px; padding: 15px 20px; }
   .shop-product-summary { font-size: 15px; }
   .shop-toolbar > div { width: 100%; }
   .shop-toolbar label { width: 100%; justify-content: space-between; margin: 0; }

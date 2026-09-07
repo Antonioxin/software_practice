@@ -24,7 +24,7 @@ const showPreviewLink = import.meta.env.DEV && !isDevelopmentPreview
 
 <style scoped>
 .home-page { width: min(1280px, calc(100% - 64px)); margin: auto; }
-.home-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: min(780px, calc(100svh - 125px)); padding: 58px 0 68px; text-align: center; }
+.home-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: min(780px, calc(100svh - var(--header-height))); padding: 58px 0 68px; text-align: center; }
 .home-hero > .wm-eyebrow { margin: 0 0 25px; color: #69716b; font-size: 14px; letter-spacing: 2px; }
 .home-hero h1 { width: 100%; margin: 0 0 32px; color: var(--ink); font: 400 clamp(86px, 11.8vw, 168px)/.93 var(--font-hand); letter-spacing: -3px; }
 .home-hero h1 span { display: block; }
@@ -37,7 +37,7 @@ const showPreviewLink = import.meta.env.DEV && !isDevelopmentPreview
 .home-dev-link { display: flex; justify-content: flex-end; gap: 14px; flex-wrap: wrap; margin: 0 0 24px; color: var(--muted); font-size: 12px; }
 @media (max-width: 760px) {
   .home-page { width: calc(100% - 36px); }
-  .home-hero { min-height: min(720px, calc(100svh - 110px)); padding: 64px 0 58px; }
+  .home-hero { min-height: min(720px, calc(100svh - var(--header-height))); padding: 64px 0 58px; }
   .home-hero > .wm-eyebrow { margin-bottom: 30px; font-size: 12px; letter-spacing: 1.6px; }
   .home-hero h1 { font-size: clamp(64px, 13.8vw, 104px); letter-spacing: -1.5px; line-height: 1.05; margin-bottom: 30px; }
   .home-chinese { font-size: 20px; letter-spacing: 1px; }

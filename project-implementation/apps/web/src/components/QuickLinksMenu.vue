@@ -6,7 +6,7 @@ import SketchIcon from './SketchIcon.vue'
 
 const session = useSessionStore()
 const route = useRoute()
-const open = ref(false)
+const open = defineModel<boolean>('open', { default: false })
 const root = ref<HTMLElement | null>(null)
 const trigger = ref<HTMLButtonElement | null>(null)
 const panelId = `quick-links-${useId()}`
@@ -52,10 +52,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outsidePointer
 
 <style scoped>
 .wm-quick-links { position: relative; flex: 0 0 auto; }
-.wm-quick-trigger { display: inline-flex; width: 110px; min-height: 42px; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--line, #dce0df); border-radius: 22px; padding: 9px 11px; color: var(--ink, #292e32); background: rgb(255 255 255 / 66%); font: 14px/1.4 var(--font-body, system-ui, sans-serif); cursor: pointer; white-space: nowrap; }
-.wm-quick-trigger:hover, .wm-quick-trigger[aria-expanded="true"] { background: #edf0ec; }
+.wm-quick-trigger { display: inline-flex; min-width: 84px; min-height: 48px; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 0; padding: 0 4px; color: #596168; background: transparent; font: 13px/1.4 var(--font-body, system-ui, sans-serif); cursor: pointer; white-space: nowrap; }
+.wm-quick-trigger:hover, .wm-quick-trigger[aria-expanded="true"] { color: var(--ink, #292e32); }
 .wm-quick-chevron-open { transform: rotate(180deg); }
-.wm-quick-panel { position: absolute; z-index: 45; top: calc(100% + 12px); right: 0; width: 278px; max-width: calc(100vw - 32px); padding: 7px; border: 1px solid rgb(255 255 255 / 95%); border-radius: 18px; background: rgb(253 254 250 / 96%); box-shadow: 0 12px 38px rgb(45 57 47 / 13%), inset 0 1px 0 white; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.wm-quick-panel { position: absolute; z-index: 45; top: calc(100% + 2px); right: 0; width: 278px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 64px); overflow-y: auto; padding: 7px; border: 1px solid rgb(60 70 74 / 8%); border-radius: 0 0 12px 12px; background: rgb(249 251 252 / 94%); box-shadow: 0 12px 28px rgb(45 57 47 / 9%); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
 .wm-quick-link { display: flex; align-items: center; gap: 12px; min-height: 67px; padding: 11px 12px; border-radius: 11px; color: var(--ink, #292e32); text-decoration: none; }
 .wm-quick-link + .wm-quick-link { border-top: 1px solid rgb(220 224 223 / 52%); }
 .wm-quick-link:hover, .wm-quick-link:focus-visible { background: #edf0ec; }
@@ -66,8 +66,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outsidePointer
 .wm-quick-trigger:focus-visible, .wm-quick-link:focus-visible { outline: 2px solid #426bac; outline-offset: 3px; }
 @media (max-width: 640px) {
   .wm-quick-links { position: static; }
-  .wm-quick-trigger { width: 80px; min-height: 40px; gap: 3px; padding: 8px 5px; font-size: 12px; }
+  .wm-quick-trigger { min-width: 76px; gap: 3px; padding: 0 4px; font-size: 12px; }
   .wm-quick-trigger .sketch-icon { width: 13px; height: 13px; }
-  .wm-quick-panel { top: calc(100% + 8px); right: 0; left: 0; width: auto; max-width: none; }
+  .wm-quick-panel { top: 100%; right: 0; left: 0; width: auto; max-width: none; max-height: calc(100dvh - var(--header-height, 52px)); padding: 10px 16px 16px; border-radius: 0; }
 }
 </style>

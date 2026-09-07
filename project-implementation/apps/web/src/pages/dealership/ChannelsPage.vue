@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import BrandMark from '../../components/BrandMark.vue'
 import PublicShell from '../../components/PublicShell.vue'
 import { getChannels } from '../../features/dealership/api'
 import type { Channel } from '../../features/dealership/types'
@@ -25,9 +26,14 @@ onMounted(load)
 
 <template>
   <PublicShell>
-    <section class="dealer-public-hero">
-      <p>OFFICIAL CHANNELS</p><h1>在你所在的城市<br />找到 WEMOVE</h1>
-      <span>这里只展示管理员明确发布的公开渠道；合作申请中的联系方式不会自动公开。</span>
+    <section class="dealer-public-hero" aria-labelledby="channels-title">
+      <div class="dealer-hero-copy">
+        <p class="dealer-hero-eyebrow">OFFICIAL CHANNELS</p>
+        <h1 id="channels-title" lang="en">Find your<br />WEMOVE.</h1>
+        <p class="dealer-hero-subtitle">在你所在的城市，找到 WEMOVE</p>
+        <p class="dealer-hero-note">这里只展示管理员明确发布的公开渠道；合作申请中的联系方式不会自动公开。</p>
+      </div>
+      <BrandMark class="dealer-hero-brand" />
     </section>
     <section class="dealer-public-content">
       <form class="dealer-filter" @submit.prevent="load">

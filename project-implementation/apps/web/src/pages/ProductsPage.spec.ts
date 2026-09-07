@@ -241,3 +241,57 @@ describe('筛选参考数据和并发查询的恢复能力', () => {
     expect(page.get('.shop-toolbar').text()).toContain('1 件商品')
   })
 })
+
+describe('拍立得商品示意图与缺失回退', () => {
+  it('六个明确 SKU 使用对应展示图，并在相纸外标明 AI 示意而非实拍', async () => {
+    mockedApi.mockImplementation(async (path) => path.startsWith('/products?')
+      ? { data: fixtures.products }
+      : responseFor(path))
+    const page = await render()
+    const cards = page.findAll('.shop-tile')
+    const imageNames = ['balance-stones', 'rainbow-arch', 'ring-toss', 'team-board', 'forest-kit', 'skip-rope']
+    expect(cards).toHaveLength(imageNames.length)
+    for (const [index, card] of cards.entries()) {
+      const image = card.get('.shop-photo-window img.shop-product-image')
+      expect(image.attributes('src')).toBe(`/assets/products/${imageNames[index]}.png`)
+      expect(image.attributes('alt')).toBe(`${fixtures.products[index]!.name}的 AI 生成商品示意图（非实拍）`)
+      expect(card.get('.shop-photo-window').attributes('aria-hidden')).toBeUndefined()
+      expect(card.get('.shop-name-label').text()).toBe(fixtures.products[index]!.name)
+      expect(card.get('.shop-product-info .shop-image-note').text()).toBe('AI 商品示意 · 非实拍')
+      expect(card.find('.shop-polaroid .shop-image-note').exists()).toBe(false)
+      expect(card.find('.shop-photo-placeholder').exists()).toBe(false)
+    }
+  })
+
+  it('商品名称相同但 SKU 不在映射内时，保留手绘占位且不猜测图片地址', async () => {
+    mockedApi.mockImplementation(async (path) => path.startsWith('/products?')
+      ? { data: [{ ...fixtures.products[0]!, sku: 'WM-UNKNOWN' }] }
+      : responseFor(path))
+    const page = await render()
+    const card = page.get('.shop-tile')
+    expect(card.find('.shop-product-image').exists()).toBe(false)
+    expect(card.get('.shop-photo-placeholder').text()).toBe('商品示意')
+    expect(card.get('.shop-photo-placeholder .sketch-icon').attributes('src')).toBe('/assets/sketch/package.webp')
+    expect(card.find('.shop-image-note').exists()).toBe(false)
+    expect(card.get('.shop-name-label').text()).toBe(fixtures.products[0]!.name)
+  })
+
+  it('图片加载失败只回退对应卡片，保留相纸与名称并且不重发业务请求', async () => {
+    mockedApi.mockImplementation(async (path) => path.startsWith('/products?')
+      ? { data: fixtures.products.slice(0, 2) }
+      : responseFor(path))
+    const page = await render()
+    const cards = page.findAll('.shop-tile')
+    const requestCount = mockedApi.mock.calls.length
+    await cards[0]!.get('.shop-product-image').trigger('error')
+    await settle()
+    expect(cards[0]!.find('.shop-product-image').exists()).toBe(false)
+    expect(cards[0]!.find('.shop-photo-placeholder').exists()).toBe(true)
+    expect(cards[0]!.find('.shop-image-note').exists()).toBe(false)
+    expect(cards[0]!.get('.shop-polaroid-paper').attributes('src')).toBe('/assets/frames/polaroid-product.png')
+    expect(cards[0]!.get('.shop-name-label').text()).toBe(fixtures.products[0]!.name)
+    expect(cards[1]!.get('.shop-product-image').attributes('src')).toBe('/assets/products/rainbow-arch.png')
+    expect(cards[1]!.find('.shop-photo-placeholder').exists()).toBe(false)
+    expect(mockedApi.mock.calls).toHaveLength(requestCount)
+  })
+})
