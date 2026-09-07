@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import wemove.commerce.platform.CommerceMetricsPort;
+import wemove.dealership.platform.DealershipMetricsPort;
 import wemove.support.api.SupportDtos.DashboardSnapshot;
 import wemove.support.domain.TicketRules;
 
@@ -17,11 +18,13 @@ import java.time.Instant;
 @Service
 public class DashboardService {
     private final CommerceMetricsPort commerce;
+    private final DealershipMetricsPort dealership;
     private final JdbcTemplate jdbc;
     private final Clock clock = Clock.systemUTC();
 
-    public DashboardService(CommerceMetricsPort commerce, JdbcTemplate jdbc) {
+    public DashboardService(CommerceMetricsPort commerce, DealershipMetricsPort dealership, JdbcTemplate jdbc) {
         this.commerce = commerce;
+        this.dealership = dealership;
         this.jdbc = jdbc;
     }
 
@@ -30,13 +33,13 @@ public class DashboardService {
         if (start == null || end == null || !start.isBefore(end))
             throw TicketRules.invalid("start", "请提供有效的UTC半开时间区间（start 早于 end）。");
         CommerceMetricsPort.Metrics metrics = commerce.read(start, end);
+        DealershipMetricsPort.Metrics dealershipMetrics = dealership.read();
         return new DashboardSnapshot(
                 count("select count(*) from catalog_products where status = 'PUBLISHED'"),
                 // 契约口径：启用用户数含管理员。
                 count("select count(*) from users where account_status = 'ACTIVE'"),
-                // TODO(D)：D 的经销申请/询价域尚未接入，接入后改为调用 D 的只读统计端口。
-                0L,
-                0L,
+                dealershipMetrics.pendingApplicationCount(),
+                dealershipMetrics.pendingInquiryCount(),
                 count("select count(*) from support_tickets where status in ('NEW','PROCESSING')"),
                 metrics.pendingShipmentCount(),
                 metrics.createdOrderCount(),

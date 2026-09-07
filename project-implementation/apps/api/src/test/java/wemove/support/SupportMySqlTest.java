@@ -105,6 +105,34 @@ class SupportMySqlTest {
         return id;
     }
 
+    /** 插入一条 PENDING 经销申请、一家关联企业与一条 NEW 询价，验证总览经 D 的端口统计。 */
+    void seedDealerPendingWork() {
+        UUID applicationId = UUID.randomUUID();
+        UUID companyId = UUID.randomUUID();
+        jdbc.update(
+                "insert into"
+                    + " dealer_applications(id,application_number,user_id,status,current_content_version,version,created_at,updated_at)"
+                    + " values(UUID_TO_BIN(?),?,UUID_TO_BIN(?),'PENDING',1,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))",
+                applicationId.toString(),
+                "WMD-T-" + applicationId.toString().substring(0, 12),
+                user.toString());
+        jdbc.update(
+                "insert into"
+                    + " dealer_companies(id,owner_user_id,source_application_id,source_public_consent,company_name,business_type,country_or_region,city,contact_name,phone,cooperation_email,cooperation_status,version,created_at,updated_at)"
+                    + " values(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),true,'测试经销公司','RETAIL','中国','上海市','测试联系人','13800000000','dealer@example.test','ACTIVE',1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))",
+                companyId.toString(),
+                user.toString(),
+                applicationId.toString());
+        jdbc.update(
+                "insert into"
+                    + " dealer_inquiries(id,inquiry_number,company_id,user_id,status,version,created_at,updated_at)"
+                    + " values(UUID_TO_BIN(?),?,UUID_TO_BIN(?),UUID_TO_BIN(?),'NEW',1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))",
+                UUID.randomUUID().toString(),
+                "WDI-T-" + companyId.toString().substring(0, 12),
+                companyId.toString(),
+                user.toString());
+    }
+
     long auditCount(UUID objectId) {
         return jdbc.queryForObject(
                 "select count(*) from operations_audit_records where object_id=UUID_TO_BIN(?) and action like 'TICKET_%'",
@@ -354,6 +382,10 @@ class SupportMySqlTest {
         jdbc.update("update catalog_products set status='UNLISTED' where status='PUBLISHED'");
         UUID p1 = product();
         UUID p2 = product();
+        // D 域数据隔离：清空经销三表（子表先于主表）后从 0 起测。
+        jdbc.update("delete from dealer_inquiries");
+        jdbc.update("delete from dealer_companies");
+        jdbc.update("delete from dealer_applications");
         Instant start = Instant.parse("2026-09-05T00:00:00Z");
         Instant end = Instant.parse("2026-09-07T00:00:00Z");
         var snapshot = dashboard.read(start, end);
@@ -365,6 +397,11 @@ class SupportMySqlTest {
         assertThat(snapshot.createdOrderCount()).isZero();
         assertThat(snapshot.netPaidFen()).isEqualTo("0");
         assertThat(snapshot.asOf()).isNotNull();
+
+        // D 域：一条 PENDING 申请 + 一条 NEW 询价 → 经 D 的 DealershipMetricsPort 计入总览。
+        seedDealerPendingWork();
+        assertThat(dashboard.read(start, end).pendingApplicationCount()).isEqualTo(1);
+        assertThat(dashboard.read(start, end).pendingInquiryCount()).isEqualTo(1);
 
         TicketDetail t = ticket(GENERAL);
         assertThat(dashboard.read(start, end).pendingTicketCount()).isEqualTo(1);

@@ -26,7 +26,7 @@
 - **PRODUCT 关联**：直查 `catalog_products`（JdbcTemplate 只读）；TODO：B 的公开商品投影端口（`CatalogPort` 类）尚未提供，提供后替换直查。
 - **审计写入**：复用 C 落地的 `DatabaseAuditAdapter`（同事务 MANDATORY，业务失败随回滚）；工单审计动作 `TICKET_CREATED/STARTED/REPLIED/FOLLOWED_UP/NOTE_ADDED/CLOSED`，`objectType=TICKET`。
 - **审计检索（F 新增）**：`GET /api/v1/admin/audit-logs`（actorId/action/objectType/objectId/时间区间筛选 + 分页）与 `GET /{id}`，只读——不提供任何修改/删除接口，查询本身不写审计。
-- **运营总览**：`DashboardService.read` 单个 `@Transactional(readOnly=true)` 事务保证 8 个指标同一快照、共用 `asOf`；`netPaidFen` 为整数分**字符串**（`CommerceMetricsPort` 原样透传，前端转元显示）；活跃用户含管理员（契约口径）；D 域两项（待审合作申请/待处理询价）在 D 接入前固定 0（代码内 TODO 标注）。
+- **运营总览**：`DashboardService.read` 单个 `@Transactional(readOnly=true)` 事务保证 8 个指标同一快照、共用 `asOf`；`netPaidFen` 为整数分**字符串**（`CommerceMetricsPort` 原样透传，前端转元显示）；活跃用户含管理员（契约口径）；D 域两项（待审合作申请/待处理询价）经 D 的 `DealershipMetricsPort` 实时统计（PENDING 申请数 + NEW/PROCESSING 询价数，与 F 快照同事务）。
 - **能力码占位（与 A 的约定）**：不修改 A 的 `UserAccountService` 能力码表。前端路由 `meta.capability` 复用现有码——用户页 `ORDERS_READ`、管理页 `ADMIN_ORDERS_READ`，仅作导航门面；真正授权由后端完成（`/admin/** hasRole(ADMIN)`、用户侧 `requireRole` + 归属校验）。待 A 下发 `TICKET_READ`/`ADMIN_TICKET_READ`/`ADMIN_AUDIT_READ` 等能力码后在 `features/support/routes.ts` 顶部注释处替换。
 
 ## 与其他成员的协作点
@@ -36,7 +36,7 @@
 | C | `OrdersPort.requireOwnedReference` 用于售后工单归属校验；`CommerceMetricsPort` 提供区间订单数/净收款/待发货 | 已按契约调用，请 C 复核用法 |
 | A | 审计检索直接读 `operations_audit_records`（C 建表、F 补查询入口）；能力码未改动 | 请 A 复核审计查询实现与“未改身份能力码”说明 |
 | B | PRODUCT 工单需要商品存在性校验，当前直查 `catalog_products` | TODO：B 提供公开投影端口后替换 |
-| D | 总览的待审合作申请/待处理询价两项固定 0；联系类写入限流共用 `CUSTOMER_CONTACT_WRITES` 桶 | D 接入后提供端口替换 |
+| D | 总览的待审合作申请/待处理询价经 `DealershipMetricsPort` 实时统计（D 已随 PR#9 提供端口，F 在总览快照内调用）；联系类写入限流共用 `CUSTOMER_CONTACT_WRITES` 桶 | 已按端口接入，请 D 复核统计口径 |
 
 ## 测试与验证
 

@@ -798,12 +798,12 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: 经销域（D）接入前固定 0
+          description: 待审核合作申请（PENDING）数量，经经销域（D）统计端口实时返回
         pendingInquiryCount:
           type: integer
           format: int64
           minimum: 0
-          description: 经销域（D）接入前固定 0
+          description: 待处理询价（NEW/PROCESSING）数量，经经销域（D）统计端口实时返回
         pendingTicketCount:
           type: integer
           format: int64
