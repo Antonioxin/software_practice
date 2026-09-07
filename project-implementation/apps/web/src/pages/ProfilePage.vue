@@ -66,7 +66,7 @@ async function save() {
       <header><p>MY RECORDS</p><h2>本人业务记录</h2><span>查看个人订单，付款与履约均为课程模拟流程。</span></header>
       <div class="link-grid">
         <div><SketchIcon name="orders" :size="32" /><RouterLink to="/account/orders"><strong>零售订单 →</strong></RouterLink><span>查看付款、退款与物流记录</span><RouterLink to="/cart">我的购物车</RouterLink></div>
-        <div><SketchIcon name="chat" :size="32" /><strong>我的咨询</strong><span>咨询记录</span><em>待接入</em></div>
+        <div><SketchIcon name="chat" :size="32" /><RouterLink to="/account/tickets"><strong>我的咨询 →</strong></RouterLink><span>工单与客服对话记录</span><RouterLink to="/contact">联系客服</RouterLink></div>
         <div><SketchIcon name="ticket" :size="32" /><RouterLink to="/account/dealer-application"><strong>经销申请 →</strong></RouterLink><span>提交、查看审核结果与修订记录</span><RouterLink v-if="session.actor?.derivedIdentity === 'DEALER'" to="/dealer/catalog">进入专属目录</RouterLink></div>
         <div><SketchIcon name="wallet" :size="32" /><RouterLink to="/account/inquiries"><strong>经销询价 →</strong></RouterLink><span>查看商品快照、回复和状态历史</span><RouterLink v-if="session.actor?.derivedIdentity === 'DEALER'" to="/dealer/catalog">新建询价</RouterLink></div>
       </div>
