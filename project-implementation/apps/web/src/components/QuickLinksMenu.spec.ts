@@ -110,4 +110,28 @@ describe('快捷入口下拉导航', () => {
     expect(page.find('.wm-header-actions a[aria-label="登录或注册"]').exists()).toBe(true)
     expect(page.find('button[aria-controls="public-mobile-menu"]').exists()).toBe(true)
   })
+
+  it('公共头部的移动导航和快捷入口互斥，并同步 aria-expanded', async () => {
+    const page = await render('guest', true)
+    const mobile = page.get('button[aria-controls="public-mobile-menu"]')
+    const shortcut = page.get('.wm-quick-trigger')
+    await mobile.trigger('click')
+    expect(page.find('#public-mobile-menu').exists()).toBe(true)
+    expect(mobile.attributes('aria-expanded')).toBe('true')
+    expect(shortcut.attributes('aria-expanded')).toBe('false')
+
+    await shortcut.trigger('click')
+    await nextTick()
+    expect(page.find('#public-mobile-menu').exists()).toBe(false)
+    expect(mobile.attributes('aria-expanded')).toBe('false')
+    expect(page.find('nav[aria-label="快捷入口"]').exists()).toBe(true)
+    expect(shortcut.attributes('aria-expanded')).toBe('true')
+
+    await mobile.trigger('click')
+    await nextTick()
+    expect(page.find('#public-mobile-menu').exists()).toBe(true)
+    expect(mobile.attributes('aria-expanded')).toBe('true')
+    expect(page.find('nav[aria-label="快捷入口"]').exists()).toBe(false)
+    expect(shortcut.attributes('aria-expanded')).toBe('false')
+  })
 })

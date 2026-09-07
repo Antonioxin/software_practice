@@ -6,7 +6,7 @@ defineProps<{ eyebrow: string; title: string; description: string }>()
 </script>
 <template>
   <div class="auth-page wm-auth">
-    <header class="wm-header glass-panel"><BrandMark /><nav class="wm-auth-nav" aria-label="账户导航"><RouterLink to="/products"><SketchIcon name="arrow-left" />返回商店</RouterLink><RouterLink to="/login">登录</RouterLink><RouterLink to="/register">注册</RouterLink></nav></header>
+    <header class="wm-header"><BrandMark /><nav class="wm-auth-nav" aria-label="账户导航"><RouterLink to="/products"><SketchIcon name="arrow-left" />返回商店</RouterLink><RouterLink to="/login">登录</RouterLink><RouterLink to="/register">注册</RouterLink></nav></header>
     <main id="main-content" class="auth-main">
       <section class="story-panel" aria-label="WEMOVE 品牌介绍">
         <p class="wm-eyebrow">WELCOME TO WEMOVE</p>

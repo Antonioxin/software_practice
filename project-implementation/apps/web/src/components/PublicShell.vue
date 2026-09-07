@@ -7,11 +7,14 @@ import SketchIcon from './SketchIcon.vue'
 import QuickLinksMenu from './QuickLinksMenu.vue'
 import SiteFooter from './SiteFooter.vue'
 const menuOpen = ref(false)
+const shortcutOpen = ref(false)
 const error = ref('')
 const session = useSessionStore()
 const route = useRoute()
 const router = useRouter()
 watch(() => route.fullPath, () => { menuOpen.value = false })
+watch(menuOpen, (open) => { if (open) shortcutOpen.value = false })
+watch(shortcutOpen, (open) => { if (open) menuOpen.value = false })
 async function signOut() {
   try { await session.logout(); await router.replace('/login') }
   catch { error.value = '退出结果暂未确认，请重试。' }
@@ -19,17 +22,17 @@ async function signOut() {
 </script>
 <template>
   <div class="catalog-site">
-    <header class="wm-header glass-panel">
+    <header class="wm-header">
       <BrandMark />
       <nav class="wm-navigation" aria-label="主导航">
-        <RouterLink to="/" exact-active-class="is-active"><SketchIcon name="home" />首页</RouterLink>
-        <RouterLink to="/products" active-class="is-active"><SketchIcon name="grid" />探索商品</RouterLink>
-        <RouterLink to="/channels" active-class="is-active"><SketchIcon name="share" />购买渠道</RouterLink>
-        <RouterLink v-if="!session.isAdmin" to="/account/orders" active-class="is-active"><SketchIcon name="orders" />我的订单</RouterLink>
-        <RouterLink v-else to="/admin/products" active-class="is-active"><SketchIcon name="filter" />管理后台</RouterLink>
+        <RouterLink to="/" exact-active-class="is-active">首页</RouterLink>
+        <RouterLink to="/products" active-class="is-active">探索商品</RouterLink>
+        <RouterLink to="/channels" active-class="is-active">购买渠道</RouterLink>
+        <RouterLink v-if="!session.isAdmin" to="/account/orders" active-class="is-active">我的订单</RouterLink>
+        <RouterLink v-else to="/admin/products" active-class="is-active">管理后台</RouterLink>
       </nav>
       <div class="wm-header-actions">
-        <QuickLinksMenu />
+        <QuickLinksMenu v-model:open="shortcutOpen" />
         <RouterLink class="wm-account-button" :aria-label="session.actor ? '我的账户' : '登录或注册'" :to="session.actor ? (session.isAdmin ? '/admin/users' : '/account/profile') : '/login'">
           <SketchIcon name="user" /><span>{{ session.actor ? session.actor.nickname : '登录 / 注册' }}</span>
         </RouterLink>
