@@ -67,8 +67,8 @@ async function save() {
       <div class="link-grid">
         <div><SketchIcon name="orders" :size="32" /><RouterLink to="/account/orders"><strong>零售订单 →</strong></RouterLink><span>查看付款、退款与物流记录</span><RouterLink to="/cart">我的购物车</RouterLink></div>
         <div><SketchIcon name="chat" :size="32" /><strong>我的咨询</strong><span>咨询记录</span><em>待接入</em></div>
-        <div><SketchIcon name="ticket" :size="32" /><strong>经销申请</strong><span>经销合作</span><em>待接入</em></div>
-        <div><SketchIcon name="wallet" :size="32" /><strong>经销询价</strong><span>经销合作</span><em>待接入</em></div>
+        <div><SketchIcon name="ticket" :size="32" /><RouterLink to="/account/dealer-application"><strong>经销申请 →</strong></RouterLink><span>提交、查看审核结果与修订记录</span><RouterLink v-if="session.actor?.derivedIdentity === 'DEALER'" to="/dealer/catalog">进入专属目录</RouterLink></div>
+        <div><SketchIcon name="wallet" :size="32" /><RouterLink to="/account/inquiries"><strong>经销询价 →</strong></RouterLink><span>查看商品快照、回复和状态历史</span><RouterLink v-if="session.actor?.derivedIdentity === 'DEALER'" to="/dealer/catalog">新建询价</RouterLink></div>
       </div>
     </section>
   </SiteShell>

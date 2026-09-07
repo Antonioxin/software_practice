@@ -1,6 +1,6 @@
 # WEMOVE 工程入口
 
-这里是 WEMOVE 的统一实现目录，包含一个 Vue 3 + TypeScript 前端、一个 Java 21 + Spring Boot 后端，以及契约、脚本、文档和测试设计。当前已接入身份账户、商品库存和零售交易模块，后续业务继续接入这套应用。
+这里是 WEMOVE 的统一实现目录，包含一个 Vue 3 + TypeScript 前端、一个 Java 21 + Spring Boot 后端，以及契约、脚本、文档和测试设计。当前已接入身份账户、商品库存、零售交易和经销合作模块，后续业务继续接入这套应用。
 
 **目录按工程职责划分，业务归属按模块记录。** 前端和后端分别是可构建、可运行的应用；身份账户、商品库存等业务由各应用内部的代码共同实现。成员姓名、分工和贡献放在[团队协作规范](project-requirements/WEMOVE团队分工与协作规范.md)及[验收追踪表](project-requirements/WEMOVE需求责任与验收追踪表.md)中维护，代码位置不随负责人变化。
 
@@ -55,7 +55,7 @@ Java 根包统一为 `wemove`，`identity`、`catalog` 及后续 `commerce` 等�
 | 身份与账户 | [identity.yaml](contracts/openapi/identity.yaml) | [模块索引](docs/modules/identity/README.md)、[运行与验证手册](docs/modules/identity/运行与验证手册.md)、[验证记录](docs/modules/identity/验证记录.md) | A |
 | 商品与库存 | [catalog.yaml](contracts/openapi/catalog.yaml) | [模块索引](docs/modules/catalog/README.md)、[运行与验证手册](docs/modules/catalog/运行与验证手册.md)、[验证记录](docs/modules/catalog/验证记录.md) | B |
 | 零售交易 | [commerce.yaml](contracts/openapi/commerce.yaml) | [模块索引](docs/modules/commerce/README.md)、[实现方案与 A/B 检查](docs/modules/commerce/WEMOVE角色C实现方案与AB检查.md) | C |
-| 经销合作（仅根目录） | 尚未实现 | [后端模块根目录](apps/api/src/main/java/wemove/dealership/)；待 D 自行细分 | D |
+| 经销合作 | [dealership.yaml](contracts/openapi/dealership.yaml) | [模块索引](docs/modules/dealership/README.md)、[运行与验证手册](docs/modules/dealership/运行与验证手册.md)、[验证记录](docs/modules/dealership/验证记录.md) | D |
 
 初版公共界面及无需后端的只读预览见[静态界面与开发预览](docs/modules/content/静态界面与开发预览.md)，覆盖现有 17 条业务路由。开发环境可访问 `http://localhost:5173/?preview=1`。
 
@@ -102,7 +102,7 @@ npm --prefix project-implementation/apps/web ci
 npm --prefix project-implementation/apps/web run dev
 ```
 
-访问 `http://localhost:5173/` 打开首页，或访问 `/products` 浏览商品、`/register` 注册账户。前端开发服务器将 `/api` 代理到 `http://localhost:8080`。管理员登录后可访问 `/admin/products` 和 `/admin/categories`。
+访问 `http://localhost:5173/` 打开首页，访问 `/products` 浏览商品、`/channels` 查询公开渠道，或访问 `/register` 注册账户。前端开发服务器将 `/api` 代理到 `http://localhost:8080`。普通用户可从个人中心提交合作申请；有效经销商可进入 `/dealer/catalog`，管理员可从 `/admin/dealer-applications` 处理申请。
 
 ## 构建与验证
 
@@ -118,7 +118,7 @@ npm --prefix project-implementation/apps/web run build
 
 | 检查 | 当前内容 | 如何解读结果 |
 | --- | --- | --- |
-| 自动化单元测试 | 前端单元测试、页面挂载检查及后端单测与应用集成测试 | 验证已有局部逻辑；结果以本次命令输出为准 |
+| 自动化测试 | 前端 Vitest、后端规则测试与应用/经销闭环集成测试 | 验证局部逻辑、应用装配及 D 的申请—审核—资格—目录—询价—回复链路；结果以本次命令输出为准 |
 | API 冒烟 | 身份账户与商品库存两个脚本 | 均需测试数据库；身份脚本从已打包 JAR 自行启动后端，商品脚本访问已运行的应用；步骤与数据影响见各模块运行手册 |
 | 成员与集成验收设计 | [审核总览](tests/cases/WEMOVE成员测试用例审核总览.md)中的 159 条用例 | 当前待审核、未执行；单元测试通过不改变这些用例的审核或执行状态 |
 
@@ -145,7 +145,7 @@ npm --prefix project-implementation/apps/web run build
 | 模块设计、运行和交付记录 | `docs/modules/<业务域>/` | 添加或更新模块 `README.md`，在本文件的模块索引中登记 |
 | 验证截图、测试用例 | `docs/verification/<业务域>/`、`tests/cases/` | 证据链接对应记录；用例审核状态与执行结果分别维护 |
 
-业务域沿用分工文档：A 为 `identity`，B 为 `catalog`，C 为 `commerce`，D 为 `dealership`，E 为 `content`，F 按职责使用 `support` 和 `operations`。**成员编号用于分工，业务域用于代码和模块资料命名；不再创建 `partA/`、`partB/`、`partC/` 等成员目录。** 当前 `identity`、`catalog` 已有实现；C 已接入后端分层、前端业务/页面、后端测试及验收证据，实施与实际验证见零售交易模块索引；D 仅保留后端 `wemove/dealership/` 根目录，由负责人自行细分。空目录用 `.gitkeep` 保留，不代表业务已经实现。E/F 仍为后续接入约定。
+业务域沿用分工文档：A 为 `identity`，B 为 `catalog`，C 为 `commerce`，D 为 `dealership`，E 为 `content`，F 按职责使用 `support` 和 `operations`。**成员编号用于分工，业务域用于代码和模块资料命名；不再创建 `partA/`、`partB/`、`partC/` 等成员目录。** 当前 `identity`、`catalog`、`commerce` 与 `dealership` 已接入共享应用；D 的实现与验证边界见经销合作模块索引。空目录用 `.gitkeep` 保留，不代表业务已经实现。E/F 仍为后续接入约定。
 
 后端启动类为根包 `wemove` 下的 `WemoveApplication`，默认组件、实体、仓库与配置属性扫描覆盖全部子包。A 的代码只放在 `wemove.identity`；B 在 `wemove.catalog`；C 使用 `wemove.commerce`。不再将其他业务嵌套在 `identity` 下。公共 HTTP 响应/异常位于 `wemove.platform.api`，幂等存储位于 `wemove.platform.idempotency`，全局请求过滤器位于 `wemove.platform.security`。
 

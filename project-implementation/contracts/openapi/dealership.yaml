@@ -1,0 +1,382 @@
+openapi: 3.1.0
+info:
+  title: WEMOVE Dealership API
+  version: 1.0.0
+  description: FR-08、FR-22—FR-25、FR-30 的已实现 HTTP 契约。所有路径实际带 /api/v1 前缀。
+servers:
+  - url: /api/v1
+tags:
+  - name: Channels
+  - name: Applications
+  - name: Dealer catalog
+  - name: Inquiries
+  - name: Admin dealership
+paths:
+  /channels:
+    get:
+      tags: [Channels]
+      operationId: listPublicChannels
+      security: []
+      parameters:
+        - { name: countryOrRegion, in: query, schema: { type: string } }
+        - { name: city, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200': { $ref: '#/components/responses/ChannelPage' }
+  /channels/{id}:
+    get:
+      tags: [Channels]
+      operationId: getPublicChannel
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { $ref: '#/components/responses/Channel' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /dealer-applications:
+    post:
+      tags: [Applications]
+      operationId: createDealerApplication
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ApplicationRequest' } } } }
+      responses:
+        '201': { $ref: '#/components/responses/Application' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [Applications]
+      operationId: listOwnDealerApplications
+      responses:
+        '200': { description: 本人申请页, content: { application/json: { schema: { $ref: '#/components/schemas/ApplicationPageEnvelope' } } } }
+  /dealer-applications/{id}:
+    get:
+      tags: [Applications]
+      operationId: getOwnDealerApplication
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { $ref: '#/components/responses/Application' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /dealer-applications/{id}/resubmit:
+    post:
+      tags: [Applications]
+      operationId: resubmitDealerApplication
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { allOf: [{ $ref: '#/components/schemas/ApplicationRequest' }, { type: object, required: [applicationVersion], properties: { applicationVersion: { type: integer, minimum: 1 } } }] } } } }
+      responses:
+        '200': { $ref: '#/components/responses/Application' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /dealer/catalog:
+    get:
+      tags: [Dealer catalog]
+      operationId: listDealerCatalog
+      responses:
+        '200': { description: 仅有效经销商可见, content: { application/json: { schema: { type: object, required: [data], properties: { data: { type: array, items: { $ref: '#/components/schemas/DealerProduct' } } } } } } }
+        '403': { $ref: '#/components/responses/Problem' }
+  /dealer/catalog/{id}:
+    get:
+      tags: [Dealer catalog]
+      operationId: getDealerProduct
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: 经销商品详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/DealerProduct' } } } } } }
+        '404': { $ref: '#/components/responses/Problem' }
+  /inquiries:
+    post:
+      tags: [Inquiries]
+      operationId: createInquiry
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/InquiryRequest' } } } }
+      responses:
+        '201': { $ref: '#/components/responses/Inquiry' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [Inquiries]
+      operationId: listOwnInquiries
+      parameters: [{ $ref: '#/components/parameters/Status' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses:
+        '200': { description: 本人询价页, content: { application/json: { schema: { $ref: '#/components/schemas/InquiryPageEnvelope' } } } }
+  /inquiries/{id}:
+    get:
+      tags: [Inquiries]
+      operationId: getOwnInquiry
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { $ref: '#/components/responses/Inquiry' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /inquiries/{id}/close:
+    post:
+      tags: [Inquiries]
+      operationId: closeOwnInquiry
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses:
+        '200': { $ref: '#/components/responses/Inquiry' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /admin/dealer-applications:
+    get:
+      tags: [Admin dealership]
+      operationId: listAdminDealerApplications
+      parameters: [{ $ref: '#/components/parameters/Status' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses:
+        '200': { description: 管理申请页, content: { application/json: { schema: { $ref: '#/components/schemas/ApplicationPageEnvelope' } } } }
+  /admin/dealer-applications/{id}:
+    get:
+      tags: [Admin dealership]
+      operationId: getAdminDealerApplication
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Application' } }
+  /admin/dealer-applications/{id}/review:
+    post:
+      tags: [Admin dealership]
+      operationId: reviewDealerApplication
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReviewRequest' } } } }
+      responses:
+        '200': { $ref: '#/components/responses/Application' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /admin/inquiries:
+    get:
+      tags: [Admin dealership]
+      operationId: listAdminInquiries
+      parameters: [{ $ref: '#/components/parameters/Status' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: 管理询价页, content: { application/json: { schema: { $ref: '#/components/schemas/InquiryPageEnvelope' } } } } }
+  /admin/inquiries/{id}:
+    get:
+      tags: [Admin dealership]
+      operationId: getAdminInquiry
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Inquiry' } }
+  /admin/inquiries/{id}/start:
+    post:
+      tags: [Admin dealership]
+      operationId: startInquiry
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [expectedVersion], properties: { expectedVersion: { type: integer, minimum: 1 } } } } } }
+      responses: { '200': { $ref: '#/components/responses/Inquiry' }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/inquiries/{id}/replies:
+    post:
+      tags: [Admin dealership]
+      operationId: replyInquiry
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/InquiryReplyRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/Inquiry' }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/inquiries/{id}/close:
+    post:
+      tags: [Admin dealership]
+      operationId: closeAdminInquiry
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses: { '200': { $ref: '#/components/responses/Inquiry' }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/companies:
+    get:
+      tags: [Admin dealership]
+      operationId: listDealerCompanies
+      parameters: [{ $ref: '#/components/parameters/Status' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: 企业列表 } }
+  /admin/companies/{id}:
+    get:
+      tags: [Admin dealership]
+      operationId: getDealerCompany
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: 企业详情 } }
+    patch:
+      tags: [Admin dealership]
+      operationId: updateDealerCompany
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: 已更新企业 }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/companies/{id}/suspend:
+    post:
+      tags: [Admin dealership]
+      operationId: suspendDealerCompany
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses: { '200': { description: 已暂停并下线关联渠道 }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/companies/{id}/restore:
+    post:
+      tags: [Admin dealership]
+      operationId: restoreDealerCompany
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses: { '200': { description: 已恢复；渠道仍需人工发布 }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/channels:
+    get:
+      tags: [Admin dealership]
+      operationId: listAdminChannels
+      responses: { '200': { $ref: '#/components/responses/ChannelPage' } }
+    post:
+      tags: [Admin dealership]
+      operationId: createChannel
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '201': { $ref: '#/components/responses/Channel' } }
+  /admin/channels/{id}:
+    get:
+      tags: [Admin dealership]
+      operationId: getAdminChannel
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Channel' } }
+    patch:
+      tags: [Admin dealership]
+      operationId: updateChannel
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Channel' }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/channels/{id}/publish:
+    post:
+      tags: [Admin dealership]
+      operationId: publishChannel
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses: { '200': { $ref: '#/components/responses/Channel' }, '409': { $ref: '#/components/responses/Problem' } }
+  /admin/channels/{id}/unpublish:
+    post:
+      tags: [Admin dealership]
+      operationId: unpublishChannel
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { $ref: '#/components/requestBodies/VersionCommand' }
+      responses: { '200': { $ref: '#/components/responses/Channel' }, '409': { $ref: '#/components/responses/Problem' } }
+components:
+  securitySchemes:
+    sessionCookie: { type: apiKey, in: cookie, name: WEMOVE_SESSION }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+    Status: { name: status, in: query, schema: { type: string } }
+  requestBodies:
+    VersionCommand:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [expectedVersion, reason]
+            properties:
+              expectedVersion: { type: integer, minimum: 1 }
+              reason: { type: string, minLength: 2, maxLength: 500 }
+  responses:
+    Problem: { description: RFC 9457 Problem Details, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Application: { description: 申请详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/Application' } } } } } }
+    Inquiry: { description: 询价详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/Inquiry' } } } } } }
+    Channel: { description: 渠道详情, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/Channel' } } } } } }
+    ChannelPage: { description: 渠道分页, content: { application/json: { schema: { type: object, properties: { data: { $ref: '#/components/schemas/ChannelPage' } } } } } }
+  schemas:
+    ApplicationRequest:
+      type: object
+      additionalProperties: false
+      required: [companyName, businessType, countryOrRegion, city, contactName, phone, cooperationEmail, businessChannels, cooperationIntent]
+      properties:
+        companyName: { type: string, minLength: 2, maxLength: 100 }
+        businessType: { type: string, enum: [RETAIL, WHOLESALE, IMPORT, EDUCATION_ACTIVITY, OTHER] }
+        countryOrRegion: { type: string, minLength: 2, maxLength: 100 }
+        city: { type: string, minLength: 2, maxLength: 100 }
+        contactName: { type: string, minLength: 2, maxLength: 50 }
+        phone: { type: string }
+        cooperationEmail: { type: string, format: email, maxLength: 254 }
+        businessChannels: { type: string, minLength: 1, maxLength: 2000 }
+        website: { type: [string, 'null'], format: uri, maxLength: 2048 }
+        cooperationIntent: { type: string, minLength: 10, maxLength: 2000 }
+        publicChannelConsent: { type: boolean, default: false }
+    ReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [applicationVersion, decision]
+      properties:
+        applicationVersion: { type: integer, minimum: 1 }
+        decision: { type: string, enum: [APPROVE, REJECT] }
+        publicReason: { type: [string, 'null'], maxLength: 500 }
+        internalNote: { type: [string, 'null'], maxLength: 2000 }
+        existingCompanyId: { type: [string, 'null'], format: uuid }
+    Application:
+      type: object
+      required: [id, applicationNumber, userId, status, currentContentVersion, version, versions, reviews]
+      properties:
+        id: { type: string, format: uuid }
+        applicationNumber: { type: string }
+        userId: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+        currentContentVersion: { type: integer }
+        version: { type: integer }
+        publicReason: { type: [string, 'null'] }
+        internalNote: { type: [string, 'null'], description: 仅管理员响应包含 }
+        suspectedDuplicate: { type: boolean }
+        versions: { type: array, items: { type: object } }
+        reviews: { type: array, items: { type: object } }
+    DealerProduct:
+      type: object
+      required: [id, sku, name, referenceUnitPriceFen, currency, minInquiryQuantity, availableQuantity, leadTimeText, priceNotice]
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        retailUnitPriceFen: { type: integer }
+        referenceUnitPriceFen: { type: integer, minimum: 1, maximum: 99999999 }
+        currency: { type: string, const: CNY }
+        minInquiryQuantity: { type: integer, minimum: 1, maximum: 9999 }
+        availableQuantity: { type: integer, minimum: 0 }
+        leadTimeText: { type: string }
+        priceNotice: { type: string }
+    InquiryRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, minItems: 1, maxItems: 20, items: { type: object, additionalProperties: false, required: [productId, quantity], properties: { productId: { type: string, format: uuid }, quantity: { type: integer, minimum: 1, maximum: 9999 } } } }
+        expectedDeliveryDate: { type: [string, 'null'], format: date }
+        deliveryNotes: { type: [string, 'null'], maxLength: 2000 }
+        purpose: { type: [string, 'null'], maxLength: 2000 }
+        remark: { type: [string, 'null'], maxLength: 2000 }
+    InquiryReplyRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, body]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        body: { type: string, minLength: 1, maxLength: 2000 }
+        items: { type: array, maxItems: 20, items: { type: object } }
+    Inquiry:
+      type: object
+      required: [id, inquiryNumber, companyId, userId, status, version, items, history]
+      properties:
+        id: { type: string, format: uuid }
+        inquiryNumber: { type: string }
+        companyId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        status: { type: string, enum: [NEW, PROCESSING, REPLIED, CLOSED] }
+        version: { type: integer }
+        expectedDeliveryDate: { type: [string, 'null'], format: date }
+        deliveryNotes: { type: [string, 'null'] }
+        purpose: { type: [string, 'null'] }
+        remark: { type: [string, 'null'] }
+        publicReply: { type: [string, 'null'] }
+        closeReason: { type: [string, 'null'] }
+        items: { type: array, items: { type: object } }
+        history: { type: array, items: { type: object } }
+    Channel:
+      type: object
+      required: [id, name, countryOrRegion, city, address, phone, published, version]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        countryOrRegion: { type: string }
+        city: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        website: { type: [string, 'null'], format: uri }
+        companyId: { type: [string, 'null'], format: uuid }
+        published: { type: boolean }
+        version: { type: integer }
+    ChannelPage: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Channel' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } }
+    ApplicationPageEnvelope: { type: object, properties: { data: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Application' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } } } }
+    InquiryPageEnvelope: { type: object, properties: { data: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Inquiry' } }, page: { type: integer }, pageSize: { type: integer }, total: { type: integer } } } } }
+    Problem:
+      type: object
+      required: [status, detail, code]
+      properties:
+        status: { type: integer }
+        detail: { type: string }
+        code: { type: string }
+        requestId: { type: [string, 'null'] }
+        errors: { type: array, items: { type: object, properties: { field: { type: string }, code: { type: string }, message: { type: string } } } }
+security:
+  - sessionCookie: []
