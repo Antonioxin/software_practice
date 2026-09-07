@@ -16,10 +16,19 @@ const links = computed(() => session.isAdmin ? [
   { to: '/admin/categories', label: '分类管理', icon: 'grid' },
   { to: '/admin/orders', label: '订单管理', icon: 'orders' },
   { to: '/admin/users', label: '用户管理', icon: 'user' },
+  { to: '/admin/dealer-applications', label: '合作审核', icon: 'ticket' },
+  { to: '/admin/inquiries', label: '询价管理', icon: 'chat' },
+  { to: '/admin/companies', label: '合作企业', icon: 'grid' },
+  { to: '/admin/channels', label: '渠道管理', icon: 'share' },
 ] : [
   { to: '/account/profile', label: '个人资料', icon: 'user' },
   { to: '/account/orders', label: '我的订单', icon: 'orders' },
   { to: '/cart', label: '购物车', icon: 'cart' },
+  { to: '/account/dealer-application', label: '合作申请', icon: 'ticket' },
+  { to: '/account/inquiries', label: '我的询价', icon: 'chat' },
+  ...(session.actor?.derivedIdentity === 'DEALER'
+    ? [{ to: '/dealer/catalog', label: '经销目录', icon: 'grid' }]
+    : []),
 ])
 const currentIcon = computed(() => links.value.find(item => route.path.startsWith(item.to))?.icon ?? 'grid')
 watch(() => route.fullPath, () => { mobileOpen.value = false })

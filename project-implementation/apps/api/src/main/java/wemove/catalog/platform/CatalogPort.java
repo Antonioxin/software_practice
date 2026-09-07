@@ -12,6 +12,8 @@ public interface CatalogPort {
 
     List<DealerProductProjection> getDealerProducts(Collection<UUID> productIds);
 
+    List<DealerProductProjection> getDealerProducts();
+
     record RequestedItem(UUID productId, int quantity) {}
 
     record PublicProductProjection(

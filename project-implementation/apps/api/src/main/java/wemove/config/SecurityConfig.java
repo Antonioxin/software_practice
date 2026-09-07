@@ -47,7 +47,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/registration-policy",
                     "/api/v1/auth/register", "/api/v1/auth/login", "/error").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET,
-                    "/api/v1/products/**", "/api/v1/categories", "/api/v1/product-options").permitAll()
+                    "/api/v1/products/**", "/api/v1/categories", "/api/v1/product-options",
+                    "/api/v1/channels/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors

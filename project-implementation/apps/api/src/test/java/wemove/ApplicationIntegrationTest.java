@@ -23,6 +23,9 @@ import wemove.catalog.platform.CatalogPort;
 import wemove.catalog.platform.InventoryPort;
 import wemove.config.WemoveProperties;
 import wemove.identity.domain.UserEntity;
+import wemove.dealership.domain.DealerApplication;
+import wemove.dealership.service.DealerAccess;
+import wemove.dealership.platform.DealershipMetricsPort;
 import wemove.platform.IdentityPort;
 import wemove.platform.UnitOfWork;
 import wemove.platform.idempotency.IdempotencyRecordEntity;
@@ -56,15 +59,21 @@ class ApplicationIntegrationTest {
         assertThat(context.getBean(CatalogPort.class)).isNotNull();
         assertThat(context.getBean(InventoryPort.class)).isNotNull();
         assertThat(context.getBean(UnitOfWork.class)).isNotNull();
+        assertThat(context.getBean(DealerAccess.class)).isNotNull();
+        assertThat(context.getBean(DealershipMetricsPort.class)).isNotNull();
         assertThat(context.getBean(WemoveProperties.class).bootstrap().adminEmail())
                 .isEqualTo("scan-admin@example.test");
         assertThat(entities.getMetamodel().entity(UserEntity.class)).isNotNull();
         assertThat(entities.getMetamodel().entity(ProductEntity.class)).isNotNull();
         assertThat(entities.getMetamodel().entity(IdempotencyRecordEntity.class)).isNotNull();
+        assertThat(entities.getMetamodel().entity(DealerApplication.class)).isNotNull();
 
         mvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").exists());
+        mvc.perform(get("/api/v1/channels"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items").isArray());
         mvc.perform(get("/api/v1/admin/products")).andExpect(status().isUnauthorized());
         var login =
                 mvc.perform(
