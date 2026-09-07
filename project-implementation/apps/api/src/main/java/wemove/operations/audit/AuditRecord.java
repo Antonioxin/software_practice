@@ -43,4 +43,25 @@ public class AuditRecord {
         this.requestId = requestId;
         changeSummary = e.changeSummary();
     }
+
+    /** F 的检索入口（只读）使用的访问器。 */
+    public UUID getId() { return id; }
+
+    public UUID getActorId() { return actorId; }
+
+    public String getAction() { return action; }
+
+    public String getObjectType() { return objectType; }
+
+    public UUID getObjectId() { return objectId; }
+
+    public String getResult() { return result; }
+
+    public String getReason() { return reason; }
+
+    public Instant getOccurredAt() { return occurredAt; }
+
+    public String getRequestId() { return requestId; }
+
+    public String getChangeSummary() { return changeSummary; }
 }

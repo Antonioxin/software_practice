@@ -12,10 +12,13 @@ const session = useSessionStore()
 const router = useRouter()
 const route = useRoute()
 const links = computed(() => session.isAdmin ? [
+  { to: '/admin', label: '运营总览', icon: 'home' },
   { to: '/admin/products', label: '商品管理', icon: 'package' },
   { to: '/admin/categories', label: '分类管理', icon: 'grid' },
   { to: '/admin/orders', label: '订单管理', icon: 'orders' },
+  { to: '/admin/tickets', label: '工单管理', icon: 'ticket' },
   { to: '/admin/users', label: '用户管理', icon: 'user' },
+  { to: '/admin/audit-logs', label: '审计日志', icon: 'history' },
   { to: '/admin/dealer-applications', label: '合作审核', icon: 'ticket' },
   { to: '/admin/inquiries', label: '询价管理', icon: 'chat' },
   { to: '/admin/companies', label: '合作企业', icon: 'grid' },
@@ -23,6 +26,8 @@ const links = computed(() => session.isAdmin ? [
 ] : [
   { to: '/account/profile', label: '个人资料', icon: 'user' },
   { to: '/account/orders', label: '我的订单', icon: 'orders' },
+  { to: '/account/tickets', label: '我的咨询', icon: 'chat' },
+  { to: '/contact', label: '联系客服', icon: 'help' },
   { to: '/cart', label: '购物车', icon: 'cart' },
   { to: '/account/dealer-application', label: '合作申请', icon: 'ticket' },
   { to: '/account/inquiries', label: '我的询价', icon: 'chat' },
@@ -30,7 +35,7 @@ const links = computed(() => session.isAdmin ? [
     ? [{ to: '/dealer/catalog', label: '经销目录', icon: 'grid' }]
     : []),
 ])
-const currentIcon = computed(() => links.value.find(item => route.path.startsWith(item.to))?.icon ?? 'grid')
+const currentIcon = computed(() => links.value.find(item => item.to === route.path)?.icon ?? links.value.find(item => route.path.startsWith(item.to))?.icon ?? 'grid')
 watch(() => route.fullPath, () => { mobileOpen.value = false })
 async function signOut() {
   try { await session.logout(); await router.replace('/login') }

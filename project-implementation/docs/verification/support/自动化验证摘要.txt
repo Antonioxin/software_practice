@@ -1,0 +1,25 @@
+F 模块（support/operations）自动化验证摘要 — 2026-09-06
+
+后端（project-implementation/apps/api，JDK 21 / Maven 3.9.16）：
+- mvn verify（H2，未设 MYSQL_TEST_URL）：
+  Tests run: 55, Failures: 0, Errors: 0, Skipped: 32（opt-in MySQL 测试类整体跳过），BUILD SUCCESS。
+- SupportMySqlTest（opt-in，MYSQL_TEST_URL 指向本机 MySQL 8 真实 support_test 库，
+  真 Flyway + ddl-auto:validate + 真实审计适配器，不 mock AuditPort）：
+  Tests run: 11, Failures: 0, Errors: 0, Skipped: 0。
+  覆盖：三类创建与关联校验（假商品/他人订单 404、缺字段 422）、401/403、
+  T-I-05 全链状态机、用户视图不泄露内部备注、关闭后拒绝写、版本冲突、
+  幂等重放（审计仍 1 行）、审计失败回滚业务、用户关闭默认原因、
+  总览 8 指标与半开区间、限流共用桶 429。
+- TicketRulesTest：11/11（码点边界 subject 1/2/100/101、body 9/10/2000/2001、
+  状态机全转移、类型关联、电话标准化）。
+- CommerceMigrationMySqlTest 校验既有迁移 checksum 不受新迁移影响（仅新建表）。
+- 迁移双路径：空库全量建表；既有 V1 开发库在线升级（存量用户保留）。
+- 2026-09-07 更新：迁移由 V8 改号为 V9（D 的经销合作分支占用 V8，内容零改动），
+  support_test 测试库已按 V9 重建并复跑 SupportMySqlTest，结果仍为 11/11 通过。
+
+前端（project-implementation/apps/web，Node 20+ / Vite）：
+- npm run test（vitest）：16/16 通过（含 features/support/presentation.spec.ts 7 项：
+  查询串构建、标签与徽章映射、分转元、上海时区区间含跨日界）。
+- npm run build（vue-tsc 类型检查 + vite 构建）：成功。
+
+以上为本工作区实际执行结果；opt-in MySQL 测试需本地数据库，未纳入默认 verify。

@@ -1,0 +1,877 @@
+openapi: 3.0.3
+info:
+  title: WEMOVE support 工单与运营
+  version: 1.0.0
+  description: |
+    FR-19/20/21 文本工单 + FR-32 运营总览 + 审计只读检索。
+    工单状态机（BR-05）：NEW →(管理员开始处理) PROCESSING；NEW/PROCESSING →(非空公开回复) REPLIED；
+    REPLIED →(用户补充) PROCESSING（NEW/PROCESSING 补充保持原状态）；任何未关闭状态 →(本人或管理员关闭) CLOSED（全只读）。
+    处理方即 ADMIN（无 SUPPORT 角色）。管理员调用用户侧工单接口一律 403。
+    所有写操作要求 Idempotency-Key；带 expectedVersion 的动作在版本不匹配时返回 409 VERSION_CONFLICT。
+    用户响应绝不包含内部备注。
+servers:
+- url: /api/v1
+security:
+- session: []
+paths:
+  /tickets:
+    post:
+      operationId: support.createTicket
+      summary: 提交咨询工单
+      description: |
+        仅启用的非管理员账户。提交与补充共用联系类写入限流（CUSTOMER_CONTACT_WRITES，每 10 分钟 20 次，重试也计数）。
+        类型关联规则：GENERAL 不带关联；PRODUCT 必须带存在的 productId；AFTER_SALES 必须带本人订单 orderId
+        （非本人或不存在返回 404）。subject 2—100、body 10—2000 码点；phone 可选，允许空格/连字符/括号，
+        标准化为可选加号 + 6—20 位数字。创建后 status=NEW、version=1，写入状态历史与审计（TICKET_CREATED）。
+      parameters:
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: 从 /auth/csrf 获取实际 headerName/token。
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: 同账户同操作共用 UUID；重放返回 200 与 Idempotency-Replayed:true。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+      responses:
+        '201':
+          description: 创建成功（重放为 200 并带 Idempotency-Replayed:true）
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '400':
+          description: 损坏的 JSON 语法
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: AFTER_SALES 订单不存在或非本人 / PRODUCT 商品不存在
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    get:
+      operationId: support.listMyTickets
+      summary: 本人工单列表
+      description: 仅本人工单，按创建时间倒序；仅支持类型/状态筛选（时间区间为管理端能力）。
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TicketType'
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TicketStatus'
+      - name: page
+        in: query
+        required: false
+        schema: { type: integer, format: int64, minimum: 1, default: 1 }
+      - name: pageSize
+        in: query
+        required: false
+        schema: { type: integer, format: int64, minimum: 1, maximum: 50, default: 12 }
+      responses:
+        '200':
+          description: 分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketSummaryPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /tickets/{id}:
+    get:
+      operationId: support.readMyTicket
+      summary: 本人工单详情
+      description: 他人工单返回 404（不暴露存在性）；响应含公开对话与 allowedActions，绝不含内部备注。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: 工单详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /tickets/{id}/messages:
+    post:
+      operationId: support.followUpTicket
+      summary: 补充说明
+      description: |
+        限本人、未关闭工单；计入联系类写入限流。content 1—2000 码点。
+        REPLIED → PROCESSING；NEW/PROCESSING 保持原状态；CLOSED 返回 409 STATE_CONFLICT。
+        写入 USER_FOLLOWUP 消息、状态历史与审计（TICKET_FOLLOWED_UP）。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, content]
+              properties:
+                expectedVersion: { type: integer, format: int64, minimum: 1 }
+                content: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '200':
+          description: 已追加（含重放）；返回最新工单详情
+          headers:
+            Idempotency-Replayed: { schema: { type: boolean } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /tickets/{id}/close:
+    post:
+      operationId: support.closeMyTicket
+      summary: 关闭本人工单
+      description: 未关闭即可关闭；reason 可选（0—500 码点，留空记录“用户确认关闭”）。写状态历史与审计（TICKET_CLOSED）。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion]
+              properties:
+                expectedVersion: { type: integer, format: int64, minimum: 1 }
+                reason: { type: string, maxLength: 500, nullable: true }
+      responses:
+        '200':
+          description: 已关闭（含重放）
+          headers:
+            Idempotency-Replayed: { schema: { type: boolean } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/tickets:
+    get:
+      operationId: support.adminListTickets
+      summary: 全部工单列表（管理员）
+      description: 支持类型/状态/创建时间区间筛选（from 包含、to 不含），创建时间倒序。
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema: { $ref: '#/components/schemas/TicketType' }
+      - name: status
+        in: query
+        required: false
+        schema: { $ref: '#/components/schemas/TicketStatus' }
+      - name: from
+        in: query
+        required: false
+        schema: { type: string, format: date-time }
+      - name: to
+        in: query
+        required: false
+        schema: { type: string, format: date-time }
+      - name: page
+        in: query
+        required: false
+        schema: { type: integer, format: int64, minimum: 1, default: 1 }
+      - name: pageSize
+        in: query
+        required: false
+        schema: { type: integer, format: int64, minimum: 1, maximum: 50, default: 12 }
+      responses:
+        '200':
+          description: 分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketSummaryPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/tickets/{id}:
+    get:
+      operationId: support.adminReadTicket
+      summary: 工单详情（管理员）
+      description: 含内部备注与完整状态时间线；allowedActions 按管理员视角返回。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: 工单详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/tickets/{id}/start:
+    post:
+      operationId: support.adminStartTicket
+      summary: 开始处理（管理员）
+      description: 仅 status=NEW 可执行（否则 409 STATE_CONFLICT）→ PROCESSING；写状态历史与审计（TICKET_STARTED）。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion]
+              properties:
+                expectedVersion: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: 已开始处理（含重放）
+          headers:
+            Idempotency-Replayed: { schema: { type: boolean } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/tickets/{id}/replies:
+    post:
+      operationId: support.adminReplyTicket
+      summary: 公开回复（管理员）
+      description: content 1—2000 码点；NEW/PROCESSING/REPLIED 均可回复 → REPLIED；CLOSED 返回 409。对用户可见。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, content]
+              properties:
+                expectedVersion: { type: integer, format: int64, minimum: 1 }
+                content: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '200':
+          description: 已回复（含重放）
+          headers:
+            Idempotency-Replayed: { schema: { type: boolean } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/tickets/{id}/internal-notes:
+    post:
+      operationId: support.adminAddTicketNote
+      summary: 内部备注（管理员）
+      description: |
+        content 1—2000 码点（可为空白字符以外任意文本）。追加式：不改变工单状态与版本、不写状态历史，
+        仅写审计（TICKET_NOTE_ADDED）；仅管理员可见，绝不出现在用户响应中。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [content]
+              properties:
+                content: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '200':
+          description: 已记录（含重放）
+          headers:
+            Idempotency-Replayed: { schema: { type: boolean } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/tickets/{id}/close:
+    post:
+      operationId: support.adminCloseTicket
+      summary: 关闭工单（管理员）
+      description: reason 必填 2—500 码点；未关闭即可关闭；closed_by=操作管理员。写状态历史与审计（TICKET_CLOSED）。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: X-CSRF-TOKEN
+        in: header
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, reason]
+              properties:
+                expectedVersion: { type: integer, format: int64, minimum: 1 }
+                reason: { type: string, minLength: 2, maxLength: 500 }
+      responses:
+        '200':
+          description: 已关闭（含重放）
+          headers:
+            Idempotency-Replayed: { schema: { type: boolean } }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetailEnvelope'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/dashboard:
+    get:
+      operationId: support.readDashboard
+      summary: 运营总览快照（管理员，FR-32）
+      description: |
+        start、end 必填且 start < end（否则 422）；区间为 [start, end)。
+        前 6 项为当前总量（在售商品、活跃用户[含管理员]、待审合作申请、待处理询价、待处理工单、待发货订单），
+        后 2 项按区间（创建订单数、净收款）。全部指标读取自同一次只读数据库快照，共用 asOf。
+        netPaidFen 为整数分字符串（避免 JS 精度丢失），由交易模块端口原样透传。
+        待审合作申请/待处理询价在经销域（D）接入前固定为 0。
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema: { type: string, format: date-time }
+      - name: end
+        in: query
+        required: true
+        schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: 总览快照
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/DashboardSnapshot' }
+                  meta: { type: object, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/audit-logs:
+    get:
+      operationId: support.listAuditLogs
+      summary: 审计日志列表（管理员，只读）
+      description: |
+        按 actorId/action/objectType/objectId/发生时间区间筛选，occurredAt 倒序。
+        审计不提供任何修改或删除接口；查询动作本身不写审计。
+      parameters:
+      - name: actorId
+        in: query
+        required: false
+        schema: { type: string, format: uuid }
+      - name: action
+        in: query
+        required: false
+        schema: { type: string }
+      - name: objectType
+        in: query
+        required: false
+        schema: { type: string }
+      - name: objectId
+        in: query
+        required: false
+        schema: { type: string, format: uuid }
+      - name: from
+        in: query
+        required: false
+        schema: { type: string, format: date-time }
+      - name: to
+        in: query
+        required: false
+        schema: { type: string, format: date-time }
+      - name: page
+        in: query
+        required: false
+        schema: { type: integer, format: int64, minimum: 1, default: 1 }
+      - name: pageSize
+        in: query
+        required: false
+        schema: { type: integer, format: int64, minimum: 1, maximum: 50, default: 12 }
+      responses:
+        '200':
+          description: 分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditViewPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /admin/audit-logs/{id}:
+    get:
+      operationId: support.readAuditLog
+      summary: 审计记录详情（管理员，只读）
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: 审计记录
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/AuditView' }
+                  meta: { type: object, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: WEMOVE_SESSION
+  responses:
+    Unauthorized:
+      description: 会话失效或账户停用
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: 权限或 CSRF 拒绝（含管理员调用用户侧接口）
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: 不存在或非本人资源（不暴露存在性）
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: VERSION_CONFLICT / STATE_CONFLICT / IDEMPOTENCY_CONFLICT / REQUEST_IN_PROGRESS（后者带 Retry-After:2）
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unprocessable:
+      description: 未知字段、严格类型、枚举值或字段校验失败
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    RateLimited:
+      description: RATE_LIMITED（联系类写入 20 次/10 分钟，重试也计数），带 Retry-After
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    TicketType:
+      type: string
+      enum: [GENERAL, PRODUCT, AFTER_SALES]
+    TicketStatus:
+      type: string
+      enum: [NEW, PROCESSING, REPLIED, CLOSED]
+    CreateTicketRequest:
+      type: object
+      additionalProperties: false
+      required: [type, subject, body]
+      properties:
+        type: { $ref: '#/components/schemas/TicketType' }
+        subject: { type: string, minLength: 2, maxLength: 100 }
+        body: { type: string, minLength: 10, maxLength: 2000 }
+        phone:
+          type: string
+          nullable: true
+          maxLength: 255
+          description: 标准化后为可选加号 + 6—20 位数字；空白视为未填
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+          description: type=PRODUCT 时必填
+        orderId:
+          type: string
+          format: uuid
+          nullable: true
+          description: type=AFTER_SALES 时必填且须为本人订单
+    ProductReference:
+      type: object
+      additionalProperties: false
+      required: [id, sku, name]
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string, nullable: true }
+        name: { type: string, nullable: true }
+    OrderReference:
+      type: object
+      additionalProperties: false
+      required: [id, orderNumber, status]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        status: { type: string }
+    MessageView:
+      type: object
+      additionalProperties: false
+      required: [id, kind, content, actorId, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [USER_FOLLOWUP, PUBLIC_REPLY] }
+        content: { type: string }
+        actorId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+    NoteView:
+      type: object
+      additionalProperties: false
+      required: [id, content, actorId, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        content: { type: string }
+        actorId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+    HistoryView:
+      type: object
+      additionalProperties: false
+      required: [id, action, fromStatus, toStatus, ticketVersion, actorId, reason, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        action:
+          type: string
+          enum: [CREATED, STARTED, REPLIED, FOLLOWED_UP, CLOSED]
+          description: 状态历史动作；内部备注（NOTE_ADDED）不写状态历史，仅入审计（审计动作为 TICKET_ 前缀，如 TICKET_CREATED）
+        fromStatus:
+          allOf: [{ $ref: '#/components/schemas/TicketStatus' }]
+          nullable: true
+        toStatus: { $ref: '#/components/schemas/TicketStatus' }
+        ticketVersion: { type: integer, format: int64, minimum: 1 }
+        actorId: { type: string, format: uuid }
+        reason: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    TicketSummary:
+      type: object
+      additionalProperties: false
+      required: [id, ticketNumber, type, status, subject, createdAt, updatedAt, version]
+      properties:
+        id: { type: string, format: uuid }
+        ticketNumber:
+          type: string
+          description: TK + UUID 无横线大写，全局唯一
+        type: { $ref: '#/components/schemas/TicketType' }
+        status: { $ref: '#/components/schemas/TicketStatus' }
+        subject: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, format: int64, minimum: 1 }
+    TicketDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - ticketNumber
+      - type
+      - status
+      - subject
+      - body
+      - phone
+      - product
+      - order
+      - version
+      - createdAt
+      - updatedAt
+      - closedAt
+      - closedBy
+      - closeReason
+      - messages
+      - internalNotes
+      - history
+      - allowedActions
+      properties:
+        id: { type: string, format: uuid }
+        ticketNumber: { type: string }
+        type: { $ref: '#/components/schemas/TicketType' }
+        status: { $ref: '#/components/schemas/TicketStatus' }
+        subject: { type: string }
+        body: { type: string }
+        phone: { type: string, nullable: true }
+        product:
+          allOf: [{ $ref: '#/components/schemas/ProductReference' }]
+          nullable: true
+        order:
+          allOf: [{ $ref: '#/components/schemas/OrderReference' }]
+          nullable: true
+        version: { type: integer, format: int64, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        closedAt: { type: string, format: date-time, nullable: true }
+        closedBy: { type: string, format: uuid, nullable: true }
+        closeReason: { type: string, nullable: true }
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/MessageView' }
+        internalNotes:
+          type: array
+          items: { $ref: '#/components/schemas/NoteView' }
+          description: 仅管理端响应返回；用户响应恒为空数组
+        history:
+          type: array
+          items: { $ref: '#/components/schemas/HistoryView' }
+          description: 仅管理端响应返回；用户响应恒为空数组
+        allowedActions:
+          type: array
+          items: { type: string }
+          description: 用户视角 [FOLLOW_UP, CLOSE]；管理员视角 [START, REPLY, NOTE, CLOSE]；CLOSED 恒为空
+    TicketDetailEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/TicketDetail' }
+        meta: { type: object, nullable: true }
+    PageMeta:
+      type: object
+      additionalProperties: false
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page: { type: integer, format: int64, minimum: 1 }
+        pageSize: { type: integer, format: int64, minimum: 1 }
+        totalItems: { type: integer, format: int64, minimum: 0 }
+        totalPages: { type: integer, format: int64, minimum: 0 }
+    TicketSummaryPage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/TicketSummary' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    DashboardSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - publishedProductCount
+      - activeUserCount
+      - pendingApplicationCount
+      - pendingInquiryCount
+      - pendingTicketCount
+      - pendingShipmentCount
+      - createdOrderCount
+      - netPaidFen
+      - asOf
+      - start
+      - end
+      properties:
+        publishedProductCount: { type: integer, format: int64, minimum: 0 }
+        activeUserCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 启用状态账户，含管理员
+        pendingApplicationCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 待审核合作申请（PENDING）数量，经经销域（D）统计端口实时返回
+        pendingInquiryCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 待处理询价（NEW/PROCESSING）数量，经经销域（D）统计端口实时返回
+        pendingTicketCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: status IN (NEW, PROCESSING)
+        pendingShipmentCount: { type: integer, format: int64, minimum: 0 }
+        createdOrderCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: [start, end) 区间内创建的订单数
+        netPaidFen:
+          type: string
+          description: 区间净收款，整数分字符串（成功付款 − 模拟退款）
+        asOf: { type: string, format: date-time }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+    AuditView:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - actorId
+      - action
+      - objectType
+      - objectId
+      - result
+      - reason
+      - occurredAt
+      - requestId
+      - changeSummary
+      properties:
+        id: { type: string, format: uuid }
+        actorId: { type: string, format: uuid, nullable: true }
+        action: { type: string }
+        objectType: { type: string }
+        objectId: { type: string }
+        result: { type: string }
+        reason: { type: string, nullable: true }
+        occurredAt: { type: string, format: date-time }
+        requestId: { type: string, nullable: true }
+        changeSummary: { type: string, nullable: true }
+    AuditViewPage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/AuditView' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    Problem:
+      type: object
+      required: [type, title, status, detail, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer, format: int64, minimum: 0 }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+        requestId: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code: { type: string }
+              message: { type: string }

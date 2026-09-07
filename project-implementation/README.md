@@ -56,6 +56,7 @@ Java 根包统一为 `wemove`，`identity`、`catalog` 及后续 `commerce` 等�
 | 商品与库存 | [catalog.yaml](contracts/openapi/catalog.yaml) | [模块索引](docs/modules/catalog/README.md)、[运行与验证手册](docs/modules/catalog/运行与验证手册.md)、[验证记录](docs/modules/catalog/验证记录.md) | B |
 | 零售交易 | [commerce.yaml](contracts/openapi/commerce.yaml) | [模块索引](docs/modules/commerce/README.md)、[实现方案与 A/B 检查](docs/modules/commerce/WEMOVE角色C实现方案与AB检查.md) | C |
 | 经销合作 | [dealership.yaml](contracts/openapi/dealership.yaml) | [模块索引](docs/modules/dealership/README.md)、[运行与验证手册](docs/modules/dealership/运行与验证手册.md)、[验证记录](docs/modules/dealership/验证记录.md) | D |
+| 工单与运营（support/operations） | [support.yaml](contracts/openapi/support.yaml) | [模块索引](docs/modules/support/README.md)、[验证记录](docs/verification/support/README.md) | F |
 
 初版公共界面及无需后端的只读预览见[静态界面与开发预览](docs/modules/content/静态界面与开发预览.md)，覆盖现有 17 条业务路由。开发环境可访问 `http://localhost:5173/?preview=1`。
 
@@ -145,7 +146,7 @@ npm --prefix project-implementation/apps/web run build
 | 模块设计、运行和交付记录 | `docs/modules/<业务域>/` | 添加或更新模块 `README.md`，在本文件的模块索引中登记 |
 | 验证截图、测试用例 | `docs/verification/<业务域>/`、`tests/cases/` | 证据链接对应记录；用例审核状态与执行结果分别维护 |
 
-业务域沿用分工文档：A 为 `identity`，B 为 `catalog`，C 为 `commerce`，D 为 `dealership`，E 为 `content`，F 按职责使用 `support` 和 `operations`。**成员编号用于分工，业务域用于代码和模块资料命名；不再创建 `partA/`、`partB/`、`partC/` 等成员目录。** 当前 `identity`、`catalog`、`commerce` 与 `dealership` 已接入共享应用；D 的实现与验证边界见经销合作模块索引。空目录用 `.gitkeep` 保留，不代表业务已经实现。E/F 仍为后续接入约定。
+业务域沿用分工文档：A 为 `identity`，B 为 `catalog`，C 为 `commerce`，D 为 `dealership`，E 为 `content`，F 按职责使用 `support` 和 `operations`。**成员编号用于分工，业务域用于代码和模块资料命名；不再创建 `partA/`、`partB/`、`partC/` 等成员目录。** 当前 `identity`、`catalog`、`commerce` 与 `dealership` 已接入共享应用，D 的实现与验证边界见经销合作模块索引；F 已接入工单、运营总览与审计检索（FR-19/20/21/32），实施与实际验证见工单与运营模块索引。空目录用 `.gitkeep` 保留，不代表业务已经实现。E 仍为后续接入约定。
 
 后端启动类为根包 `wemove` 下的 `WemoveApplication`，默认组件、实体、仓库与配置属性扫描覆盖全部子包。A 的代码只放在 `wemove.identity`；B 在 `wemove.catalog`；C 使用 `wemove.commerce`。不再将其他业务嵌套在 `identity` 下。公共 HTTP 响应/异常位于 `wemove.platform.api`，幂等存储位于 `wemove.platform.idempotency`，全局请求过滤器位于 `wemove.platform.security`。
 
