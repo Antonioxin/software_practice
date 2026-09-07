@@ -100,6 +100,12 @@ public class CatalogIntegrationService implements CatalogPort {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<DealerProductProjection> getDealerProducts() {
+        return getDealerProducts(products.findAll().stream().map(ProductEntity::getId).toList());
+    }
+
     private List<UUID> orderedIds(Collection<UUID> ids) {
         if (ids == null) return List.of();
         return ids.stream()

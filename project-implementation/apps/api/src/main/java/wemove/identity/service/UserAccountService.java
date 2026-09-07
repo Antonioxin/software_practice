@@ -240,7 +240,9 @@ public class UserAccountService {
                             "ADMIN_CATALOG_READ",
                             "ADMIN_CATALOG_WRITE",
                             "ADMIN_ORDERS_READ",
-                            "ADMIN_ORDERS_WRITE"));
+                            "ADMIN_ORDERS_WRITE",
+                            "ADMIN_DEALERSHIP_READ",
+                            "ADMIN_DEALERSHIP_WRITE"));
         } else {
             capabilities.addAll(
                     Set.of(
@@ -249,8 +251,15 @@ public class UserAccountService {
                             "CART_READ",
                             "CART_WRITE",
                             "ORDERS_READ",
-                            "ORDERS_WRITE"));
-            if ("DEALER".equals(derived)) capabilities.add("DEALER_ACCESS");
+                            "ORDERS_WRITE",
+                            "DEALER_APPLICATION_READ",
+                            "DEALER_APPLICATION_WRITE",
+                            "INQUIRIES_READ"));
+            if ("DEALER".equals(derived)) {
+                capabilities.add("DEALER_ACCESS");
+                capabilities.add("DEALER_CATALOG_READ");
+                capabilities.add("INQUIRIES_WRITE");
+            }
         }
         return new Dtos.Actor(
                 user.getId(),

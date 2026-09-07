@@ -1,0 +1,13 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import SiteShell from '../../components/SiteShell.vue'
+import { companyStatus, getCompanies } from '../../features/dealership/api'
+import type { Company } from '../../features/dealership/types'
+import '../../features/dealership/style.css'
+const companies = ref<Company[]>([]); const status = ref(''); const loading = ref(true); const error = ref('')
+async function load() { loading.value = true; try { companies.value = (await getCompanies(status.value ? `status=${status.value}` : '')).items } catch (cause) { error.value = (cause as Error).message } finally { loading.value = false } }
+async function toggle(company: Company) { try { const action = company.cooperationStatus === 'ACTIVE' ? '暂停' : '恢复'; const result = await ElMessageBox.prompt(`请输入${action}合作原因`, `${action}合作`, { inputPattern: /^.{2,500}$/, inputErrorMessage: '请填写 2—500 个字符' }); await companyStatus(company, company.cooperationStatus === 'SUSPENDED', result.value); ElMessage.success(`合作已${action}`); await load() } catch (cause) { if (cause instanceof Error && cause.message) error.value = cause.message } }
+onMounted(load)
+</script>
+<template><SiteShell title="合作企业" admin eyebrow="OPERATIONS / COMPANIES"><section class="paper-section"><div class="dealer-toolbar"><select v-model="status" @change="load"><option value="">全部状态</option><option value="ACTIVE">合作有效</option><option value="SUSPENDED">合作暂停</option></select><RouterLink class="secondary-button" to="/admin/channels">管理公开渠道</RouterLink></div><p v-if="error" class="error-summary">{{ error }}</p><div v-if="loading" class="dealer-empty">正在读取合作企业…</div><div v-else class="company-grid"><article v-for="company in companies" :key="company.id"><header><div><p>{{ company.countryOrRegion }} · {{ company.city }}</p><h2>{{ company.companyName }}</h2></div><span class="dealer-status" :data-status="company.cooperationStatus">{{ company.cooperationStatus === 'ACTIVE' ? '合作有效' : '合作暂停' }}</span></header><dl><div><dt>联系人</dt><dd>{{ company.contactName }} · {{ company.phone }}</dd></div><div><dt>合作邮箱</dt><dd>{{ company.cooperationEmail }}</dd></div><div><dt>公开意愿</dt><dd>{{ company.sourcePublicConsent ? '已同意' : '未同意' }}</dd></div><div><dt>记录版本</dt><dd>v{{ company.version }}</dd></div></dl><button :class="company.cooperationStatus === 'ACTIVE' ? 'danger-button' : 'primary-button'" type="button" @click="toggle(company)">{{ company.cooperationStatus === 'ACTIVE' ? '暂停合作' : '恢复合作' }}</button><small v-if="company.cooperationStatus === 'SUSPENDED'">恢复合作不会自动重新发布关联渠道。</small></article></div></section></SiteShell></template>

@@ -24,6 +24,7 @@ async function signOut() {
       <nav class="wm-navigation" aria-label="主导航">
         <RouterLink to="/" exact-active-class="is-active"><SketchIcon name="home" />首页</RouterLink>
         <RouterLink to="/products" active-class="is-active"><SketchIcon name="grid" />探索商品</RouterLink>
+        <RouterLink to="/channels" active-class="is-active"><SketchIcon name="share" />购买渠道</RouterLink>
         <RouterLink v-if="!session.isAdmin" to="/account/orders" active-class="is-active"><SketchIcon name="orders" />我的订单</RouterLink>
         <RouterLink v-else to="/admin/products" active-class="is-active"><SketchIcon name="filter" />管理后台</RouterLink>
       </nav>
@@ -36,7 +37,7 @@ async function signOut() {
         <button class="wm-menu-button wm-icon-button" type="button" aria-controls="public-mobile-menu" :aria-expanded="menuOpen" :aria-label="menuOpen ? '关闭导航' : '展开导航'" @click="menuOpen = !menuOpen"><SketchIcon :name="menuOpen ? 'close' : 'menu'" /></button>
       </div>
       <nav v-if="menuOpen" id="public-mobile-menu" class="wm-mobile-menu" aria-label="移动端导航">
-        <RouterLink to="/">首页</RouterLink><RouterLink to="/products">探索商品</RouterLink>
+        <RouterLink to="/">首页</RouterLink><RouterLink to="/products">探索商品</RouterLink><RouterLink to="/channels">购买渠道</RouterLink>
         <RouterLink :to="session.isAdmin ? '/admin/orders' : '/account/orders'">{{ session.isAdmin ? '订单管理' : '我的订单' }}</RouterLink>
         <RouterLink v-if="session.isAdmin" to="/admin/products">商品管理</RouterLink>
         <RouterLink :to="session.actor ? (session.isAdmin ? '/admin/users' : '/account/profile') : '/login'">{{ session.actor ? '账户信息' : '登录 / 注册' }}</RouterLink>
