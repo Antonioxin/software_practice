@@ -45,7 +45,9 @@ export interface Order {
   currency: string
   mode: string
   createdAt: string
+  items: OrderItemSummary[]
 }
+export type OrderItemSummary = Pick<Line, 'productId' | 'sku' | 'name' | 'quantity'>
 export interface Detail extends Order {
   shippingAddress: Address
   remark: string

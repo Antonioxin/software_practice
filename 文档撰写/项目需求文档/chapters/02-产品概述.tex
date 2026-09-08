@@ -1,0 +1,263 @@
+% 根据已评审 Markdown 需求基线排版；需求语义与编号保持一致。
+\Needspace{12\baselineskip}
+\section{产品概述}\label{sec:2-产品概述}
+
+\Needspace{10\baselineskip}
+\subsection{产品背景与业务目标}\label{sec:21-产品背景与业务目标}
+
+平台服务于运动玩具品牌的产品展示、消费咨询和渠道合作，将商品与内容维护集中到统一后台。公开内容、个人零售记录和企业合作信息采用不同访问边界；管理员通过管理界面维护数据并处理用户提交的业务。
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.230\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.520\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.250\linewidth-2\tabcolsep\relax}}
+\caption{业务目标与能力对应关系}\label{tab:5}\\
+\toprule
+{\bfseries 目标} & {\bfseries 业务结果} & {\bfseries 对应能力} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 目标} & {\bfseries 业务结果} & {\bfseries 对应能力} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+G1 支持产品发现与理解 & 用户能够按分类、适用年龄、玩法和场景找到商品，读取规格、玩法与安全信息。 & FR-01 至 FR-08。 \\
+\tabledivider
+G2 贯通零售交易流程 & 用户能够从购物车形成订单，跟踪模拟付款、取消、发货和收货结果。 & FR-09 至 FR-18。 \\
+\tabledivider
+G3 建立经销合作入口 & 申请、审核、专属信息访问和询价回复可追踪，合作状态决定权限。 & FR-22 至 FR-25、FR-30。 \\
+\tabledivider
+G4 支持日常服务与运营 & 平台能够维护商品和内容，处理咨询，查看业务待办及关键操作记录。 & FR-19 至 FR-21、FR-26 至 FR-32。 \\
+\tabledivider
+G5 保持业务数据可信 & 金额、库存、状态和数据归属满足统一规则，异常结果可恢复、可核验。 & FR-11、BR-01 至 BR-07、NFR-01 至 NFR-05。 \\
+\end{longtable}
+\endgroup
+
+\Needspace{10\baselineskip}
+\subsection{主要功能}\label{sec:22-主要功能}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.170\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.830\linewidth-2\tabcolsep\relax}}
+\caption{主要功能}\label{tab:6}\\
+\toprule
+{\bfseries 功能域} & {\bfseries 本版本提供的能力} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 功能域} & {\bfseries 本版本提供的能力} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+公开网站 & 首页、品牌介绍、商品列表与详情、搜索筛选、玩法文章、FAQ、资料下载、地区渠道查询。 \\
+\tabledivider
+身份与个人中心 & 成人账户注册、登录退出、会话管理、个人资料及本人业务记录。 \\
+\tabledivider
+零售交易 & 登录购物车、结算、订单创建、模拟付款、取消与模拟退款、模拟发货、确认收货。 \\
+\tabledivider
+客户支持 & 一般联系、产品咨询、订单售后咨询、补充问题、公开回复及关闭。 \\
+\tabledivider
+经销合作 & 企业申请、版本化重提、审核、合作状态、统一专属目录与参考价、私有资料及询价。 \\
+\tabledivider
+运营管理 & 商品、分类、价格、库存、内容、媒体、企业、渠道、用户状态、待办统计和操作记录。 \\
+\end{longtable}
+\endgroup
+
+\Needspace{10\baselineskip}
+\subsection{用户类别与权限边界}\label{sec:23-用户类别与权限边界}
+
+\Needspace{12\baselineskip}
+\subsubsection{目标用户}\label{sec:231-目标用户}
+
+网站面向家长及成年消费者、礼品购买者、零售商与批发商、进口商、教育或活动机构采购人员，以及平台运营人员。普通消费者主要关注产品适用性、购买流程和服务结果；采购人员关注产品规格、参考价格、供货信息和合作进度；平台人员关注维护效率、待办处理及业务记录。
+
+儿童是部分商品的使用对象，网站账户与业务操作面向成年人。系统不得创建儿童账户、儿童档案或儿童社区，也不得主动收集儿童姓名、生日、照片、学校和位置。商品适用年龄只用于表达产品属性和筛选条件。
+
+\Needspace{12\baselineskip}
+\subsubsection{系统角色}\label{sec:232-系统角色}
+
+\begin{enumerate}
+\item {\bfseries 游客}：未登录，可浏览公开信息。
+\item {\bfseries 普通用户}：已注册的成人账户，可使用个人零售业务、提交咨询和经销商申请。
+\item {\bfseries 有效经销商}：申请已通过且合作状态有效的用户；保留普通用户能力，并增加经销商目录、价格、资料和询价权限。
+\item {\bfseries 管理员}：平台内部账户，统一承担商品运营、内容运营、订单处理和合作审核。本版本不拆分更多内部角色。
+\end{enumerate}
+
+经销商申请状态与合作状态分开维护。待审核和被驳回均不获得专属权限；暂停合作后，账户仍可登录查看本人历史记录和使用普通用户功能，但立即失去经销商专属资源及新询价权限。
+
+\Needspace{12\baselineskip}
+\subsubsection{权限矩阵}\label{sec:233-权限矩阵}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.290\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.170\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.240\linewidth-2\tabcolsep\relax}}
+\caption{角色权限矩阵}\label{tab:7}\\
+\toprule
+{\bfseries 操作} & {\bfseries 游客} & {\bfseries 普通用户} & {\bfseries 有效经销商} & {\bfseries 管理员} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 操作} & {\bfseries 游客} & {\bfseries 普通用户} & {\bfseries 有效经销商} & {\bfseries 管理员} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+浏览公开商品、零售价、文章、FAQ、公开资料、门店 & 允许 & 允许 & 允许 & 允许 \\
+\tabledivider
+购物车、模拟零售购买 & 登录后 & 本人 & 本人，按零售价 & 不允许发起个人零售交易 \\
+\tabledivider
+查看个人订单、咨询及申请记录 & 不允许 & 本人 & 本人 & 按后台职责查看全部 \\
+\tabledivider
+提交经销商申请 & 登录后 & 允许，受申请状态限制 & 不重复申请 & 不代替用户申请 \\
+\tabledivider
+查看经销商价格及专属资料 & 不允许 & 不允许 & 允许 & 允许管理 \\
+\tabledivider
+提交经销商询价 & 不允许 & 不允许 & 本人企业 & 回复和管理 \\
+\tabledivider
+查看其他用户或企业的非公开记录 & 不允许 & 不允许 & 不允许 & 后台允许，记录关键操作 \\
+\tabledivider
+维护商品、库存、内容、渠道 & 不允许 & 不允许 & 不允许 & 允许 \\
+\tabledivider
+发货、审核申请、暂停合作、停用账户 & 不允许 & 不允许 & 不允许 & 允许 \\
+\tabledivider
+创建管理员／修改自身角色 & 不允许 & 不允许 & 不允许 & 本版本不提供在线角色管理；通过初始化配置创建 \\
+\end{longtable}
+\endgroup
+
+\Needspace{7\baselineskip}
+权限可写为：
+
+\[
+\begin{aligned}
+\operatorname{Allow}(u,a,r)={}&\operatorname{Authenticated}(u)\land\operatorname{Active}(u)\\
+ &{}\land\operatorname{RoleAllowed}(u,a)\land\operatorname{ScopeAllowed}(u,r)
+\end{aligned}
+\]
+
+其中 \(u\) 为用户，\(a\) 为动作，\(r\) 为数据资源；公开读取接口不要求登录。前端隐藏按钮只改善界面体验，服务端仍须独立检查上述条件。
+
+\Needspace{10\baselineskip}
+\subsection{产品约束}\label{sec:24-产品约束}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.090\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.520\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.390\linewidth-2\tabcolsep\relax}}
+\caption{产品约束}\label{tab:8}\\
+\toprule
+{\bfseries 编号} & {\bfseries 约束} & {\bfseries 影响} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 编号} & {\bfseries 约束} & {\bfseries 影响} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+C-01 & 本版本零售固定采用模拟支付、模拟退款和模拟履约，页面应明确标识 & 不接入支付或物流供应商，不收集银行卡和支付账户。 \\
+\tabledivider
+C-02 & 默认界面语言为简体中文，金额币种为 CNY，商品英文名称可保留 & 不处理汇率、多市场定价或完整翻译工作流。 \\
+\tabledivider
+C-03 & 一个商品对应一个 SKU，交易数量单位为件 & 独立售卖的颜色或包装版本可建立为不同商品。 \\
+\tabledivider
+C-04 & 零售运费为 0，税费不单独计算，无折扣 & 结算界面应明确显示金额构成，合计按 BR-01 计算。 \\
+\tabledivider
+C-05 & 库存由平台维护，付款成功时扣减，一次整单发货 & 不支持预售、多仓和分批履约；并发规则按 BR-02、BR-06 执行。 \\
+\tabledivider
+C-06 & 一个企业对应一个主账户；有效经销商使用统一目录和参考价 & 不设置子账号、等级价、企业专属价、账期或授信。 \\
+\tabledivider
+C-07 & 通知通过操作反馈、个人中心记录和后台待办呈现 & 本版本无邮件、短信或第三方消息依赖。 \\
+\tabledivider
+C-08 & 首页使用固定布局，内容由后台维护 & 不提供任意页面搭建、定时发布或内容版本回滚。 \\
+\tabledivider
+C-09 & 系统应包含实际业务服务与持久化数据库 & 框架和数据库产品由设计阶段选择；前后端部署方式不改变需求。 \\
+\end{longtable}
+\endgroup
+
+\Needspace{12\baselineskip}
+\subsection{假设与依赖}\label{sec:25-假设与依赖}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.090\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.390\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.170\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.350\linewidth-2\tabcolsep\relax}}
+\caption{假设与依赖}\label{tab:9}\\
+\toprule
+{\bfseries 编号} & {\bfseries 假设或依赖} & {\bfseries 责任方} & {\bfseries 不满足时的处理} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 编号} & {\bfseries 假设或依赖} & {\bfseries 责任方} & {\bfseries 不满足时的处理} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+A-01 & 品牌名称、图片、产品描述、安全资料和联系方式可由业务方提供并确认 & 业务负责人、品牌运营 & 未确认内容不得作为正式品牌事实发布；验收环境使用明确标识的测试资料。 \\
+\tabledivider
+A-02 & 零售价、经销参考价、库存及交期由平台维护 & 商品运营 & 缺少必填数据的商品保持草稿或关闭经销目录入口。 \\
+\tabledivider
+A-03 & 经销申请、询价和工单由平台人员人工处理 & 经销运营、客户服务 & 记录保持当前待办状态；处理时限由运营约定，本版本不设自动审批。 \\
+\tabledivider
+A-04 & 运行环境提供数据库、文件存储和网络连接 & 技术与运行维护人员 & 故障时按错误反馈规则返回结果；未成功的业务变更不得部分保存。 \\
+\tabledivider
+A-05 & 用户通过支持的浏览器访问，无需额外插件或专用设备 & 产品与研发 & 受支持环境以 NFR-03、NFR-04 的验证范围为准。 \\
+\end{longtable}
+\endgroup
+
+\Needspace{10\baselineskip}
+\subsection{需求分配与版本边界}\label{sec:26-需求分配与版本边界}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.250\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.570\linewidth-2\tabcolsep\relax}}
+\caption{需求分配与版本边界}\label{tab:10}\\
+\toprule
+{\bfseries 子系统} & {\bfseries 主要需求} & {\bfseries 本版本边界} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 子系统} & {\bfseries 主要需求} & {\bfseries 本版本边界} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+公开网站 & FR-01 至 FR-08 & 产品搜索和地区列表，不含全站全文搜索、地图距离排序。 \\
+\tabledivider
+身份与权限 & FR-09 至 FR-12 & 固定角色、成人账户、服务端授权，不含子账号和在线角色配置。 \\
+\tabledivider
+零售交易 & FR-13 至 FR-18 & 模拟交易、整车结算与整单处理，不含真实支付和发货后的退款执行。 \\
+\tabledivider
+用户支持 & FR-19 至 FR-21 & 文本工单和公开回复，不含用户附件、客服分配或外部 CRM。 \\
+\tabledivider
+经销合作 & FR-22 至 FR-25 & 申请、授权目录与询价，不含正式报价接受或转订单。 \\
+\tabledivider
+运营管理 & FR-26 至 FR-32 & 商品内容维护、业务处理和基本统计，不含复杂营销或分析平台。 \\
+\tabledivider
+跨模块规则 & BR-01 至 BR-07、NFR-01 至 NFR-05 & 统一应用于各子系统，前端展示不能替代后端校验。 \\
+\end{longtable}
+\endgroup
+
+后续增强与远期能力未纳入本版本交付范围；新增需求应经评审确认后纳入后续版本。

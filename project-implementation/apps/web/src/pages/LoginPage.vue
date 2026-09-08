@@ -33,7 +33,7 @@ async function submit() {
 </script>
 
 <template>
-  <AuthShell eyebrow="ACCOUNT ACCESS" title="欢迎回来" description="登录后继续管理您的资料与业务记录。">
+  <AuthShell class="login-page" title="欢迎回来" handwritten-story>
     <form class="identity-form" novalidate @submit.prevent="submit">
       <div v-if="registered" class="success-summary" role="status"><strong>账户已创建</strong><span>请使用新账户登录。</span></div>
       <div v-if="error" class="error-summary" role="alert"><strong>未能登录</strong><span>{{ error }}</span></div>
@@ -48,8 +48,16 @@ async function submit() {
         <span v-if="fields.password" class="field-error">{{ fields.password }}</span>
       </div>
       <button class="primary-button" type="submit" :disabled="busy">{{ busy ? '正在验证…' : '登录账户' }}<span aria-hidden="true">→</span></button>
-      <p class="form-switch">还没有账户？<RouterLink to="/register">创建成人账户</RouterLink></p>
-      <div class="security-note"><span aria-hidden="true">◇</span><p><strong>安全会话</strong>空闲 30 分钟后自动退出，请勿在公共设备保留登录。</p></div>
+      <p class="form-switch">还没有账户？<RouterLink to="/register">点此创建一个属于您的账户</RouterLink></p>
     </form>
   </AuthShell>
 </template>
+
+<style scoped>
+.identity-form { margin-top: 28px; }
+.form-switch { line-height: 1.7; }
+.form-switch a { display: inline-block; }
+@media (min-width: 761px) {
+  .login-page :deep(.form-panel) { margin-top: clamp(56px, 5.1vw, 72px); }
+}
+</style>

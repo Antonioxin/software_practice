@@ -32,6 +32,10 @@ describe('开发预览的响应契约', () => {
     expect(orders.meta).toBeUndefined()
     expect(orders.data).toMatchObject({ page: 1, pageSize: 2, total: 4 })
     expect(orders.data.items).toHaveLength(2)
+    for (const summary of orders.data.items) {
+      const savedOrder = fixtures.orders.find(order => order.id === summary.id)!
+      expect(summary.items).toEqual(savedOrder.items.map(({ productId, sku, name, quantity }) => ({ productId, sku, name, quantity })))
+    }
   })
 
   it('公开商品不包含经销价格，筛选包含 BOTH 场景且数据不会被调用方改写', () => {

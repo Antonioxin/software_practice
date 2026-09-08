@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import wemove.commerce.api.CommerceDtos.*;
 import wemove.commerce.domain.Order;
+import wemove.commerce.domain.OrderItem;
 import wemove.commerce.repository.CommerceRepository;
 
 import java.time.Instant;
@@ -37,9 +38,17 @@ public class OrderQueryService {
         if (start != null && end != null && !start.isBefore(end))
             throw invalid("start", "开始时间必须早于结束时间。");
         UUID user = admin ? null : actor;
+        List<Order> orders = db.list(user, status, start, end, (page - 1) * pageSize, pageSize);
+        Map<UUID, List<ItemSummary>> itemsByOrder = new HashMap<>();
+        if (!orders.isEmpty()) {
+            for (OrderItem item : db.itemsForOrders(orders.stream().map(o -> o.id).toList())) {
+                itemsByOrder.computeIfAbsent(item.orderId, id -> new ArrayList<>())
+                        .add(itemSummary(item));
+            }
+        }
         return new OrderPage(
-                db.list(user, status, start, end, (page - 1) * pageSize, pageSize).stream()
-                        .map(this::summary)
+                orders.stream()
+                        .map(o -> summary(o, itemsByOrder.getOrDefault(o.id, List.of())))
                         .toList(),
                 page,
                 pageSize,
@@ -54,6 +63,14 @@ public class OrderQueryService {
     }
 
     public Summary summary(Order o) {
+        return summary(o, db.items(o.id).stream().map(this::itemSummary).toList());
+    }
+
+    private ItemSummary itemSummary(OrderItem item) {
+        return new ItemSummary(item.productId, item.sku, item.name, item.quantity);
+    }
+
+    private Summary summary(Order o, List<ItemSummary> items) {
         return new Summary(
                 o.id,
                 o.orderNumber,
@@ -62,7 +79,8 @@ public class OrderQueryService {
                 o.currency,
                 o.totalFen,
                 o.mode,
-                o.createdAt);
+                o.createdAt,
+                items);
     }
 
     public Detail detail(Order o, boolean admin) {

@@ -1,0 +1,246 @@
+% =============================================
+% 实验报告 / 课程报告 LaTeX 通用模板
+% 基于 xelatex + ctex 编译
+% 适用：A4 / 12pt / 中文（宋体 + 黑体）
+% =============================================
+\documentclass[12pt, a4paper]{article}
+
+% ---- 中文支持 ----
+% 注：以下字体路径基于 macOS。若在其他系统上使用，请把 Path=... 替换为本机字体目录
+% 或直接删除 Path 与 FontIndex 选项，改用系统已注册的字体名称（如 SimSun、SimHei）。
+\usepackage[fontset=none]{ctex}
+\setCJKmainfont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/, FontIndex=3, BoldFont=Songti.ttc, BoldFeatures={FontIndex=3}]
+\setCJKsansfont{STHeiti Light.ttc}[Path=/System/Library/Fonts/, BoldFont=STHeiti Light.ttc]
+\setCJKmonofont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/, FontIndex=3, BoldFont=Songti.ttc, BoldFeatures={FontIndex=3}]
+\setCJKfamilyfont{zhsong}{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/, FontIndex=3, BoldFont=Songti.ttc, BoldFeatures={FontIndex=3}]
+\setCJKfamilyfont{zhhei}{STHeiti Light.ttc}[Path=/System/Library/Fonts/, BoldFont=STHeiti Light.ttc]
+\setCJKfamilyfont{zhfs}{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/, FontIndex=3, BoldFont=Songti.ttc, BoldFeatures={FontIndex=3}]
+\setCJKfamilyfont{zhkai}{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/, FontIndex=3, BoldFont=Songti.ttc, BoldFeatures={FontIndex=3}]
+\newcommand{\songti}{\CJKfamily{zhsong}}
+\newcommand{\heiti}{\CJKfamily{zhhei}}
+\newcommand{\fangsong}{\CJKfamily{zhfs}}
+\newcommand{\kaishu}{\CJKfamily{zhkai}}
+
+% ---- 页面布局 ----
+\usepackage[
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=2.5cm
+]{geometry}
+
+% ---- 图片 ----
+\usepackage{graphicx}
+\usepackage{float}
+\graphicspath{{figures/}}
+
+% ---- 表格 ----
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+
+% ---- 代码高亮 ----
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{red!70!black},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{black!30},
+  backgroundcolor=\color{gray!5},
+  showstringspaces=false,
+  tabsize=4,
+}
+
+% ---- 超链接 ----
+\usepackage[
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  urlcolor=blue,
+  citecolor=green!50!black
+]{hyperref}
+
+% ---- 数学 ----
+\usepackage{amsmath, amssymb}
+
+% ---- 页眉页脚 ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small \courseName}
+\fancyhead[R]{\small \leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---- 其他工具 ----
+\usepackage{enumitem}
+\usepackage{caption}
+\captionsetup{font=small, labelfont=bf}
+
+% ---- 封面绘图 ----
+\usepackage{tikz}
+\usepackage{array}
+
+% =============================================
+%  封面信息（每次新报告只需修改这一段）
+% =============================================
+\newcommand{\courseName}{课程名称}                   % 页眉左侧 / 课程名
+\newcommand{\expTitle}{实验大标题}                   % 封面正中大字
+\newcommand{\expFullTitle}{实验报告完整题目}         % 题目栏
+\newcommand{\academicYear}{2025-2026-2}              % 学年学期
+\newcommand{\college}{计算机学院}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\studentName}{姓名}
+\newcommand{\studentID}{学号}
+\newcommand{\instructor}{任课教师}
+\newcommand{\expDate}{YYYY 年 M 月 D 日}
+
+% 校名图片文件名（位于 figures/ 下，不带路径前缀）
+\newcommand{\titleLogo}{杭电文字 title.png}
+
+% =============================================
+\begin{document}
+
+% ---- 封面 ----
+\begin{titlepage}
+  \thispagestyle{empty}
+
+  \centering
+  \vspace*{2.0cm}
+
+  % ---- 校名图片 ----
+  \includegraphics[width=11cm]{\titleLogo}
+
+  \vspace{2.2cm}
+
+  % ---- 实验大标题 ----
+  {\fontsize{38}{50}\selectfont\heiti\bfseries \expTitle\par}
+
+  \vspace{0.9cm}
+
+  % ---- 学年 ----
+  {\Large\bfseries （\academicYear）\par}
+
+  \vspace{3.0cm}
+
+  % ---- 信息表格 ----
+  % 辅助命令：带下划线的定宽内容框
+  \newcommand{\infobox}[1]{\underline{\makebox[7.8cm][c]{\large #1}}}
+
+  \renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{>{\large\bfseries}p{2.6cm} l}
+    题\quad 目 & \infobox{\expFullTitle}   \\
+    学\quad 院 & \infobox{\college}        \\
+    专\quad 业 & \infobox{\major}          \\
+    学\quad 号 & \infobox{\studentID}      \\
+    学生姓名   & \infobox{\studentName}    \\
+    任课教师   & \infobox{\instructor}     \\
+    完成日期   & \infobox{\expDate}        \\
+  \end{tabular}
+
+\end{titlepage}
+
+% ---- 目录 ----
+\tableofcontents
+\newpage
+
+% =============================================
+%  正文
+%  小提示：
+%   - 章节多时可用 \input{sections/01-purpose.tex} 等方式拆分
+%   - 图片放 figures/ 下，\includegraphics 时省略路径前缀
+%   - 代码块用 lstlisting 环境，已在 \lstset 中预设样式
+% =============================================
+
+\section{实验目的}
+
+% TODO: 用 itemize 列出本次实验需要达成的目标
+\begin{itemize}
+  \item 目的一……
+  \item 目的二……
+  \item 目的三……
+\end{itemize}
+
+
+\section{实验背景与原理}
+
+% TODO: 阐述与本次实验相关的背景知识、概念定义和原理。
+% 建议分自然段叙述，必要时配合 itemize/enumerate 罗列要点。
+
+
+\section{实验环境}
+
+% TODO: 列出操作系统、虚拟机、发行版、内核版本等。
+\begin{table}[H]
+  \centering
+  \caption{实验环境信息}
+  \begin{tabularx}{\linewidth}{>{\centering\arraybackslash}p{3.5cm} >{\centering\arraybackslash}X}
+    \toprule
+    \textbf{项目} & \textbf{说明} \\
+    \midrule
+    操作系统      & TODO \\
+    虚拟机软件    & TODO \\
+    Linux 发行版  & TODO \\
+    内核版本      & TODO \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+\section{实验设计}
+
+% TODO: 说明实验整体思路与各部分的安排。可以分若干 \subsection 介绍每个部分。
+
+\subsection{第一部分：标题}
+
+% TODO: 描述本部分的目的与所用命令/方法。
+
+\subsection{第二部分：标题}
+
+% TODO: 同上。
+
+
+\section{实验过程与结果分析}
+
+\subsection{第一部分：标题}
+
+% TODO: 在每个步骤里穿插 \begin{lstlisting} 代码块和 \begin{figure} 截图。
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{操作步骤一。}
+
+\begin{lstlisting}[language=bash, caption={示例命令}]
+echo "hello world"
+\end{lstlisting}
+
+        在此处分析图 \ref{fig:example} 的输出：……
+
+        \begin{figure}[H]
+          \centering
+          \includegraphics[width=0.9\linewidth]{example.png}
+          \caption{示例截图}
+          \label{fig:example}
+        \end{figure}
+
+  \item \textbf{操作步骤二。} ……
+\end{enumerate}
+
+
+\section{实验总结}
+
+% TODO: 总结主要结论、收获与可拓展的方向。
+
+
+\newpage
+\section{参考文献}
+
+\begin{enumerate}[label={[\arabic*]}, leftmargin=2.2em]
+  \item 作者. \emph{文献标题}. 出版方, 年份. \url{https://example.com/}.
+\end{enumerate}
+
+\end{document}

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SketchIcon from '../components/SketchIcon.vue'
 import PublicShell from '../components/PublicShell.vue'
+import PolaroidMotion from '../components/PolaroidMotion.vue'
 import { buildCatalogQuery, formatAgeRange, formatCny } from '../features/catalog/presentation'
 import { productIllustrationSrc } from '../features/catalog/productImages'
 import { api, ApiProblem } from '../services/http'
@@ -168,15 +169,17 @@ watch(() => route.query, loadProducts, { immediate: true })
         <div v-else-if="error" class="shop-state" role="alert"><SketchIcon name="help" :size="66" /><h2>暂时无法取得商品</h2><p>{{ error }}</p><button class="shop-state-action" type="button" @click="loadProducts">重新加载</button></div>
         <div v-else-if="!products.length" class="shop-state"><SketchIcon name="search" :size="66" /><h2>未找到符合条件的商品</h2><p>试试减少筛选条件，或返回全部商品。</p><button class="shop-state-action" type="button" @click="clearFilters">查看全部商品</button></div>
         <div v-else class="shop-grid" aria-label="商品列表">
-          <RouterLink v-for="(product, index) in products" :key="product.id" class="shop-tile" :to="{ path: `/products/${product.id}`, query: route.query }">
-            <div class="shop-polaroid">
-              <div class="shop-photo-window" :style="{ backgroundColor: tileColor(product) }">
-                <img v-if="illustrationSrc(product)" class="shop-product-image" :src="illustrationSrc(product) ?? undefined" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" :loading="index < 2 ? 'eager' : 'lazy'" decoding="async" @error="illustrationFailed(product.sku)" />
-                <div v-else class="shop-photo-placeholder" aria-hidden="true"><SketchIcon name="package" :size="128" /><span>商品示意</span></div>
+          <RouterLink v-for="(product, index) in products" :key="product.id" class="shop-tile" :aria-label="`${product.name}，${formatCny(product.retailUnitPriceFen)}，查看商品详情`" :to="{ path: `/products/${product.id}`, query: route.query }">
+            <PolaroidMotion>
+              <div class="shop-polaroid">
+                <div class="shop-photo-window" :style="{ backgroundColor: tileColor(product) }">
+                  <img v-if="illustrationSrc(product)" class="shop-product-image" :src="illustrationSrc(product) ?? undefined" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" :loading="index < 2 ? 'eager' : 'lazy'" decoding="async" @error="illustrationFailed(product.sku)" />
+                  <div v-else class="shop-photo-placeholder" aria-hidden="true"><SketchIcon name="package" :size="128" /><span>商品示意</span></div>
+                </div>
+                <img class="shop-polaroid-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
+                <h3 class="shop-name-label" :title="product.name"><span>{{ product.name }}</span></h3>
               </div>
-              <img class="shop-polaroid-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
-              <h3 class="shop-name-label" :title="product.name"><span>{{ product.name }}</span></h3>
-            </div>
+            </PolaroidMotion>
             <div class="shop-product-info">
               <p v-if="illustrationSrc(product)" class="shop-image-note">AI 商品示意 · 非实拍</p>
               <div class="shop-tile-top"><span>{{ product.category.name }}</span><span>{{ formatAgeRange(product.ageMin, product.ageMax) }}</span></div>
@@ -204,11 +207,13 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-heading > span { display: block; font-size: 16px; line-height: 1.9; }
 .shop-categories { display: grid; gap: 3px; margin: 36px 0 28px; }
 .shop-section-label { margin: 0 0 12px; font-size: 14px; color: #4d4d27; }
-.shop-categories button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; padding: 8px 0; border: 0; background: none; color: var(--shop-ink); font-size: 17px; text-align: left; }
+.shop-categories button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% + 24px); min-height: 42px; margin-inline: -12px; padding: 8px 12px; border: 0; background: transparent; color: var(--shop-ink); font-size: 17px; text-align: left; transition: background-color 160ms ease, color 160ms ease; }
+.shop-categories button:hover, .shop-categories button:focus-visible { background: var(--shop-ink); color: var(--shop-yellow); }
+.shop-categories button:focus-visible { outline: 2px solid var(--shop-ink); outline-offset: 3px; }
 .shop-categories button > span:first-child { overflow-wrap: anywhere; }
-.shop-categories button > span:last-child { flex-shrink: 0; opacity: 0; }
+.shop-categories button > span:last-child { flex-shrink: 0; opacity: 0; transition: opacity 160ms ease; }
 .shop-categories button[aria-pressed="true"] { font-weight: 500; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
-.shop-categories button[aria-pressed="true"] > span:last-child, .shop-categories button:hover > span:last-child { opacity: 1; }
+.shop-categories button[aria-pressed="true"] > span:last-child, .shop-categories button:hover > span:last-child, .shop-categories button:focus-visible > span:last-child { opacity: 1; }
 .shop-filter-form { border-top: 1px solid #242a2650; padding-top: 20px; }
 .shop-search { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #242a2666; }
 .shop-search input { min-width: 0; width: 100%; border: 0; padding: 6px 0; background: transparent; color: var(--shop-ink); font-size: 16px; }
@@ -291,7 +296,7 @@ watch(() => route.query, loadProducts, { immediate: true })
   .shop-heading > span { display: none; }
   .shop-categories { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 20px 0; }
   .shop-section-label { flex-basis: 100%; margin-bottom: 0; }
-  .shop-categories button { width: auto; min-height: 36px; padding: 5px 0; font-size: 15px; gap: 5px; }
+  .shop-categories button { width: auto; min-height: 36px; margin-inline: 0; padding: 5px 10px; font-size: 15px; gap: 5px; }
   .shop-reference-note { flex-basis: 100%; }
   .shop-filter-form { padding-top: 10px; }
   .shop-search { padding: 3px 0; }

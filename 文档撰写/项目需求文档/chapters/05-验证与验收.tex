@@ -1,0 +1,182 @@
+% 根据已评审 Markdown 需求基线排版；需求语义与编号保持一致。
+\Needspace{12\baselineskip}
+\section{验证与验收}\label{sec:5-验证与验收}
+
+\Needspace{10\baselineskip}
+\subsection{验证环境与数据}\label{sec:51-验证环境与数据}
+
+验证应在与业务运行数据隔离的环境进行。账户、企业资料、订单和文件使用测试数据，测试素材应明确标识，不以测试价格或证书替代正式商业信息。测试环境应记录安装版本与配置，支持独立初始化和重建。
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.210\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.790\linewidth-2\tabcolsep\relax}}
+\caption{验收数据准备}\label{tab:21}\\
+\toprule
+{\bfseries 类别} & {\bfseries 最小准备量及覆盖条件} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 类别} & {\bfseries 最小准备量及覆盖条件} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+账户 & 1 个管理员、2 个普通用户 A／B、2 个有效经销商 A／B、1 个停用账户；暂停合作状态可以由测试步骤产生。 \\
+\tabledivider
+商品与分类 & 至少 18 个商品、3 个分类；覆盖已上架、草稿、下架、零库存、库存 1、不同价格与年龄区间、不同玩法和场景；至少 3 个启用经销业务。 \\
+\tabledivider
+内容 & 至少 3 篇文章、5 条 FAQ、2 张 Banner；包含草稿／下线项目以验证不可见性。 \\
+\tabledivider
+文件 & 至少 2 份公开 PDF、1 份经销商 PDF、1 份内部 PDF，均为明确标注的测试资料。 \\
+\tabledivider
+渠道 & 至少 4 条不同地区的渠道记录，包含已发布、未发布以及关联企业记录。 \\
+\tabledivider
+业务记录 & 由脚本或业务场景验证产生不同状态的订单、申请、工单和询价，统计结果必须从业务记录计算。 \\
+\tabledivider
+边界样本 & 重复邮箱和 SKU、空白与超长文本、非法金额、负数和小数数量、伪装文件、用于输出转义测试的文本。 \\
+\end{longtable}
+\endgroup
+
+每个测试说明初始库存和用户状态，执行后能清理或通过独立测试库重建；并发和幂等测试不依赖上一条手工用例留下的偶然状态。
+
+\Needspace{10\baselineskip}
+\subsection{验证方法与证据}\label{sec:52-验证方法与证据}
+
+\begin{enumerate}
+\item {\bfseries 测试}：通过自动化接口测试、脚本或界面测试校验正常、异常、边界、重复及并发行为，记录预期与实际结果。
+\item {\bfseries 业务场景验证}：按 UC-01 至 UC-03 执行完整操作，核对用户反馈、后台处理结果与业务记录。
+\item {\bfseries 检查}：审阅界面、接口说明、运行配置和交付文档，确认身份边界、敏感字段、发布范围及可部署性。
+\item {\bfseries 分析}：根据状态表、库存变动和订单金额核对数据一致性及统计口径，使用测试结果提供证据。
+\end{enumerate}
+
+每份验证记录应包含需求编号、TC 编号、软件版本、环境、执行时间、预期结果、实际结果、通过状态、缺陷编号及证据位置。证据包括接口响应、界面截图、库存与状态记录或测量结果，应脱敏保存。详细验证场景见附录 A。
+
+\Needspace{10\baselineskip}
+\subsection{需求验证追踪矩阵}\label{sec:53-需求验证追踪矩阵}
+
+以下为验证计划。所有状态初始为未执行，证据在执行后登记；需求文本中的验收条件不是执行结果。
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.270\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.340\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.130\linewidth-2\tabcolsep\relax}}
+\caption{需求验证追踪矩阵}\label{tab:22}\\
+\toprule
+{\bfseries 需求编号} & {\bfseries 验证方法} & {\bfseries 验证场景} & {\bfseries 状态} & {\bfseries 证据} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 需求编号} & {\bfseries 验证方法} & {\bfseries 验证场景} & {\bfseries 状态} & {\bfseries 证据} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+FR-01 & 测试、业务场景验证 & TC-01、TC-38 & 未执行 & 待登记 \\
+\tabledivider
+FR-02 & 测试、业务场景验证 & TC-01 & 未执行 & 待登记 \\
+\tabledivider
+FR-03 & 测试、业务场景验证 & TC-02 & 未执行 & 待登记 \\
+\tabledivider
+FR-04 & 测试、业务场景验证 & TC-02、TC-03 & 未执行 & 待登记 \\
+\tabledivider
+FR-05 & 测试、业务场景验证 & TC-04 & 未执行 & 待登记 \\
+\tabledivider
+FR-06 & 测试、业务场景验证 & TC-05 & 未执行 & 待登记 \\
+\tabledivider
+FR-07 & 测试 & TC-06、TC-36 & 未执行 & 待登记 \\
+\tabledivider
+FR-08 & 测试、业务场景验证 & TC-07 & 未执行 & 待登记 \\
+\tabledivider
+FR-09 & 测试、业务场景验证 & TC-08、TC-09 & 未执行 & 待登记 \\
+\tabledivider
+FR-10 & 测试 & TC-10 & 未执行 & 待登记 \\
+\tabledivider
+FR-11 & 测试、业务场景验证 & TC-11、TC-29 & 未执行 & 待登记 \\
+\tabledivider
+FR-12 & 测试、业务场景验证 & TC-09、TC-12 & 未执行 & 待登记 \\
+\tabledivider
+FR-13 & 测试、业务场景验证 & TC-13、TC-14 & 未执行 & 待登记 \\
+\tabledivider
+FR-14 & 测试、业务场景验证 & TC-14、TC-15、TC-16、TC-17 & 未执行 & 待登记 \\
+\tabledivider
+FR-15 & 测试、业务场景验证 & TC-17、TC-18、TC-19、TC-20 & 未执行 & 待登记 \\
+\tabledivider
+FR-16 & 测试 & TC-11、TC-21 & 未执行 & 待登记 \\
+\tabledivider
+FR-17 & 测试 & TC-22、TC-23 & 未执行 & 待登记 \\
+\tabledivider
+FR-18 & 测试、业务场景验证 & TC-23、TC-24 & 未执行 & 待登记 \\
+\tabledivider
+FR-19 & 测试、业务场景验证 & TC-25、TC-26 & 未执行 & 待登记 \\
+\tabledivider
+FR-20 & 测试、业务场景验证 & TC-11、TC-25 & 未执行 & 待登记 \\
+\tabledivider
+FR-21 & 测试、业务场景验证 & TC-25 & 未执行 & 待登记 \\
+\tabledivider
+FR-22 & 测试、业务场景验证 & TC-27、TC-28 & 未执行 & 待登记 \\
+\tabledivider
+FR-23 & 测试、业务场景验证 & TC-27、TC-28 & 未执行 & 待登记 \\
+\tabledivider
+FR-24 & 测试、业务场景验证 & TC-29、TC-32 & 未执行 & 待登记 \\
+\tabledivider
+FR-25 & 测试、业务场景验证 & TC-30、TC-31、TC-32 & 未执行 & 待登记 \\
+\tabledivider
+FR-26 & 测试、业务场景验证 & TC-04、TC-33、TC-34 & 未执行 & 待登记 \\
+\tabledivider
+FR-27 & 测试 & TC-33、TC-34 & 未执行 & 待登记 \\
+\tabledivider
+FR-28 & 测试、业务场景验证 & TC-05、TC-35 & 未执行 & 待登记 \\
+\tabledivider
+FR-29 & 测试、业务场景验证 & TC-06、TC-35、TC-36 & 未执行 & 待登记 \\
+\tabledivider
+FR-30 & 测试、业务场景验证 & TC-07、TC-32 & 未执行 & 待登记 \\
+\tabledivider
+FR-31 & 测试 & TC-10、TC-32 & 未执行 & 待登记 \\
+\tabledivider
+FR-32 & 测试、业务场景验证 & TC-37 & 未执行 & 待登记 \\
+\tabledivider
+BR-01 & 测试、检查或数据核对 & TC-15、TC-21 & 未执行 & 待登记 \\
+\tabledivider
+BR-02 & 测试、检查或数据核对 & TC-17、TC-19、TC-20、TC-22、TC-34 & 未执行 & 待登记 \\
+\tabledivider
+BR-03 & 测试、检查或数据核对 & TC-18、TC-22、TC-23、TC-24 & 未执行 & 待登记 \\
+\tabledivider
+BR-04 & 测试、检查或数据核对 & TC-27、TC-28、TC-32 & 未执行 & 待登记 \\
+\tabledivider
+BR-05 & 测试、检查或数据核对 & TC-25、TC-30 & 未执行 & 待登记 \\
+\tabledivider
+BR-06 & 测试、检查或数据核对 & TC-16、TC-17、TC-19、TC-23、TC-26、TC-28、TC-41 & 未执行 & 待登记 \\
+\tabledivider
+BR-07 & 测试、检查或数据核对 & TC-04、TC-21、TC-25、TC-32、TC-33 & 未执行 & 待登记 \\
+\tabledivider
+NFR-01 & 测试、检查或数据核对 & TC-12、TC-17、TC-40 & 未执行 & 待登记 \\
+\tabledivider
+NFR-02 & 测试、检查或数据核对 & TC-06、TC-08、TC-09、TC-10、TC-11、TC-26、TC-29、TC-32、TC-35 & 未执行 & 待登记 \\
+\tabledivider
+NFR-03 & 测试、检查或数据核对 & TC-01、TC-09、TC-38、TC-41 & 未执行 & 待登记 \\
+\tabledivider
+NFR-04 & 测试、检查或数据核对 & TC-38、TC-39 & 未执行 & 待登记 \\
+\tabledivider
+NFR-05 & 测试、检查或数据核对 & TC-40 & 未执行 & 待登记 \\
+\end{longtable}
+\endgroup
+
+\Needspace{10\baselineskip}
+\subsection{版本验收标准}\label{sec:54-版本验收标准}
+
+\begin{enumerate}
+\item FR-01 至 FR-32 已实现，且关联的接口、数据、BR 和 NFR 要求在约定环境满足。
+\item 附录 A 全部场景执行并保存结果；关键权限、金额、重复付款、库存竞争、取消和发货冲突不存在未修复缺陷。
+\item UC-01 至 UC-03 可以从业务发起执行至处理结果，不依赖手工修改数据库；失败和关闭分支符合状态约束。
+\item 测试失败应形成缺陷记录，修复后复测；执行记录和证据能够追溯到对应软件版本。
+\item 模拟交易标识清楚，支付、退款和发货结果不触发真实外部操作；正式公开内容经业务负责人确认。
+\item 安装、初始化、运行与测试命令经执行验证，已保存数据在服务重启后保留；测试重置与业务数据隔离。
+\item 变更后的规格、接口说明、实现和验证记录保持一致。P1、P2 候选项不得被计入本版本已交付功能。
+\end{enumerate}

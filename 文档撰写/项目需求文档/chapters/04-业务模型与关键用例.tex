@@ -1,0 +1,150 @@
+% 根据已评审 Markdown 需求基线排版；需求语义与编号保持一致。
+\Needspace{12\baselineskip}
+\section{业务模型与关键用例}\label{sec:4-业务模型与关键用例}
+
+本节流程用于说明参与者与系统之间的交互。矩形表示活动，菱形表示判断，箭头表示业务先后关系；异常和并发条件以第 3.3 节状态规则为准。
+
+\Needspace{10\baselineskip}
+\subsection{零售交易流程}\label{sec:41-零售交易流程}
+
+\begin{figure}[H]
+\centering
+\input{figures/retail-flow.tex}
+\caption{零售交易流程}
+\label{fig:retail-flow}
+\end{figure}
+
+\Needspace{10\baselineskip}
+\subsection{经销合作流程}\label{sec:42-经销合作流程}
+
+\begin{figure}[H]
+\centering
+\input{figures/dealer-flow.tex}
+\caption{经销合作与询价流程}
+\label{fig:dealer-flow}
+\end{figure}
+
+本版本“询价回复”属于沟通记录，不是具有价格锁定、有效期、接受签约或转订单能力的正式报价单。
+
+\Needspace{10\baselineskip}
+\subsection{关键业务用例}\label{sec:43-关键业务用例}
+
+\reqheading[3]{UC-01}{UC-01 零售订单提交与处理}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.820\linewidth-2\tabcolsep\relax}}
+\caption{零售交易用例 UC-01}\label{tab:18}\\
+\toprule
+{\bfseries 项目} & {\bfseries 说明} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 项目} & {\bfseries 说明} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+业务目标 & 用户形成可追踪订单，并得到明确付款及履约结果。 \\
+\tabledivider
+参与者 & 普通用户或经销商、管理员。 \\
+\tabledivider
+前置条件 & 用户已登录、账户启用，购物车包含可售商品，收货资料完整。 \\
+\tabledivider
+触发 & 用户在结算页确认商品、地址和金额。 \\
+\tabledivider
+主流程 & 1. 系统校验当前商品和价格；2. 创建待模拟付款订单并保存快照；3. 用户提交模拟成功结果；4. 系统再次检查可售状态与库存并一致扣减；5. 管理员记录模拟发货；6. 用户确认收货。 \\
+\tabledivider
+替代和异常流程 & 价格变更要求重新确认；输入无效不创建订单；重复提交返回原结果；模拟失败或库存不足保留待付款；取消和发货冲突按当前状态处理。 \\
+\tabledivider
+后置条件 & 成功时订单完成，库存已扣减一次；取消时按付款情况恢复库存；失败不得产生部分业务变更。 \\
+\tabledivider
+关联需求 & FR-13 至 FR-18、BR-01 至 BR-03、BR-06。 \\
+\tabledivider
+验证场景 & TC-13 至 TC-24。 \\
+\end{longtable}
+\endgroup
+
+\reqheading[3]{UC-02}{UC-02 经销合作申请与询价}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.820\linewidth-2\tabcolsep\relax}}
+\caption{经销合作用例 UC-02}\label{tab:19}\\
+\toprule
+{\bfseries 项目} & {\bfseries 说明} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 项目} & {\bfseries 说明} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+业务目标 & 平台审核合作申请，并向有效经销商提供专属信息和采购沟通渠道。 \\
+\tabledivider
+参与者 & 普通用户、有效经销商、管理员。 \\
+\tabledivider
+前置条件 & 申请者账户启用，且没有待审核申请或已获批资格。 \\
+\tabledivider
+触发 & 用户提交企业合作申请。 \\
+\tabledivider
+主流程 & 1. 系统保存申请版本；2. 管理员审核通过；3. 系统一致建立企业记录并激活资格；4. 经销商读取专属目录和资料；5. 经销商提交询价；6. 管理员回复参考价与交期；7. 经销商查看并关闭询价。 \\
+\tabledivider
+替代和异常流程 & 驳回后可修订重提；重复或旧版本审核被拒绝；暂停合作后撤销专属访问与新询价权限；历史询价按既定权限可读；询价允许在回复前关闭。 \\
+\tabledivider
+后置条件 & 审核状态与资格一致，采购沟通可查询；询价不形成正式订单、付款或库存变化。 \\
+\tabledivider
+关联需求 & FR-07、FR-22 至 FR-25、FR-30、BR-04、BR-05、BR-06。 \\
+\tabledivider
+验证场景 & TC-06、TC-27 至 TC-32。 \\
+\end{longtable}
+\endgroup
+
+\reqheading[3]{UC-03}{UC-03 用户咨询与服务处理}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.820\linewidth-2\tabcolsep\relax}}
+\caption{客户支持用例 UC-03}\label{tab:20}\\
+\toprule
+{\bfseries 项目} & {\bfseries 说明} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 项目} & {\bfseries 说明} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+业务目标 & 用户提交诉求并获知处理结果，平台保存服务历史。 \\
+\tabledivider
+参与者 & 普通用户或经销商、管理员。 \\
+\tabledivider
+前置条件 & 账户启用；售后咨询所关联订单属于提交者。 \\
+\tabledivider
+触发 & 用户提交一般、产品或订单咨询。 \\
+\tabledivider
+主流程 & 1. 系统校验内容并创建工单；2. 管理员读取并处理；3. 管理员保存公开回复及可选内部备注；4. 用户查看回复；5. 用户或管理员关闭工单。 \\
+\tabledivider
+替代和异常流程 & 无效内容或非法订单关联被拒绝；相同提交不重复建单；已回复工单收到用户补充后转处理中；内部备注不可向用户公开；关闭后只读。 \\
+\tabledivider
+后置条件 & 用户可查询原始内容、公开回复及状态；售后咨询本身不执行退款或改变订单状态。 \\
+\tabledivider
+关联需求 & FR-19 至 FR-21、BR-05、BR-06、BR-07。 \\
+\tabledivider
+验证场景 & TC-11、TC-25、TC-26。 \\
+\end{longtable}
+\endgroup

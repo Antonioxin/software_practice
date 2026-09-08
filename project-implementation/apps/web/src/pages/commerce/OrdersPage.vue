@@ -3,6 +3,7 @@ import SketchIcon from '../../components/SketchIcon.vue'
 import { onMounted, ref } from 'vue'
 import PublicShell from '../../components/PublicShell.vue'
 import SiteShell from '../../components/SiteShell.vue'
+import ProductThumbnail from '../../components/ProductThumbnail.vue'
 import { readOrders } from '../../features/commerce/api'
 import { statusLabels, type OrderPage } from '../../features/commerce/types'
 import { formatCny } from '../../features/catalog/presentation'
@@ -74,7 +75,7 @@ onMounted(() => void load())
         <div>
           <p class="commerce-eyebrow">ORDERS / SIMULATED</p>
           <h1 id="orders-title"><SketchIcon name="orders" :size="44" />我的订单</h1>
-          <p class="commerce-lede">本期付款、退款和物流均为模拟；订单列表只展示接口返回的摘要。</p>
+          <p class="commerce-lede">查看订单中的商品、数量与配送进度。</p>
         </div>
         <RouterLink class="commerce-back-link" to="/products">← 返回商品目录</RouterLink>
       </header>
@@ -110,13 +111,28 @@ onMounted(() => void load())
 
         <div v-else-if="!props.admin" class="commerce-order-list">
           <article v-for="order in result.items" :key="order.id" class="commerce-order-row">
-            <div class="commerce-order-main">
-              <RouterLink class="commerce-order-number" :to="`/account/orders/${order.id}`">{{ order.orderNumber }}</RouterLink>
-              <p class="commerce-order-date">{{ formatDate(order.createdAt) }}</p>
+            <header class="order-card-header">
+              <div class="commerce-order-main">
+                <RouterLink class="commerce-order-number" :to="`/account/orders/${order.id}`">{{ order.orderNumber }}</RouterLink>
+                <p class="commerce-order-date">{{ formatDate(order.createdAt) }}</p>
+              </div>
+              <span class="commerce-status" :class="statusClass(order.status)">{{ statusLabel(order.status) }}</span>
+            </header>
+            <div class="order-card-body">
+              <div class="order-products">
+                <div v-for="item in (order.items ?? []).slice(0, 2)" :key="item.productId" class="order-product">
+                  <ProductThumbnail :sku="item.sku" :name="item.name" />
+                  <div class="order-product-copy"><strong>{{ item.name }}</strong><span>{{ item.sku }} · 数量 {{ item.quantity }}</span></div>
+                </div>
+                <p v-if="!order.items?.length" class="order-more-products">商品信息暂未提供，可进入详情查看。</p>
+                <p v-else-if="order.items.length > 2" class="order-more-products">另有 {{ order.items.length - 2 }} 种商品，可在详情中查看全部。</p>
+              </div>
+              <div class="order-card-summary">
+                <p v-if="order.items?.length">共 {{ order.items.reduce((total, item) => total + item.quantity, 0) }} 件商品</p>
+                <div class="order-card-amount"><span>订单合计</span><strong class="commerce-order-total">{{ formatCny(order.totalFen) }}</strong></div>
+                <RouterLink class="secondary-button" :to="`/account/orders/${order.id}`">查看详情</RouterLink>
+              </div>
             </div>
-            <span class="commerce-status" :class="statusClass(order.status)">{{ statusLabel(order.status) }}</span>
-            <strong class="commerce-order-total">{{ formatCny(order.totalFen) }}</strong>
-            <RouterLink class="secondary-button" :to="`/account/orders/${order.id}`">查看详情</RouterLink>
           </article>
         </div>
 
@@ -144,3 +160,31 @@ onMounted(() => void load())
     </section>
   </component>
 </template>
+
+<style scoped>
+.commerce-order-row { display: block; padding: 25px 0; }
+.order-card-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.order-card-header .commerce-status { flex-shrink: 0; }
+.order-card-body { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 32px; margin-top: 22px; }
+.order-products { display: grid; min-width: 0; gap: 16px; }
+.order-product { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 17px; }
+.order-product-copy { min-width: 0; }
+.order-product-copy strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--ink); font-size: 17px; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
+.order-product-copy span { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.order-more-products { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.order-card-summary { display: flex; flex-direction: column; align-items: flex-end; gap: 13px; padding-left: 24px; border-left: 1px solid var(--line); }
+.order-card-summary > p { margin: 0; color: var(--muted); font-size: 13px; }
+.order-card-amount { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 6px 10px; }
+.order-card-amount > span { color: var(--muted); font-size: 12px; }
+@media (max-width: 760px) {
+  .order-card-header { align-items: flex-start; gap: 10px; }
+  .commerce-order-number { font-size: 13px; }
+  .commerce-order-date { font-size: 12px; line-height: 1.6; }
+  .order-card-body { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .order-product { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
+  .order-product-copy strong { font-size: 16px; }
+  .order-card-summary { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border: 0; border-top: 1px dashed var(--line); padding: 16px 0 0; }
+  .order-card-summary > p { flex: 1 0 auto; white-space: nowrap; }
+  .order-card-summary > .secondary-button { margin-left: auto; }
+}
+</style>

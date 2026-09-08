@@ -76,6 +76,8 @@ public final class CommerceDtos {
             long discountFen,
             long totalFen) {}
 
+    public record ItemSummary(UUID productId, String sku, String name, int quantity) {}
+
     public record Summary(
             UUID id,
             String orderNumber,
@@ -84,7 +86,8 @@ public final class CommerceDtos {
             String currency,
             long totalFen,
             String mode,
-            Instant createdAt) {}
+            Instant createdAt,
+            List<ItemSummary> items) {}
 
     public record Attempt(
             UUID id,

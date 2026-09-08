@@ -1,0 +1,39 @@
+% 对应源文档 4.2；保留全部 8 个节点、8 条箭头及两条审核标签。
+\begin{tikzpicture}[
+    font=\fontsize{10.5}{14}\selectfont,
+    node distance=7mm,
+    activity/.style={
+        rectangle, rounded corners=1.5pt,
+        draw=wmnavy, line width=0.65pt,
+        fill=wmaccent!6,
+        text=wmnavy, align=center,
+        text width=5.6cm, minimum height=7.5mm,
+        inner xsep=3mm, inner ysep=2mm
+    },
+    flow/.style={-{Stealth[length=2.2mm,width=1.5mm]},
+        draw=wmnavy, line width=0.7pt},
+    edge label/.style={text=wmnavy, fill=white, inner sep=2pt,
+        align=center, font=\fontsize{10.5}{14}\selectfont}
+]
+    \node[activity] (A) {普通用户提交企业申请};
+    \node[activity, below=of A, fill=wmaccent!12] (B) {管理员审核};
+    \node[activity, right=24mm of B, text width=4.0cm] (C) {用户修订后重新提交};
+    \node[activity, below=12mm of B] (D) {激活经销商权限};
+    \node[activity, below=of D] (E) {查看专属价格与资料};
+    \node[activity, below=of E] (F) {提交商品及数量询价};
+    \node[activity, below=of F] (G) {管理员回复参考价格与交期};
+    \node[activity, below=of G] (H) {用户查看回复并关闭询价};
+
+    \draw[flow] (A) -- (B);
+    \draw[flow] ([yshift=1.5mm]B.east) --
+        node[edge label, above] {驳回并\\说明原因}
+        ([yshift=1.5mm]C.west);
+    \draw[flow] (C.south) -- ++(0,-6mm)
+        -| ([xshift=7mm,yshift=-2mm]B.east)
+        -- ([yshift=-2mm]B.east);
+    \draw[flow] (B.south) -- node[edge label, right] {通过} (D.north);
+    \draw[flow] (D) -- (E);
+    \draw[flow] (E) -- (F);
+    \draw[flow] (F) -- (G);
+    \draw[flow] (G) -- (H);
+\end{tikzpicture}
