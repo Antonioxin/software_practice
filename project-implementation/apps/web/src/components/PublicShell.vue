@@ -55,6 +55,16 @@ async function signOut() {
 
 <style scoped>
 .wm-header-actions { min-width: 0; }
+@media (min-width: 901px) {
+  /* Equal side columns keep navigation centered regardless of the account controls. */
+  .wm-header { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .wm-header :deep(.wm-brand) { justify-self: start; }
+  .wm-navigation { justify-self: center; }
+  .wm-header-actions { justify-self: end; max-width: 100%; }
+  .wm-account-button { min-width: 0; }
+  .wm-account-button :deep(.sketch-icon), .wm-signout { flex-shrink: 0; }
+  .wm-account-button span { min-width: 0; }
+}
 /* Keep the shortcut, account and mobile navigation controls on screen at 320 px. */
 @media (max-width: 380px) {
   .wm-header :deep(.wm-brand > span) { display: none; }

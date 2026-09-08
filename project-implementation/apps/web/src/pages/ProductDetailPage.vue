@@ -8,6 +8,7 @@ import { useCartStore } from '../features/commerce/cartStore'
 import SketchIcon from '../components/SketchIcon.vue'
 import PublicShell from '../components/PublicShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
+import PolaroidMotion from '../components/PolaroidMotion.vue'
 import { formatAgeRange, formatCny } from '../features/catalog/presentation'
 import { productIllustrationSrc } from '../features/catalog/productImages'
 import { productUsageGuide } from '../features/catalog/productGuides'
@@ -80,7 +81,7 @@ onUnmounted(() => { latestRequest++ })
 </script>
 
 <template>
-  <PublicShell>
+  <PublicShell class="product-detail-shell">
     <div class="product-detail-page">
       <div v-if="addCommand.pending.value && !session.isAdmin" class="detail-recovery" role="status"><p>有加购请求结果尚未确认，可先查询购物车或恢复原请求。</p><button type="button" :disabled="addCommand.busy.value" @click="addToCart">使用原加购请求重试</button><RouterLink to="/cart">查询购物车</RouterLink></div>
       <button class="detail-back" type="button" @click="back">← 返回商品列表与当前筛选</button>
@@ -89,14 +90,16 @@ onUnmounted(() => { latestRequest++ })
       <div v-else-if="error" class="state-panel" role="alert"><h1>详情暂时不可用</h1><p>{{ error }}</p><button class="secondary-button" type="button" @click="load">重新加载</button></div>
       <article v-else-if="product" class="product-detail">
         <section class="product-gallery">
-          <figure class="product-polaroid">
-            <div class="product-photo-window">
-              <img v-if="mainImage" class="product-main-image" :src="mainImage" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" loading="eager" decoding="async" @error="mainImageFailed = true" />
-              <ProductArtwork v-else :name="product.name" :sku="product.sku" />
-            </div>
-            <img class="product-photo-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
-            <figcaption class="product-photo-name" :title="product.name"><span>{{ product.name }}</span></figcaption>
-          </figure>
+          <PolaroidMotion>
+            <figure class="product-polaroid">
+              <div class="product-photo-window">
+                <img v-if="mainImage" class="product-main-image" :src="mainImage" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" loading="eager" decoding="async" @error="mainImageFailed = true" />
+                <ProductArtwork v-else :name="product.name" :sku="product.sku" />
+              </div>
+              <img class="product-photo-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
+              <figcaption class="product-photo-name" :title="product.name"><span>{{ product.name }}</span></figcaption>
+            </figure>
+          </PolaroidMotion>
           <p class="product-image-caption">{{ mainImage ? 'AI 商品示意 · 非实拍' : '手绘商品示意' }}</p>
         </section>
         <section class="product-intro">
@@ -156,6 +159,7 @@ onUnmounted(() => { latestRequest++ })
 </template>
 
 <style scoped>
+.product-detail-shell { overflow-x: clip; }
 .product-detail-page { width: min(1180px, calc(100% - 64px)); margin: 0 auto; padding: 34px 0 84px; }
 .detail-back { margin-bottom: 28px; min-height: 44px; padding: 8px 0; color: var(--muted); font-size: 14px; font-weight: 400; text-align: left; }
 .detail-recovery { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 22px; margin-bottom: 20px; padding: 18px 22px; border: 1px solid var(--line); background: #fffefa; font-size: 14px; line-height: 1.8; }

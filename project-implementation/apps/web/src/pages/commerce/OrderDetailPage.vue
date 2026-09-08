@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { ElDialog } from 'element-plus'
 import PublicShell from '../../components/PublicShell.vue'
 import SiteShell from '../../components/SiteShell.vue'
-import ProductArtwork from '../../components/ProductArtwork.vue'
+import ProductThumbnail from '../../components/ProductThumbnail.vue'
 import { useSessionStore } from '../../stores/session'
 import { readOrder } from '../../features/commerce/api'
 import { useCommandRecovery } from '../../features/commerce/commandRecovery'
@@ -192,8 +192,8 @@ onMounted(() => void load())
               <header><div><p>01 / SNAPSHOT</p><h2 id="snapshot-title">商品快照</h2></div><span>成交价格与数量已固定</span></header>
               <div class="commerce-detail-items">
                 <article v-for="item in order.items" :key="item.productId" class="commerce-detail-item">
-                  <ProductArtwork :name="item.name" :sku="item.sku" compact />
-                  <div><strong>{{ item.name }}</strong><span>{{ item.sku }} · 数量 {{ item.quantity }} · 单价 {{ formatCny(item.unitPriceFen) }}</span></div>
+                  <ProductThumbnail :name="item.name" :sku="item.sku" />
+                  <div class="commerce-detail-item-copy"><strong>{{ item.name }}</strong><span>{{ item.sku }} · 数量 {{ item.quantity }} · 单价 {{ formatCny(item.unitPriceFen) }}</span></div>
                   <strong>{{ formatCny(item.subtotalFen) }}</strong>
                 </article>
               </div>
@@ -288,3 +288,28 @@ onMounted(() => void load())
     </section>
   </component>
 </template>
+
+<style scoped>
+.commerce-detail-item {
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 18px;
+}
+
+.commerce-detail-item-copy strong { font-size: 16px; line-height: 1.5; }
+.commerce-detail-item-copy span { overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .commerce-detail-item {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 8px 14px;
+  }
+
+  .commerce-detail-item > .product-thumbnail { grid-row: span 2; }
+  .commerce-detail-item-copy { align-self: end; }
+  .commerce-detail-item > strong {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 0;
+  }
+}
+</style>

@@ -81,6 +81,16 @@ public class CommerceRepository {
                 .getResultList();
     }
 
+    public List<OrderItem> itemsForOrders(Collection<UUID> orders) {
+        if (orders.isEmpty()) return List.of();
+        return em.createQuery(
+                        "select i from CommerceOrderItem i where i.orderId in :ids order by"
+                                + " i.orderId,i.productId",
+                        OrderItem.class)
+                .setParameter("ids", orders)
+                .getResultList();
+    }
+
     public List<PaymentAttempt> attempts(UUID order) {
         return em.createQuery(
                         "select p from CommercePaymentAttempt p where p.orderId=:id order by"

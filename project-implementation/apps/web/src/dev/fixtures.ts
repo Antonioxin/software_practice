@@ -1044,7 +1044,21 @@ export const fixtures: PreviewFixtures = {
       "totalFen": 59700,
       "currency": "CNY",
       "mode": "SIMULATED",
-      "createdAt": "2026-09-05T02:00:00Z"
+      "createdAt": "2026-09-05T02:00:00Z",
+      "items": [
+        {
+          "productId": "469ec43c-559a-5040-8015-614ed58f12a6",
+          "sku": "WM-BALANCE-STONES",
+          "name": "平衡石 · 示例",
+          "quantity": 1
+        },
+        {
+          "productId": "9b07436c-613e-53ba-b12e-f552254283fe",
+          "sku": "WM-RING-TOSS",
+          "name": "环环投掷 · 示例",
+          "quantity": 2
+        }
+      ]
     },
     {
       "id": "0caf56da-db21-5081-8bf6-baa006fa4789",
@@ -1054,7 +1068,15 @@ export const fixtures: PreviewFixtures = {
       "totalFen": 32900,
       "currency": "CNY",
       "mode": "SIMULATED",
-      "createdAt": "2026-09-04T02:00:00Z"
+      "createdAt": "2026-09-04T02:00:00Z",
+      "items": [
+        {
+          "productId": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
+          "sku": "WM-RAINBOW-ARCH",
+          "name": "彩虹拱桥 · 示例",
+          "quantity": 1
+        }
+      ]
     },
     {
       "id": "6d0182f8-6102-5829-b9d4-18f765d61248",
@@ -1064,7 +1086,21 @@ export const fixtures: PreviewFixtures = {
       "totalFen": 50800,
       "currency": "CNY",
       "mode": "SIMULATED",
-      "createdAt": "2026-09-03T02:00:00Z"
+      "createdAt": "2026-09-03T02:00:00Z",
+      "items": [
+        {
+          "productId": "d84473a5-10f5-5dad-b124-74a521a1f0f1",
+          "sku": "WM-TEAM-BOARD",
+          "name": "伙伴协作板 · 示例",
+          "quantity": 1
+        },
+        {
+          "productId": "ada916b9-cd61-5de8-89d0-1668f9869376",
+          "sku": "WM-FOREST-KIT",
+          "name": "森林探索套装 · 示例",
+          "quantity": 1
+        }
+      ]
     },
     {
       "id": "c707b880-c841-5303-9dda-8dd5976d3253",
@@ -1074,7 +1110,15 @@ export const fixtures: PreviewFixtures = {
       "totalFen": 32900,
       "currency": "CNY",
       "mode": "SIMULATED",
-      "createdAt": "2026-09-04T02:00:00Z"
+      "createdAt": "2026-09-04T02:00:00Z",
+      "items": [
+        {
+          "productId": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
+          "sku": "WM-RAINBOW-ARCH",
+          "name": "彩虹拱桥 · 示例",
+          "quantity": 1
+        }
+      ]
     }
   ],
   "adminOrderAllowedActions": {

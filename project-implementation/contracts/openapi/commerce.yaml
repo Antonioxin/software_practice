@@ -1463,6 +1463,26 @@ components:
         taxFen: *id013
         discountFen: *id013
         totalFen: *id013
+    ItemSummary:
+      type: object
+      additionalProperties: false
+      description: 下单时保存的商品快照摘要；商品后续改名或下架不改变本摘要。
+      required:
+      - productId
+      - sku
+      - name
+      - quantity
+      properties:
+        productId: *id003
+        sku:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 99
     Summary:
       type: object
       additionalProperties: false
@@ -1475,6 +1495,7 @@ components:
       - totalFen
       - mode
       - createdAt
+      - items
       properties:
         id: *id003
         orderNumber: &id015
@@ -1491,6 +1512,10 @@ components:
           enum:
           - SIMULATED
         createdAt: *id011
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemSummary'
     Attempt:
       type: object
       additionalProperties: false
