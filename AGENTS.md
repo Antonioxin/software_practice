@@ -16,7 +16,7 @@ This repository holds course materials, requirements, and the shared WEMOVE appl
 - `project-implementation/tests/cases/`: member and cross-module acceptance test designs. Review status and execution evidence are separate from unit-test results.
 - `project-implementation/.env.example`: shared environment template. `.env` and `.local/` hold local configuration and artifacts; `.superdesign/` holds design-tool metadata.
 - `文档撰写/项目进度表/`: shared Gantt chart PDF and editable Excel schedule, moved from `project-implementation/project_flowchart_view/`.
-- `文档撰写/项目需求文档/`: self-contained LaTeX requirements sources, required figures, Makefile, and compilation guide. Keep generated PDFs, source archives, `.build/`, and layout verification artifacts local and ignored. The original template sources are in `文档撰写/latex-template/`.
+- `文档撰写/项目需求文档/`: the final requirements PDF, self-contained LaTeX sources, required figures, Makefile, and compilation guide. Commit the reviewed final PDF alongside source updates. Keep source archives, `.build/`, intermediate PDFs, and layout verification artifacts local and ignored. The original template sources are in `文档撰写/latex-template/`.
 - Existing `project-implementation/ideation/` and `前端设计视觉参考/` retain their current purpose and location.
 
 Organize files by engineering responsibility and business domain, never by member labels such as `partA/` or `partB/`. Maintain member ownership in the collaboration and acceptance documents. Extend the shared applications when adding business modules. Keep unit tests beside their corresponding application code and keep database migrations in the backend's Flyway discovery path. Preserve course-provided originals in their existing locations.
