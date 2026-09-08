@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -122,7 +123,7 @@ onMounted(() => void loadOrders())
 
     <div class="support-submit-layout">
       <section class="paper-section">
-        <div class="section-heading"><div><p>NEW INQUIRY</p><h2>提交咨询</h2></div><span>所有字段均会写入审计</span></div>
+        <div class="section-heading"><div><p>NEW INQUIRY</p><h2 class="wm-icon-label"><SketchIcon name="ticket" :size="28" /> 提交咨询</h2></div><span>所有字段均会写入审计</span></div>
         <form @submit.prevent="submit()">
           <div v-if="error" class="error-summary" role="alert" style="margin-bottom: 20px"><strong>未能提交</strong><span>{{ error }}</span></div>
 
@@ -187,7 +188,7 @@ onMounted(() => void loadOrders())
           <p>提交与补充共用联系类写入限额（每 10 分钟 20 次），超限会暂时拒绝，请稍后再试。</p>
         </section>
         <section class="support-aside-card">
-          <h3>历史咨询</h3>
+          <h3 class="wm-icon-label"><SketchIcon name="history" :size="26" /> 历史咨询</h3>
           <p>已提交的咨询可在“我的咨询”中随时查看、补充或关闭。</p>
           <div class="support-actions" style="margin-top: 14px">
             <RouterLink class="secondary-button" to="/account/tickets">进入我的咨询</RouterLink>

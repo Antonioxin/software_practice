@@ -3,6 +3,17 @@ import { describe, expect, it } from 'vitest'
 import ProductThumbnail from './ProductThumbnail.vue'
 
 describe('ProductThumbnail', () => {
+  it('媒体库图片优先于静态示意，失效后占位，更换图片可以恢复', async () => {
+    const id = 'e1000000-0000-4000-8000-000000000001'
+    const nextId = 'e1000000-0000-4000-8000-000000000002'
+    const wrapper = mount(ProductThumbnail, { props: { sku: 'WM-BALANCE-STONES', name: '平衡石', mainImageId: id } })
+    expect(wrapper.get('img').attributes('src')).toBe(`/api/v1/media/${id}/content`)
+    expect(wrapper.get('img').attributes('alt')).toBe('平衡石商品图片')
+    await wrapper.get('img').trigger('error')
+    expect(wrapper.find('.product-thumbnail__image').exists()).toBe(false)
+    await wrapper.setProps({ mainImageId: nextId })
+    expect(wrapper.get('img').attributes('src')).toBe(`/api/v1/media/${nextId}/content`)
+  })
   it('按明确的 SKU 映射显示图片并标明示意图性质', () => {
     const wrapper = mount(ProductThumbnail, { props: { sku: 'WM-BALANCE-STONES', name: '平衡石' } })
 

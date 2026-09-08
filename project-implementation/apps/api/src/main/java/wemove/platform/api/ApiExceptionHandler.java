@@ -116,6 +116,22 @@ public class ApiExceptionHandler {
                 .body(problem);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ProblemDetail> handleUploadSize(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.unprocessableEntity()
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(base(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                        "文件过大。图片最多 5 MiB，PDF 最多 10 MiB。", request));
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    ResponseEntity<ProblemDetail> handleMissingUpload(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.unprocessableEntity()
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(base(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                        "请选择文件并填写资料信息后重试。", request));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ProblemDetail> handleConflict(
             DataIntegrityViolationException ex, HttpServletRequest request) {
@@ -146,7 +162,7 @@ public class ApiExceptionHandler {
                         base(
                                 HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                                 "UNSUPPORTED_MEDIA_TYPE",
-                                "请使用 JSON 请求内容。",
+                                "请求内容类型不符合此接口要求。",
                                 request));
     }
 

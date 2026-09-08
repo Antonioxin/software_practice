@@ -1,0 +1,39 @@
+\begin{tikzpicture}[
+  font=\fontsize{10.5}{14}\selectfont,
+  stage/.style={draw=wmnavy!65,fill=white,rounded corners=2pt,
+    text width=3.0cm,minimum height=1.35cm,align=center,
+    inner sep=4pt,line width=0.6pt},
+  link/.style={-{Stealth[length=2mm]},draw=wmaccent,line width=0.7pt}
+]
+\node[anchor=west,font=\fontsize{11}{14}\selectfont\bfseries,text=wmnavy]
+  at (0,1.05) {CSR：客户端渲染};
+\node[stage] (c1) at (1.65,0) {浏览器\\请求页面};
+\node[stage,fill=wmnavy!5] (c2) at (5.4,0) {返回 HTML 壳\\通常缺少主要正文};
+\node[stage] (c3) at (9.15,0) {浏览器执行 JS\\获取数据并渲染};
+\node[stage,fill=wmnavy!9] (c4) at (12.9,0) {主要正文出现\\建立页面交互};
+\draw[link] (c1) -- (c2);
+\draw[link] (c2) -- (c3);
+\draw[link] (c3) -- (c4);
+\node[anchor=west,font=\fontsize{11}{14}\selectfont\bfseries,text=wmnavy]
+  at (0,-1.35) {SSR：服务端渲染};
+\node[stage] (r1) at (1.65,-2.4) {浏览器\\请求页面};
+\node[stage,fill=wmnavy!9] (r2) at (5.4,-2.4) {服务端生成页面\\HTML 已含正文};
+\node[stage,fill=wmnavy!9] (r3) at (9.15,-2.4) {浏览器显示正文\\此时可未执行 JS};
+\node[stage] (r4) at (12.9,-2.4) {执行 JS 并水合\\接管已有界面交互};
+\draw[link] (r1) -- (r2);
+\draw[link] (r2) -- (r3);
+\draw[link] (r3) -- (r4);
+\node[anchor=west,font=\fontsize{11}{14}\selectfont\bfseries,text=wmnavy]
+  at (0,-3.75) {SSG：静态生成};
+\node[stage] (s1) at (1.65,-4.8) {构建时生成\\含正文的 HTML};
+\node[stage,fill=wmnavy!9] (s2) at (5.4,-4.8) {页面请求到达\\返回静态 HTML};
+\node[stage,fill=wmnavy!9] (s3) at (9.15,-4.8) {浏览器显示正文\\此时可未执行 JS};
+\node[stage] (s4) at (12.9,-4.8) {按需执行 JS\\增强交互（可选）};
+\draw[link,dashed] (s1) -- (s2);
+\draw[link] (s2) -- (s3);
+\draw[link] (s3) -- (s4);
+\node[anchor=north west,text width=14.45cm,align=left,text=wmnavy]
+  at (0,-5.85)
+  {典型流程示意：底色强调正文何时可用；箭头不表示耗时比例。SSG 的构建先于页面请求；%
+    混合渲染可按路由选择策略。};
+\end{tikzpicture}

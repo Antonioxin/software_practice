@@ -1,6 +1,7 @@
 import type { ApiEnvelope } from '../types'
 import { ApiProblem } from '../services/http'
 import { fixtures } from './fixtures'
+import { contentFixtures, contentPreview } from './contentPreview'
 
 export type PreviewRole = 'guest' | 'user' | 'admin'
 export type PreviewState = 'normal' | 'empty' | 'error'
@@ -72,6 +73,8 @@ export function handlePreviewRequest<T>(
     return { data: clone(fixtures.actors[context.role]) as T }
   }
   if (endpoint.startsWith('/admin/')) requireRole(context, 'admin')
+  const contentResult = contentPreview<T>(endpoint, query, context)
+  if (contentResult) return contentResult
   if (endpoint === '/cart' || endpoint === '/checkout-previews' || endpoint === '/orders' || endpoint.startsWith('/orders/')) {
     requireRole(context, 'user')
   }
@@ -151,6 +154,16 @@ export function handlePreviewRequest<T>(
 }
 
 export const previewScenes: Array<{ label: string; path: string; role: PreviewRole }> = [
+  { label: '玩法灵感', path: '/articles', role: 'guest' },
+  { label: '玩法文章', path: `/articles/${contentFixtures.articles[0]!.id}`, role: 'guest' },
+  { label: '常见问题', path: '/faq', role: 'guest' },
+  { label: '下载中心', path: '/downloads', role: 'guest' },
+  { label: '关于 WEMOVE', path: '/about', role: 'guest' },
+  { label: '使用说明', path: '/terms', role: 'guest' },
+  { label: '隐私说明', path: '/privacy', role: 'guest' },
+  { label: '内容管理', path: '/admin/content', role: 'admin' },
+  { label: '媒体与文件', path: '/admin/files', role: 'admin' },
+  { label: '品牌与首页', path: '/admin/content/settings', role: 'admin' },
   { label: '商品目录', path: '/products', role: 'guest' },
   { label: '商品详情', path: `/products/${fixtures.products[0]!.id}`, role: 'user' },
   { label: '登录', path: '/login', role: 'guest' },

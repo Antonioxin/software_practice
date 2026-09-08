@@ -137,9 +137,9 @@ public class DealershipRepository {
         return q.getSingleResult();
     }
 
-    public int unpublishCompanyChannels(UUID companyId) {
-        return em.createQuery("update DealerChannel c set c.published=false,c.version=c.version+1,c.updatedAt=CURRENT_TIMESTAMP where c.companyId=:company and c.published=true")
-                .setParameter("company", companyId).executeUpdate();
+    public int unpublishCompanyChannels(UUID companyId, java.time.Instant now) {
+        return em.createQuery("update DealerChannel c set c.published=false,c.version=c.version+1,c.updatedAt=:now where c.companyId=:company and c.published=true")
+                .setParameter("company", companyId).setParameter("now", now).executeUpdate();
     }
 
     public DealerInquiry inquiry(UUID id, boolean lock) {

@@ -62,10 +62,16 @@ function startAnimation() {
 }
 
 function trackPointer(event: PointerEvent) {
-  if (!hovered || event.pointerType !== 'mouse' || !surface.value) return
+  if (event.pointerType !== 'mouse' || motionPreference?.matches || !surface.value || !renderer) return
   // Measure the stationary hit area, never the transformed paper.
   const bounds = surface.value.getBoundingClientRect()
   if (!bounds.width || !bounds.height) return
+  // A resize or tab switch can happen while the pointer is still over the paper.
+  // Resume on movement without requiring another pointerenter event.
+  if (!hovered) {
+    hovered = true
+    enteredAt = performance.now()
+  }
   target.set(
     MathUtils.clamp((event.clientX - bounds.left) / bounds.width * 2 - 1, -1, 1),
     MathUtils.clamp((event.clientY - bounds.top) / bounds.height * 2 - 1, -1, 1),
@@ -74,9 +80,6 @@ function trackPointer(event: PointerEvent) {
 }
 
 function enter(event: PointerEvent) {
-  if (event.pointerType !== 'mouse' || motionPreference?.matches || !renderer) return
-  hovered = true
-  enteredAt = performance.now()
   trackPointer(event)
 }
 
@@ -111,7 +114,7 @@ function resize() {
   camera.aspect = viewWidth / viewHeight
   camera.fov = MathUtils.radToDeg(2 * Math.atan(viewHeight / (2 * cameraDistance)))
   camera.updateProjectionMatrix()
-  resetMotion()
+  renderPose()
 }
 
 onMounted(() => {

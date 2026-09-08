@@ -1,0 +1,2383 @@
+---
+openapi: 3.1.0
+info:
+  title: WEMOVE 内容管理 API
+  version: 1.1.0
+  description: >-
+    成员 E CMS；媒体与 PDF 文件参见 files.yaml。所有富文本在服务端用 jsoup 清洗：允许
+    p/br/strong/b/em/i/u/s/h2/h3/h4/ul/ol/li/blockquote/a/code/pre/hr，链接仅合法站内路径及 HTTP/HTTPS。
+    文章正文另外允许 section/figure/figcaption/img/div；section 仅保留 data-layout=image-left 或 image-right，
+    无有效布局的 section 展开为子内容；img 仅保留 src/alt。图片源必须精确匹配
+    /assets/products/guides/{balance-stones,rainbow-arch,ring-toss,team-board,forest-kit,skip-rope}-guide.png
+    六个内置路径之一，或 /api/v1/media/{小写标准 UUID}/content；其他图片被移除，查询参数、片段及外链均不允许。
+    禁止任意 style/class/id、事件、srcset、script、iframe、SVG。FAQ 与站点设置仍不支持正文图片。
+    文章保存和发布时从清洗后的正文提取媒体 ID，与显式 mediaIds 去重合并；显式顺序优先，正文按出现顺序追加，
+    合计最多 20 张。全部引用须在媒体库存在，草稿引用保护删除，发布后允许公开读取，下架后撤销此文章的公开引用。
+    Banner targetUrl 仅站内 / 路径及绝对 HTTP/HTTPS。公开与管理请求均 no-store，写入与媒体引用、审计、幂等同事务。
+    商品关联仅接受已发布商品。所有管理路由须 ADMIN 与有效会话；写入须 CSRF 和允许的 Origin。
+servers:
+- url: "/api/v1"
+paths:
+  "/admin/articles":
+    get:
+      operationId: adminListArticles
+      summary: 管理员查询Article
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    "$ref": "#/components/schemas/PageMeta"
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: createArticle
+      summary: 创建草稿Article
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+        '201':
+          description: 成功；创建原始请求返回 201，同键同内容重放返回 200。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ArticleCreate"
+  "/admin/articles/{id}":
+    get:
+      operationId: adminGetArticle
+      summary: 管理员读取Article
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateArticle
+      summary: 编辑Article；字段作为完整表单提交，已发布内容保存后立即更新公开投影
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ArticleUpdate"
+  "/admin/articles/{id}/publish":
+    post:
+      operationId: publishArticle
+      summary: 发布Article
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+  "/admin/articles/{id}/unpublish":
+    post:
+      operationId: unpublishArticle
+      summary: 下线Article
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+  "/articles":
+    get:
+      operationId: publicListArticles
+      summary: 仅查询已发布Article
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    "$ref": "#/components/schemas/PageMeta"
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+  "/articles/{id}":
+    get:
+      operationId: publicGetArticle
+      summary: 读取已发布Article；草稿/下线统一 404
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/ArticleView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  "/admin/faqs":
+    get:
+      operationId: adminListFaqs
+      summary: 管理员查询Faq
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    "$ref": "#/components/schemas/PageMeta"
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: createFaq
+      summary: 创建草稿Faq
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+        '201':
+          description: 成功；创建原始请求返回 201，同键同内容重放返回 200。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/FaqCreate"
+  "/admin/faqs/{id}":
+    get:
+      operationId: adminGetFaq
+      summary: 管理员读取Faq
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateFaq
+      summary: 编辑Faq；字段作为完整表单提交，已发布内容保存后立即更新公开投影
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/FaqUpdate"
+  "/admin/faqs/{id}/publish":
+    post:
+      operationId: publishFaq
+      summary: 发布Faq
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+  "/admin/faqs/{id}/unpublish":
+    post:
+      operationId: unpublishFaq
+      summary: 下线Faq
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+  "/faqs":
+    get:
+      operationId: publicListFaqs
+      summary: 仅查询已发布Faq
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    "$ref": "#/components/schemas/PageMeta"
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+  "/faqs/{id}":
+    get:
+      operationId: publicGetFaq
+      summary: 读取已发布Faq；草稿/下线统一 404
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/FaqView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  "/admin/banners":
+    get:
+      operationId: adminListBanners
+      summary: 管理员查询Banner
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    "$ref": "#/components/schemas/PageMeta"
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+    post:
+      operationId: createBanner
+      summary: 创建草稿Banner
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+        '201':
+          description: 成功；创建原始请求返回 201，同键同内容重放返回 200。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BannerCreate"
+  "/admin/banners/{id}":
+    get:
+      operationId: adminGetBanner
+      summary: 管理员读取Banner
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateBanner
+      summary: 编辑Banner；字段作为完整表单提交，已发布内容保存后立即更新公开投影
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BannerUpdate"
+  "/admin/banners/{id}/publish":
+    post:
+      operationId: publishBanner
+      summary: 发布Banner
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+  "/admin/banners/{id}/unpublish":
+    post:
+      operationId: unpublishBanner
+      summary: 下线Banner
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/BannerView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+  "/site-settings":
+    get:
+      operationId: publicSiteSettings
+      summary: 读取品牌、联系信息和现行条款/隐私说明
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/SettingsView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+  "/admin/site-settings":
+    get:
+      operationId: adminSiteSettings
+      summary: 读取网站设置
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/SettingsView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+    patch:
+      operationId: updateSiteSettings
+      summary: 更新固定设置；条款/隐私正文变更必须更新对应版本
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/SettingsView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SettingsUpdate"
+  "/home":
+    get:
+      operationId: publicHome
+      summary: 启用 Banner、按配置顺序过滤有效推荐商品和文章；下线立即排除
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/HomeView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+  "/admin/home":
+    get:
+      operationId: adminHome
+      summary: 读取首页推荐配置
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/HomeAdminView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+    patch:
+      operationId: updateHome
+      summary: 编辑推荐顺序；关联条目必须当前已发布
+      security:
+      - session: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: 幂等成功重放时为 true
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/HomeAdminView"
+                  meta:
+                    type: 'null'
+                required:
+                - data
+        '401':
+          "$ref": "#/components/responses/Error401"
+        '403':
+          "$ref": "#/components/responses/Error403"
+        '404':
+          "$ref": "#/components/responses/Error404"
+        '409':
+          "$ref": "#/components/responses/Error409"
+        '422':
+          "$ref": "#/components/responses/Error422"
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/HomeUpdate"
+components:
+  responses:
+    Error401:
+      description: 未登录
+      content:
+        application/problem+json:
+          schema:
+            "$ref": "#/components/schemas/Problem"
+    Error403:
+      description: 非管理员或 CSRF 校验失败
+      content:
+        application/problem+json:
+          schema:
+            "$ref": "#/components/schemas/Problem"
+    Error404:
+      description: 资源不存在或未公开
+      content:
+        application/problem+json:
+          schema:
+            "$ref": "#/components/schemas/Problem"
+    Error409:
+      description: VERSION_CONFLICT / IDEMPOTENCY_CONFLICT / INVALID_STATE_TRANSITION
+      content:
+        application/problem+json:
+          schema:
+            "$ref": "#/components/schemas/Problem"
+    Error422:
+      description: VALIDATION_ERROR，包含字段错误
+      content:
+        application/problem+json:
+          schema:
+            "$ref": "#/components/schemas/Problem"
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: WEMOVE_SESSION
+  schemas:
+    PageMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 50
+        totalItems:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - page
+      - pageSize
+      - totalItems
+      - totalPages
+    VersionCommand:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - expectedVersion
+    SettingsView:
+      type: object
+      additionalProperties: false
+      properties:
+        brandName:
+          type: string
+          maxLength: 100
+        brandDescription:
+          type: string
+          maxLength: 20000
+        contactEmail:
+          type: string
+          maxLength: 250
+        contactPhone:
+          type: string
+          maxLength: 50
+        contactAddress:
+          type: string
+          maxLength: 250
+        logoMediaId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        termsText:
+          type: string
+          maxLength: 50000
+        termsVersion:
+          type: string
+          maxLength: 32
+        privacyText:
+          type: string
+          maxLength: 50000
+        privacyVersion:
+          type: string
+          maxLength: 32
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - brandName
+      - brandDescription
+      - contactEmail
+      - contactPhone
+      - contactAddress
+      - logoMediaId
+      - termsText
+      - termsVersion
+      - privacyText
+      - privacyVersion
+      - version
+    SettingsUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        brandName:
+          type: string
+          maxLength: 100
+        brandDescription:
+          type: string
+          maxLength: 20000
+        contactEmail:
+          type: string
+          maxLength: 250
+        contactPhone:
+          type: string
+          maxLength: 50
+        contactAddress:
+          type: string
+          maxLength: 250
+        logoMediaId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        termsText:
+          type: string
+          maxLength: 50000
+        termsVersion:
+          type: string
+          maxLength: 32
+        privacyText:
+          type: string
+          maxLength: 50000
+        privacyVersion:
+          type: string
+          maxLength: 32
+      required:
+      - expectedVersion
+      - brandName
+      - termsText
+      - termsVersion
+      - privacyText
+      - privacyVersion
+    HomeAdminView:
+      type: object
+      additionalProperties: false
+      properties:
+        recommendedProductIds:
+          type: array
+          maxItems: 12
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        featuredArticleIds:
+          type: array
+          maxItems: 6
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - recommendedProductIds
+      - featuredArticleIds
+      - version
+    HomeUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        recommendedProductIds:
+          type: array
+          maxItems: 12
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        featuredArticleIds:
+          type: array
+          maxItems: 6
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+      required:
+      - expectedVersion
+      - recommendedProductIds
+      - featuredArticleIds
+    PublicProduct:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        sku:
+          type: string
+        name:
+          type: string
+        mainImageId:
+          type: string
+          nullable: true
+        retailUnitPriceFen:
+          type: integer
+          format: int64
+          minimum: 0
+        published:
+          type: boolean
+        inStock:
+          type: boolean
+    Problem:
+      type: object
+      properties:
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        requestId:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+    ArticleView:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        summary:
+          type: string
+          maxLength: 500
+        body:
+          type: string
+          maxLength: 200000
+          description: >-
+            清洗后的受控 HTML；可见文本按 Unicode 码点计数，最多 20000；草稿可空，发布至少 1 字符。
+            通栏图片使用 figure(img[src,alt], figcaption)；左右图文使用
+            section[data-layout=image-left|image-right]，内部依次为 figure 和 div(h3,p...)。
+            可保留段落、标题、列表、加粗等基础排版。图片来源与属性限制见 API 总说明。
+        category:
+          type: string
+          maxLength: 80
+        pageDescription:
+          type: string
+          maxLength: 300
+        productIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        mediaIds:
+          type: array
+          description: 显式媒体按输入顺序优先（第一张作为封面），再追加清洗后正文中的媒体 ID；去重合计最多 20 张。内置 guide 图片不计入媒体引用。
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - title
+      - summary
+      - body
+      - category
+      - pageDescription
+      - productIds
+      - mediaIds
+      - sortOrder
+      - id
+      - status
+      - sortOrder
+      - version
+      - createdAt
+      - updatedAt
+      - publishedAt
+    ArticleCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        summary:
+          type: string
+          maxLength: 500
+        body:
+          type: string
+          maxLength: 200000
+          description: >-
+            清洗后的受控 HTML；可见文本按 Unicode 码点计数，最多 20000；草稿可空，发布至少 1 字符。
+            通栏图片使用 figure(img[src,alt], figcaption)；左右图文使用
+            section[data-layout=image-left|image-right]，内部依次为 figure 和 div(h3,p...)。
+            可保留段落、标题、列表、加粗等基础排版。图片来源与属性限制见 API 总说明。
+        category:
+          type: string
+          maxLength: 80
+        pageDescription:
+          type: string
+          maxLength: 300
+        productIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        mediaIds:
+          type: array
+          description: 显式媒体按输入顺序优先（第一张作为封面），再追加清洗后正文中的媒体 ID；去重合计最多 20 张。内置 guide 图片不计入媒体引用。
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+    ArticleUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        title:
+          type: string
+          maxLength: 100
+        summary:
+          type: string
+          maxLength: 500
+        body:
+          type: string
+          maxLength: 200000
+          description: >-
+            清洗后的受控 HTML；可见文本按 Unicode 码点计数，最多 20000；草稿可空，发布至少 1 字符。
+            通栏图片使用 figure(img[src,alt], figcaption)；左右图文使用
+            section[data-layout=image-left|image-right]，内部依次为 figure 和 div(h3,p...)。
+            可保留段落、标题、列表、加粗等基础排版。图片来源与属性限制见 API 总说明。
+        category:
+          type: string
+          maxLength: 80
+        pageDescription:
+          type: string
+          maxLength: 300
+        productIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        mediaIds:
+          type: array
+          description: 显式媒体按输入顺序优先（第一张作为封面），再追加清洗后正文中的媒体 ID；去重合计最多 20 张。内置 guide 图片不计入媒体引用。
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - expectedVersion
+    FaqView:
+      type: object
+      additionalProperties: false
+      properties:
+        question:
+          type: string
+          maxLength: 200
+        answer:
+          type: string
+          maxLength: 60000
+          description: 清洗后可见文本最多 5000 Unicode 码点；草稿可空，发布必填。
+        category:
+          type: string
+          maxLength: 80
+        productIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - question
+      - answer
+      - category
+      - productIds
+      - sortOrder
+      - id
+      - status
+      - sortOrder
+      - version
+      - createdAt
+      - updatedAt
+      - publishedAt
+    FaqCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        question:
+          type: string
+          maxLength: 200
+        answer:
+          type: string
+          maxLength: 60000
+          description: 清洗后可见文本最多 5000 Unicode 码点；草稿可空，发布必填。
+        category:
+          type: string
+          maxLength: 80
+        productIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+    FaqUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        question:
+          type: string
+          maxLength: 200
+        answer:
+          type: string
+          maxLength: 60000
+          description: 清洗后可见文本最多 5000 Unicode 码点；草稿可空，发布必填。
+        category:
+          type: string
+          maxLength: 80
+        productIds:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - expectedVersion
+    BannerView:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        imageId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        buttonText:
+          type: string
+          maxLength: 50
+        targetUrl:
+          type: string
+          maxLength: 2048
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - title
+      - imageId
+      - buttonText
+      - targetUrl
+      - sortOrder
+      - id
+      - status
+      - sortOrder
+      - version
+      - createdAt
+      - updatedAt
+      - publishedAt
+    BannerCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        imageId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        buttonText:
+          type: string
+          maxLength: 50
+        targetUrl:
+          type: string
+          maxLength: 2048
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+    BannerUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        title:
+          type: string
+          maxLength: 100
+        imageId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        buttonText:
+          type: string
+          maxLength: 50
+        targetUrl:
+          type: string
+          maxLength: 2048
+        sortOrder:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - expectedVersion
+    HomeView:
+      type: object
+      additionalProperties: false
+      properties:
+        banners:
+          type: array
+          items:
+            "$ref": "#/components/schemas/BannerView"
+        recommendedProducts:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PublicProduct"
+        featuredArticles:
+          type: array
+          items:
+            "$ref": "#/components/schemas/ArticleView"
+      required:
+      - banners
+      - recommendedProducts
+      - featuredArticles

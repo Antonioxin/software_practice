@@ -56,6 +56,7 @@
 }
 
 .commerce-count {
+  border-radius: var(--radius-small);
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -90,6 +91,7 @@
 }
 
 .commerce-notice {
+  border-radius: var(--radius-card);
   display: grid;
   gap: 8px;
   margin: 0 0 24px;
@@ -155,6 +157,7 @@
 }
 
 .commerce-status {
+  border-radius: var(--radius-small);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -354,7 +357,7 @@
   width: 72px;
   min-height: 43px;
   border: 1px solid #bfb5a5;
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   padding: 8px 10px;
   color: var(--ink);
   background: #fffdf8;
@@ -384,6 +387,7 @@
 }
 
 .commerce-summary {
+  border-radius: var(--radius-panel);
   padding: 28px;
   color: #f8f3e8;
   background: var(--green);
@@ -538,6 +542,7 @@
 }
 
 .checkout-card {
+  border-radius: var(--radius-panel);
   min-width: 0;
   padding: clamp(24px, 3vw, 36px);
   border: 1px solid var(--line);
@@ -619,7 +624,7 @@
   width: 100%;
   min-height: 48px;
   border: 1px solid #c9c0b2;
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   padding: 12px 14px;
   color: var(--ink);
   background: #fffdf8;
@@ -792,6 +797,7 @@
 }
 
 .commerce-filter-panel {
+  border-radius: var(--radius-card);
   display: grid;
   grid-template-columns: minmax(190px, 260px) auto;
   gap: 16px;
@@ -803,18 +809,21 @@
 }
 
 .commerce-filter-panel--admin {
+  grid-template-columns: minmax(0, 1fr);
   margin-bottom: 24px;
 }
 
 .commerce-filter-grid {
   display: grid;
+  min-width: 0;
   grid-template-columns: repeat(3, minmax(150px, 1fr));
   gap: 16px;
   align-items: end;
 }
 
 .commerce-filter-grid--admin {
-  grid-template-columns: 1fr 1fr 1fr;
+  /* The workspace sidebar changes available width independently of the viewport. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
 }
 
 .commerce-filter-field {
@@ -830,6 +839,16 @@
   display: flex;
   gap: 8px;
   align-items: end;
+}
+
+.commerce-filter-control {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.commerce-filter-panel--admin .commerce-filter-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .commerce-filter-help {
@@ -925,6 +944,7 @@
 }
 
 .commerce-state-panel {
+  border-radius: var(--radius-panel);
   display: grid;
   min-height: 190px;
   place-items: center;
@@ -1035,6 +1055,7 @@
 }
 
 .commerce-detail-section {
+  border-radius: var(--radius-panel);
   min-width: 0;
   padding: 25px 27px;
   border: 1px solid var(--line);
@@ -1143,6 +1164,7 @@
 }
 
 .commerce-amount-card {
+  border-radius: var(--radius-panel);
   padding: 27px;
   color: #f8f3e8;
   background: var(--green);
@@ -1325,9 +1347,6 @@
     max-width: none;
   }
 
-  .commerce-filter-grid--admin {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 @media (max-width: 760px) {
@@ -1437,7 +1456,7 @@
 
   .commerce-filter-grid,
   .commerce-filter-grid--admin {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .commerce-filter-actions {

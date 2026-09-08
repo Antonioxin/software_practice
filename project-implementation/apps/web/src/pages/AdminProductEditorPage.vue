@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import SiteShell from '../components/SiteShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
+import SketchIcon from '../components/SketchIcon.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
 import type { AdminProduct, Category, ProductOptions } from '../types'
 
@@ -110,7 +111,7 @@ onMounted(load)
 
 <template>
   <SiteShell :title="creating ? '新建商品草稿' : '编辑商品'" eyebrow="OPERATIONS / PRODUCT EDITOR" admin>
-    <button class="back-link" type="button" @click="router.push('/admin/products')">← 返回商品与库存</button>
+    <button class="back-link" type="button" @click="router.push('/admin/products')"><SketchIcon name="arrow-left" :size="22" /> 返回商品与库存</button>
     <div v-if="loading" class="state-panel"><span class="loader"></span><p>正在加载编辑器…</p></div>
     <div v-else-if="error && !creating && !current" class="state-panel" role="alert"><h2>无法打开商品</h2><p>{{ error }}</p></div>
     <form v-else class="product-editor" novalidate @submit.prevent="save">
@@ -127,7 +128,7 @@ onMounted(load)
           <label class="field"><span>商品名称</span><input v-model="form.name" maxlength="100" placeholder="2—100 个字符" :aria-invalid="!!fields.name" /><small v-if="fields.name" class="field-error">{{ fields.name }}</small></label>
           <label class="field"><span>SKU</span><input v-model="form.sku" maxlength="40" placeholder="WM-EXAMPLE-001" :disabled="!!current?.sku" :aria-invalid="!!fields.sku" /><small v-if="fields.sku" class="field-error">{{ fields.sku }}</small></label>
           <label class="field"><span>分类</span><select v-model="form.categoryId" :aria-invalid="!!fields.categoryId"><option value="">请选择分类</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}{{ category.enabled ? '' : '（已停用）' }}</option></select><small v-if="fields.categoryId" class="field-error">{{ fields.categoryId }}</small></label>
-          <label class="field"><span>推荐顺序</span><input v-model.number="form.displayOrder" type="number" min="0" /></label>
+          <label class="field"><span class="wm-icon-label"><SketchIcon name="sort" :size="20" /> 推荐顺序</span><input v-model.number="form.displayOrder" type="number" min="0" /></label>
           <label class="field editor-span-2"><span>商品简述</span><textarea v-model="form.summary" maxlength="200" rows="2" placeholder="列表和页面首屏使用，最多 200 字符" :aria-invalid="!!fields.summary"></textarea><small v-if="fields.summary" class="field-error">{{ fields.summary }}</small></label>
           <label class="field editor-span-2"><span>详细说明</span><textarea v-model="form.description" maxlength="10000" rows="4" placeholder="介绍使用价值和设计思路"></textarea></label>
         </div>
@@ -142,17 +143,17 @@ onMounted(load)
           <label class="field"><span>使用场景</span><select v-model="form.scene"><option value="">请选择</option><option v-for="item in options.scenes" :key="item.value" :value="item.value">{{ item.label }}</option></select></label>
           <label class="field editor-span-2"><span>材质</span><textarea v-model="form.material" maxlength="2000" rows="2"></textarea></label>
           <label class="field editor-span-2"><span>规格与单位</span><textarea v-model="form.dimensions" maxlength="2000" rows="2"></textarea></label>
-          <label class="field editor-span-2"><span>包装包含</span><textarea v-model="form.packageContents" maxlength="2000" rows="3"></textarea></label>
+          <label class="field editor-span-2"><span class="wm-icon-label"><SketchIcon name="package" :size="20" /> 包装包含</span><textarea v-model="form.packageContents" maxlength="2000" rows="3"></textarea></label>
           <label class="field editor-span-2"><span>玩法说明</span><textarea v-model="form.instructions" maxlength="2000" rows="3"></textarea></label>
           <label class="field editor-span-4"><span>安全提示</span><textarea v-model="form.safetyNotes" maxlength="2000" rows="3" :aria-invalid="!!fields.safetyNotes"></textarea><small v-if="fields.safetyNotes" class="field-error">{{ fields.safetyNotes }}</small></label>
         </div>
       </section>
 
       <section class="paper-section editor-section">
-        <header><div><p>03 / MEDIA & PRICE</p><h3>图片与价格</h3></div><span>图片保存受控引用；文件内容由 E 模块负责。</span></header>
+        <header><div><p>03 / MEDIA & PRICE</p><h3>图片与价格</h3></div><RouterLink to="/admin/files?tab=media" target="_blank">打开媒体库上传或选择图片 ↗</RouterLink></header>
         <div class="editor-grid">
-          <label class="field"><span>主图 ID</span><input v-model="form.mainImageId" maxlength="64" placeholder="asset_xxx 或测试引用" :aria-invalid="!!fields.mainImageId" /><small v-if="fields.mainImageId" class="field-error">{{ fields.mainImageId }}</small></label>
-          <label class="field"><span>附图 ID（逗号分隔）</span><input v-model="form.imageIds" placeholder="asset_a, asset_b" :aria-invalid="!!fields.imageIds" /><small v-if="fields.imageIds" class="field-error">{{ fields.imageIds }}</small></label>
+          <label class="field"><span>主图 ID</span><input v-model="form.mainImageId" maxlength="64" placeholder="粘贴媒体库中的图片 ID" :aria-invalid="!!fields.mainImageId" /><small v-if="fields.mainImageId" class="field-error">{{ fields.mainImageId }}</small></label>
+          <label class="field"><span>附图 ID（逗号分隔）</span><input v-model="form.imageIds" placeholder="粘贴媒体库中的图片 ID，以逗号分隔" :aria-invalid="!!fields.imageIds" /><small v-if="fields.imageIds" class="field-error">{{ fields.imageIds }}</small></label>
           <label class="field"><span>零售价（CNY 元）</span><input v-model="form.retailPrice" inputmode="decimal" placeholder="299.00" :aria-invalid="!!fields.retailUnitPriceFen" /><small v-if="fields.retailUnitPriceFen" class="field-error">{{ fields.retailUnitPriceFen }}</small></label>
           <label v-if="creating" class="field"><span>初始库存</span><input v-model.number="form.initialStock" type="number" min="0" /><small>建档后只能通过库存调整命令变更。</small></label>
         </div>
@@ -161,7 +162,7 @@ onMounted(load)
           <div v-if="form.dealerEnabled" class="editor-grid editor-grid-3">
             <label class="field"><span>经销参考价（CNY 元）</span><input v-model="form.dealerPrice" inputmode="decimal" :aria-invalid="!!fields.dealerReferenceUnitPriceFen" /><small v-if="fields.dealerReferenceUnitPriceFen" class="field-error">{{ fields.dealerReferenceUnitPriceFen }}</small></label>
             <label class="field"><span>最小询价量</span><input v-model.number="form.minInquiryQuantity" type="number" min="1" max="9999" :aria-invalid="!!fields.minInquiryQuantity" /><small v-if="fields.minInquiryQuantity" class="field-error">{{ fields.minInquiryQuantity }}</small></label>
-            <label class="field"><span>参考交期</span><input v-model="form.leadTimeText" maxlength="500" placeholder="例如 7—10 个工作日" :aria-invalid="!!fields.leadTimeText" /><small v-if="fields.leadTimeText" class="field-error">{{ fields.leadTimeText }}</small></label>
+            <label class="field"><span class="wm-icon-label"><SketchIcon name="timer" :size="20" /> 参考交期</span><input v-model="form.leadTimeText" maxlength="500" placeholder="例如 7—10 个工作日" :aria-invalid="!!fields.leadTimeText" /><small v-if="fields.leadTimeText" class="field-error">{{ fields.leadTimeText }}</small></label>
           </div>
         </div>
       </section>

@@ -2,7 +2,7 @@ package wemove.identity.api;
 
 import wemove.platform.api.ApiException;
 import wemove.platform.api.ApiEnvelope;
-import wemove.config.WemoveProperties;
+import wemove.content.platform.ContentSettingsPort;
 import wemove.platform.*;
 import wemove.identity.service.*;
 import jakarta.servlet.http.*;
@@ -24,18 +24,18 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final HttpSessionSecurityContextRepository contexts;
     private final RateLimitPort limits;
-    private final WemoveProperties properties;
+    private final ContentSettingsPort contentSettings;
 
     public AuthController(UserAccountService accounts, IdentityPort identity,
                           AuthenticationManager authenticationManager,
                           HttpSessionSecurityContextRepository contexts,
-                          RateLimitPort limits, WemoveProperties properties) {
+                          RateLimitPort limits, ContentSettingsPort contentSettings) {
         this.accounts = accounts;
         this.identity = identity;
         this.authenticationManager = authenticationManager;
         this.contexts = contexts;
         this.limits = limits;
-        this.properties = properties;
+        this.contentSettings = contentSettings;
     }
 
     @GetMapping("/csrf")
@@ -46,10 +46,11 @@ public class AuthController {
 
     @GetMapping("/registration-policy")
     public ApiEnvelope<Dtos.RegistrationPolicy> policy() {
+        var versions = contentSettings.currentDocumentVersions();
         return ApiEnvelope.of(new Dtos.RegistrationPolicy(
             "我确认已年满 18 岁，本账户用于成年消费或采购活动。",
-            properties.registration().termsVersion(), "/terms",
-            properties.registration().privacyVersion(), "/privacy"));
+            versions.termsVersion(), "/terms",
+            versions.privacyVersion(), "/privacy"));
     }
 
     @PostMapping("/register")

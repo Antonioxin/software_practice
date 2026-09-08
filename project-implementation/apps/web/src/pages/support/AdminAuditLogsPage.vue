@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElDialog } from 'element-plus'
 import SiteShell from '../../components/SiteShell.vue'
@@ -57,13 +58,13 @@ onMounted(() => void load())
     <section class="paper-section admin-filter">
       <form @submit.prevent="load(1)">
         <div class="field"><label for="audit-filter-actor">操作者 ID</label>
-          <input id="audit-filter-actor" v-model="filters.actorId" placeholder="用户 UUID" />
+          <input class="wm-search-input" id="audit-filter-actor" v-model="filters.actorId" placeholder="用户 UUID" />
         </div>
         <div class="field"><label for="audit-filter-action">动作</label>
-          <input id="audit-filter-action" v-model="filters.action" placeholder="如 TICKET_CLOSED" />
+          <input class="wm-search-input" id="audit-filter-action" v-model="filters.action" placeholder="如 TICKET_CLOSED" />
         </div>
         <div class="field"><label for="audit-filter-object">对象类型</label>
-          <input id="audit-filter-object" v-model="filters.objectType" placeholder="如 TICKET / ORDER" />
+          <input class="wm-search-input" id="audit-filter-object" v-model="filters.objectType" placeholder="如 TICKET / ORDER" />
         </div>
         <div class="field"><label for="audit-filter-from">发生时间起点（上海）</label>
           <input id="audit-filter-from" v-model="filters.from" type="datetime-local" />
@@ -73,7 +74,7 @@ onMounted(() => void load())
         </div>
         <div class="filter-actions">
           <button class="primary-button compact" type="submit">查询</button>
-          <button class="secondary-button" type="button" @click="resetFilters">重置</button>
+          <button class="secondary-button" type="button" @click="resetFilters"><SketchIcon name="return" :size="22" />重置</button>
         </div>
       </form>
     </section>

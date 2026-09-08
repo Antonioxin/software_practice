@@ -20,6 +20,7 @@ public interface CatalogPort {
             UUID id,
             String sku,
             String name,
+            String mainImageId,
             long retailUnitPriceFen,
             boolean published,
             boolean inStock) {}

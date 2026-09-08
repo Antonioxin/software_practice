@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { computed, onMounted, ref } from 'vue'
 import SiteShell from '../../components/SiteShell.vue'
 import { readDashboard } from '../../features/support/api'
@@ -107,8 +108,8 @@ onMounted(() => void load())
         <input id="dashboard-end" v-model="range.end" type="date" />
       </div>
       <div class="filter-actions">
-        <button class="primary-button compact" type="submit" :disabled="loading">{{ loading ? '读取中…' : '查看指标' }}</button>
-        <button class="secondary-button" type="button" @click="range = { start: today, end: today }; load()">回到今天</button>
+        <button class="primary-button compact" type="submit" :disabled="loading"><SketchIcon name="search" :size="22" />{{ loading ? '读取中…' : '查看指标' }}</button>
+        <button class="secondary-button" type="button" @click="range = { start: today, end: today }; load()"><SketchIcon name="return" :size="22" />回到今天</button>
       </div>
     </form>
 

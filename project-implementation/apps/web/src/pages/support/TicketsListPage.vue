@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { onMounted, reactive, ref } from 'vue'
 import SiteShell from '../../components/SiteShell.vue'
 import { readTickets, type TicketPage } from '../../features/support/api'
@@ -77,8 +78,8 @@ onMounted(() => void load())
           </div>
         </template>
         <div class="filter-actions">
-          <button class="primary-button compact" type="submit">查询</button>
-          <button v-if="props.admin" class="secondary-button" type="button" @click="resetFilters">重置</button>
+          <button class="primary-button compact" type="submit"><SketchIcon name="search" :size="22" />查询</button>
+          <button v-if="props.admin" class="secondary-button" type="button" @click="resetFilters"><SketchIcon name="return" :size="22" />重置</button>
         </div>
       </form>
     </section>

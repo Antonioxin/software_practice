@@ -14,13 +14,13 @@ afterEach(() => {
 })
 
 describe('开发预览的响应契约', () => {
-  it('按路径选择默认身份，保留显式身份与数据状态，并覆盖 17 个业务场景', () => {
+  it('按路径选择默认身份，保留显式身份与数据状态，并覆盖 27 个业务场景', () => {
     expect(previewContext({ pathname: '/admin/products', search: '?preview=1' })).toEqual(admin)
     expect(previewContext({ pathname: '/checkout', search: '?preview=1' })).toEqual(user)
     expect(previewContext({ pathname: '/login', search: '?preview=1' })).toEqual({ role: 'guest', state: 'normal' })
     expect(previewContext({ pathname: '/products', search: '?role=admin&state=error' })).toEqual({ role: 'admin', state: 'error' })
-    expect(previewScenes).toHaveLength(17)
-    expect(new Set(previewScenes.map(scene => scene.path)).size).toBe(17)
+    expect(previewScenes).toHaveLength(27)
+    expect(new Set(previewScenes.map(scene => scene.path)).size).toBe(27)
   })
 
   it('保留目录 data + meta 与订单 data 内分页的不同接口结构', () => {

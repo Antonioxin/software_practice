@@ -1,0 +1,50 @@
+{
+  "date": "2026-09-08",
+  "method": "PNG source file bytes, not network transfer or page load",
+  "unit": "MiB = 1048576 bytes",
+  "total_bytes": 9573368,
+  "assets": [
+    {
+      "file": "project-implementation/apps/web/public/assets/products/guides/balance-stones-guide.png",
+      "label": "平衡石",
+      "bytes": 1232915,
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "project-implementation/apps/web/public/assets/products/guides/forest-kit-guide.png",
+      "label": "自然观察工具",
+      "bytes": 1909681,
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "project-implementation/apps/web/public/assets/products/guides/rainbow-arch-guide.png",
+      "label": "彩虹拱",
+      "bytes": 1617173,
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "project-implementation/apps/web/public/assets/products/guides/ring-toss-guide.png",
+      "label": "木质套圈",
+      "bytes": 1663546,
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "project-implementation/apps/web/public/assets/products/guides/skip-rope-guide.png",
+      "label": "跳绳",
+      "bytes": 1506426,
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "project-implementation/apps/web/public/assets/products/guides/team-board-guide.png",
+      "label": "多人协作板",
+      "bytes": 1643627,
+      "width": 1254,
+      "height": 1254
+    }
+  ]
+}

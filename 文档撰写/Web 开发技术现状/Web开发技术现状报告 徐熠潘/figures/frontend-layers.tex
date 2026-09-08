@@ -1,0 +1,32 @@
+\begin{tikzpicture}[
+  font=\fontsize{10.5}{14}\selectfont,
+  layer/.style={draw=wmnavy!65,fill=white,rounded corners=2pt,
+    line width=0.6pt,text width=9.35cm,minimum height=1.2cm,
+    align=center,inner sep=5pt},
+  link/.style={-{Stealth[length=2mm]},draw=wmaccent,line width=0.7pt}
+]
+\node[layer,fill=wmnavy!6] (shell) at (4.9,0)
+  {\textbf{全站基础与统一规范}\\全站壳、导航与页脚、设计变量、路由、响应式和无障碍约定};
+\node[layer] (pages) at (4.9,-1.75)
+  {\textbf{页面与交互}\\公开内容：品牌故事、新闻与资源；后台：内容管理与预览};
+\node[layer] (components) at (4.9,-3.5)
+  {\textbf{内容领域组件}\\受控正文渲染、区块编辑、图文布局与媒体选择};
+\node[layer,fill=wmnavy!6] (api) at (4.9,-5.25)
+  {\textbf{内容接口与服务端约束}\\内容 API、发布状态、版本冲突；服务端实施权限与输入校验};
+\draw[link] (shell) -- (pages);
+\draw[link] (pages) -- (components);
+\draw[link] (components) -- (api);
+\node[draw=wmnavy!50,rounded corners=2pt,fill=white,
+  text width=3.0cm,minimum height=3.15cm,align=left,inner sep=7pt]
+  (partners) at (12.1,-1.75)
+  {\textbf{跨成员协作}\\[5pt]
+   A：身份与角色\\[4pt]
+   B：商品页面衔接\\[4pt]
+   D：渠道页面衔接};
+\draw[link,dashed] (partners.west) -- (pages.east);
+\node[text width=3.1cm,align=left,text=wmnavy] at (12.1,-4.65)
+  {成员 E 负责内容体验与全站整合；接口边界由各领域共同约定。};
+\node[anchor=north west,text width=14.4cm,align=left,text=wmnavy]
+  at (0,-6.15)
+  {职责层次示意：界面、领域组件与服务端约束相互配合；箭头表示依赖关系。};
+\end{tikzpicture}

@@ -8,6 +8,7 @@ let now = 1000
 let nextFrame = 0
 let reducedMotion = false
 let media: MediaQueryList
+let resizeCallback: ResizeObserverCallback | undefined
 const frames = new Map<number, FrameRequestCallback>()
 const disconnectObserver = vi.fn()
 
@@ -41,6 +42,7 @@ beforeEach(() => {
   now = 1000
   nextFrame = 0
   reducedMotion = false
+  resizeCallback = undefined
   frames.clear()
   disconnectObserver.mockClear()
   vi.spyOn(performance, 'now').mockImplementation(() => now)
@@ -51,6 +53,7 @@ beforeEach(() => {
   }))
   vi.stubGlobal('cancelAnimationFrame', vi.fn((id: number) => { frames.delete(id) }))
   vi.stubGlobal('ResizeObserver', class {
+    constructor(callback: ResizeObserverCallback) { resizeCallback = callback }
     observe = vi.fn()
     disconnect = disconnectObserver
   })
@@ -102,6 +105,65 @@ describe('Three.js 拍立得交互', () => {
     expect(paperTransform()).toBe(resting)
   })
 
+  it('首个收到的鼠标事件是移动时，也能激活相纸动效', async () => {
+    const paper = render()
+    const resting = paperTransform()
+    await paper.trigger('pointermove', { pointerType: 'mouse', clientX: 290, clientY: 40 })
+    expect(frames.size).toBeGreaterThan(0)
+    settleMotion()
+    expect(paperTransform()).not.toBe(resting)
+    await paper.trigger('pointerleave', { pointerType: 'mouse' })
+    settleMotion()
+    expect(paperTransform()).toBe(resting)
+  })
+
+  it.each(['窗口失焦', '页面隐藏'] as const)('%s复位后，鼠标继续移动即可恢复，无需移出再移入', async (cause) => {
+    const paper = render()
+    const resting = paperTransform()
+    await paper.trigger('pointerenter', { pointerType: 'mouse', clientX: 290, clientY: 40 })
+    settleMotion()
+    expect(paperTransform()).not.toBe(resting)
+
+    if (cause === '窗口失焦') window.dispatchEvent(new Event('blur'))
+    else {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    expect(paperTransform()).toBe(resting)
+    expect(frames.size).toBe(0)
+
+    if (cause === '窗口失焦') window.dispatchEvent(new Event('focus'))
+    else {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    await paper.trigger('pointermove', { pointerType: 'mouse', clientX: 30, clientY: 360 })
+    expect(frames.size).toBeGreaterThan(0)
+    settleMotion()
+    expect(paperTransform()).not.toBe(resting)
+  })
+
+  it('悬停期间尺寸观察触发仍保留相纸姿态，并继续跟随鼠标', async () => {
+    const paper = render()
+    const resting = paperTransform()
+    await paper.trigger('pointerenter', { pointerType: 'mouse', clientX: 290, clientY: 40 })
+    settleMotion()
+    const beforeResize = paperTransform()
+    expect(beforeResize).not.toBe(resting)
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockReturnValue(new DOMRect(10, 20, 400, 480))
+    expect(resizeCallback).toBeDefined()
+    resizeCallback!([], {} as ResizeObserver)
+    expect(paperTransform()).toBe(beforeResize)
+    expect((paper.get('.polaroid-motion-paper').element as HTMLElement).style.width).toBe('400px')
+
+    await paper.trigger('pointermove', { pointerType: 'mouse', clientX: 30, clientY: 480 })
+    settleMotion()
+    expect(paperTransform()).not.toBe(beforeResize)
+    await paper.trigger('pointerleave', { pointerType: 'mouse' })
+    settleMotion()
+    expect(paperTransform()).toBe(resting)
+  })
+
   it('运行中开启减少动态效果立即归位，并阻止后续悬停动画', async () => {
     const paper = render()
     const resting = paperTransform()
@@ -115,6 +177,10 @@ describe('Three.js 拍立得交互', () => {
     expect(frames.size).toBe(0)
     await paper.trigger('pointerenter', { pointerType: 'mouse', clientX: 30, clientY: 360 })
     expect(frames.size).toBe(0)
+    await paper.trigger('pointermove', { pointerType: 'mouse', clientX: 290, clientY: 40 })
+    advanceFrames(60)
+    expect(frames.size).toBe(0)
+    expect(paperTransform()).toBe(resting)
   })
 
   it('动画中卸载取消调度和尺寸观察，并正常卸载被渲染器移动的 Vue 插槽', async () => {

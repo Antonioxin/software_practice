@@ -1,0 +1,17 @@
+\begin{tikzpicture}[font=\fontsize{11}{15}\selectfont,
+ box/.style={draw=wmaccent,fill=wmnavy!5,rounded corners=2pt,%
+   text width=4.8cm,minimum height=1.1cm,align=center},
+ arr/.style={-{Stealth[length=2mm]},draw=wmaccent,line width=0.8pt}]
+\node[box] (event) at (0,0) {\textbf{DOM event}\\%
+  用户输入与浏览器事件};
+\node[box] (transaction) at (7,0) {\textbf{Transaction}\\%
+  把编辑表达为一次状态变换};
+\node[box] (state) at (7,-2.1) {\textbf{new EditorState}\\%
+  形成新的文档与选区状态};
+\node[box] (view) at (0,-2.1) {\textbf{EditorView}\\%
+  将状态呈现为可编辑界面};
+\draw[arr] (event)--(transaction);%
+\draw[arr] (transaction)--(state);
+\draw[arr] (state)--(view);%
+\draw[arr] (view)--(event);
+\end{tikzpicture}

@@ -12,3 +12,11 @@ const illustrations = new Map<string, string>([
 export function productIllustrationSrc(sku: string): string | null {
   return illustrations.get(sku) ?? null
 }
+
+export function isManagedImage(id?: string | null): boolean {
+  return !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+}
+
+export function productImageSrc(sku: string, mainImageId?: string | null): string | null {
+  return isManagedImage(mainImageId) ? `/api/v1/media/${mainImageId}/content` : productIllustrationSrc(sku)
+}

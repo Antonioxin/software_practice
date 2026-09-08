@@ -2,6 +2,11 @@ export function formatCny(fen?: number | null): string {
   return fen == null ? '—' : `¥${(fen / 100).toFixed(2)}`
 }
 
+/** Keep older order and inquiry snapshots readable after the catalog names are cleaned up. */
+export function formatProductName(name: string): string {
+  return name.replace(/\s*(?:·\s*)?示例\s*$/u, '') || name
+}
+
 export function formatAgeRange(ageMin: number, ageMax?: number | null): string {
   return ageMax == null ? `${ageMin} 岁以上` : `${ageMin}—${ageMax} 岁`
 }

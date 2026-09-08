@@ -10,7 +10,7 @@ import PublicShell from '../components/PublicShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
 import PolaroidMotion from '../components/PolaroidMotion.vue'
 import { formatAgeRange, formatCny } from '../features/catalog/presentation'
-import { productIllustrationSrc } from '../features/catalog/productImages'
+import { isManagedImage, productImageSrc } from '../features/catalog/productImages'
 import { productUsageGuide } from '../features/catalog/productGuides'
 import { api, ApiProblem } from '../services/http'
 import type { PublicProduct } from '../types'
@@ -29,7 +29,7 @@ const canPurchase = computed(() => product.value?.status === 'PUBLISHED' && prod
 const validQuantity = computed(() => Number.isInteger(quantity.value) && quantity.value >= 1 && quantity.value <= 99)
 const mainImageFailed = ref(false)
 const guideImageFailed = ref(false)
-const mainImage = computed(() => product.value && !mainImageFailed.value ? productIllustrationSrc(product.value.sku) : null)
+const mainImage = computed(() => product.value && !mainImageFailed.value ? productImageSrc(product.value.sku, product.value.mainImageId) : null)
 const guide = computed(() => product.value?.status === 'PUBLISHED' ? productUsageGuide(product.value.sku) : null)
 let latestRequest = 0
 
@@ -84,7 +84,7 @@ onUnmounted(() => { latestRequest++ })
   <PublicShell class="product-detail-shell">
     <div class="product-detail-page">
       <div v-if="addCommand.pending.value && !session.isAdmin" class="detail-recovery" role="status"><p>有加购请求结果尚未确认，可先查询购物车或恢复原请求。</p><button type="button" :disabled="addCommand.busy.value" @click="addToCart">使用原加购请求重试</button><RouterLink to="/cart">查询购物车</RouterLink></div>
-      <button class="detail-back" type="button" @click="back">← 返回商品列表与当前筛选</button>
+      <button class="detail-back" type="button" @click="back"><SketchIcon name="arrow-left" :size="22" /> 返回商品列表与当前筛选</button>
       <div v-if="loading" class="state-panel" role="status"><span class="loader"></span><p>正在加载商品详情…</p></div>
       <div v-else-if="missing" class="state-panel"><h1>没有找到这个商品</h1><p>链接可能已经失效，或商品仍处于草稿阶段。</p><RouterLink class="secondary-button" to="/products">返回商品列表</RouterLink></div>
       <div v-else-if="error" class="state-panel" role="alert"><h1>详情暂时不可用</h1><p>{{ error }}</p><button class="secondary-button" type="button" @click="load">重新加载</button></div>
@@ -93,14 +93,14 @@ onUnmounted(() => { latestRequest++ })
           <PolaroidMotion>
             <figure class="product-polaroid">
               <div class="product-photo-window">
-                <img v-if="mainImage" class="product-main-image" :src="mainImage" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" loading="eager" decoding="async" @error="mainImageFailed = true" />
+                <img v-if="mainImage" class="product-main-image" :src="mainImage" :alt="isManagedImage(product.mainImageId) ? `${product.name}商品图片` : `${product.name}的 AI 生成商品示意图（非实拍）`" loading="eager" decoding="async" @error="mainImageFailed = true" />
                 <ProductArtwork v-else :name="product.name" :sku="product.sku" />
               </div>
               <img class="product-photo-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
               <figcaption class="product-photo-name" :title="product.name"><span>{{ product.name }}</span></figcaption>
             </figure>
           </PolaroidMotion>
-          <p class="product-image-caption">{{ mainImage ? 'AI 商品示意 · 非实拍' : '手绘商品示意' }}</p>
+          <p class="product-image-caption">{{ mainImage ? (isManagedImage(product.mainImageId) ? '商品图片' : 'AI 商品示意 · 非实拍') : '手绘商品示意' }}</p>
         </section>
         <section class="product-intro">
           <p class="detail-eyebrow">{{ product.category.name }} / {{ product.sku }}</p>
@@ -112,7 +112,7 @@ onUnmounted(() => { latestRequest++ })
             <div><dt>建议年龄</dt><dd>{{ formatAgeRange(product.ageMin, product.ageMax) }}</dd></div>
             <div><dt>玩法方向</dt><dd>{{ playLabels[product.playType] }}</dd></div>
             <div><dt>使用场景</dt><dd>{{ sceneLabels[product.scene] }}</dd></div>
-            <div><dt>库存状态</dt><dd :class="{ unavailable: !product.inStock }">{{ product.availabilityMessage }}</dd></div>
+            <div><dt><SketchIcon name="package" :size="20" /> 库存状态</dt><dd :class="{ unavailable: !product.inStock }">{{ product.availabilityMessage }}</dd></div>
           </dl>
           <div class="purchase-panel">
             <div><span>零售价格</span><strong>{{ formatCny(product.retailUnitPriceFen) }}</strong><small>含税规则以本期模拟流程为准，运费 ¥0.00</small></div>
@@ -161,8 +161,8 @@ onUnmounted(() => { latestRequest++ })
 <style scoped>
 .product-detail-shell { overflow-x: clip; }
 .product-detail-page { width: min(1180px, calc(100% - 64px)); margin: 0 auto; padding: 34px 0 84px; }
-.detail-back { margin-bottom: 28px; min-height: 44px; padding: 8px 0; color: var(--muted); font-size: 14px; font-weight: 400; text-align: left; }
-.detail-recovery { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 22px; margin-bottom: 20px; padding: 18px 22px; border: 1px solid var(--line); background: #fffefa; font-size: 14px; line-height: 1.8; }
+.detail-back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 28px; min-height: 44px; padding: 8px 0; color: var(--muted); font-size: 14px; font-weight: 400; text-align: left; }
+.detail-recovery { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 22px; margin-bottom: 20px; padding: 18px 22px; border: 1px solid var(--line); border-radius: var(--radius-card); background: #fffefa; font-size: 14px; line-height: 1.8; }
 .detail-recovery p { flex-basis: 100%; margin: 0; }
 .detail-recovery button { min-height: 40px; border: 0; padding: 6px 0; color: var(--green); background: transparent; text-decoration: underline; text-underline-offset: 4px; }
 .detail-recovery a { color: var(--green); text-underline-offset: 4px; }
@@ -170,9 +170,9 @@ onUnmounted(() => { latestRequest++ })
 .product-gallery, .product-intro { min-width: 0; }
 .product-gallery { width: 100%; max-width: 560px; justify-self: center; container-type: inline-size; }
 .product-polaroid { position: relative; isolation: isolate; width: 100%; aspect-ratio: 1149 / 1369; margin: 0; }
-.product-photo-window { position: absolute; left: 11.9234%; top: 9.1308%; width: 76.5013%; height: 66.7641%; overflow: hidden; background: #efece2; }
+.product-photo-window { position: absolute; left: 11.9234%; top: 9.1308%; width: 76.5013%; height: 66.7641%; overflow: hidden; border-radius: var(--radius-small); background: #efece2; }
 .product-main-image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.product-photo-window :deep(.product-artwork) { width: 100%; height: 100%; min-height: 0; border-radius: 0; padding: 20px; gap: 14px; }
+.product-photo-window :deep(.product-artwork) { width: 100%; height: 100%; min-height: 0; border-radius: var(--radius-small); padding: 20px; gap: 14px; }
 .product-photo-window :deep(.sketch-product-icon) { width: 35%; max-width: 128px; height: auto; }
 .product-photo-window :deep(.product-artwork strong) { font-size: clamp(14px, 4cqi, 20px); }
 .product-photo-window :deep(.product-artwork small) { font-size: clamp(10px, 2.5cqi, 12px); overflow-wrap: anywhere; }
@@ -189,14 +189,14 @@ onUnmounted(() => { latestRequest++ })
 .product-keyfacts div { min-width: 0; padding: 15px 14px 15px 0; border-color: var(--line); }
 .product-keyfacts dt { margin-bottom: 7px; color: var(--muted); font-size: 13px; }
 .product-keyfacts dd { font-size: 15px; font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
-.purchase-panel { grid-template-columns: minmax(0, 1fr) 82px; gap: 22px 24px; padding: 26px; border-radius: 4px; }
+.purchase-panel { grid-template-columns: minmax(0, 1fr) 82px; gap: 22px 24px; padding: 26px; border-radius: var(--radius-panel); }
 .purchase-panel > div { min-width: 0; gap: 6px; }
 .purchase-panel > div span { font-size: 13px; letter-spacing: .5px; }
 .purchase-panel > div strong { font-size: 38px; line-height: 1.2; }
 .purchase-panel > div small { font-size: 12px; line-height: 1.7; }
 .purchase-panel label { align-content: start; gap: 10px; font-size: 13px; }
-.purchase-panel input { min-width: 0; min-height: 45px; border-radius: 3px; font-size: 17px; }
-.purchase-panel .primary-button { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 16px; padding: 12px 18px; border-radius: 3px; font-size: 16px; }
+.purchase-panel input { min-width: 0; min-height: 45px; border-radius: var(--radius-control); font-size: 17px; }
+.purchase-panel .primary-button { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 16px; padding: 12px 18px; border-radius: var(--radius-control); font-size: 16px; }
 .purchase-panel > p { font-size: 12px; line-height: 1.7; }
 .product-guide { grid-column: 1 / -1; min-width: 0; padding-top: 40px; border-top: 1px solid var(--line); }
 .product-section-heading { margin-bottom: 32px; }
@@ -204,7 +204,7 @@ onUnmounted(() => { latestRequest++ })
 .product-section-heading h2 { margin: 0; font: 500 30px/1.6 var(--font-body); }
 .product-guide-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: center; gap: 58px; }
 .product-guide-art { min-width: 0; margin: 0; }
-.product-guide-image { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.product-guide-image { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: var(--radius-card); }
 .product-guide-art figcaption { margin: 12px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
 .product-guide-copy { min-width: 0; }
 .product-guide-copy > h3 { margin: 0 0 12px; font-size: 25px; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
@@ -226,7 +226,7 @@ onUnmounted(() => { latestRequest++ })
 .product-specifications dl > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.9; }
 .product-specifications dt { color: var(--muted); }
 .product-specifications dd { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
-.product-safety { min-width: 0; padding: 29px 32px 32px; border-radius: 3px; background: #ebe6d7; }
+.product-safety { min-width: 0; padding: 29px 32px 32px; border-radius: var(--radius-card); background: #ebe6d7; }
 .product-safety > .sketch-icon { display: block; margin-bottom: 18px; }
 .product-safety > span { color: #70634e; font: 400 22px/1.4 var(--font-hand); }
 .product-safety h2 { margin: 6px 0 15px; font-size: 24px; font-weight: 500; line-height: 1.5; }

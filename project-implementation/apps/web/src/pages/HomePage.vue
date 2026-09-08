@@ -2,6 +2,7 @@
 import PublicShell from '../components/PublicShell.vue'
 import SketchIcon from '../components/SketchIcon.vue'
 import HeroHandwriting from '../components/HeroHandwriting.vue'
+import HomeContent from '../components/HomeContent.vue'
 import { isDevelopmentPreview } from '../services/http'
 const showPreviewLink = import.meta.env.DEV && !isDevelopmentPreview
 </script>
@@ -14,6 +15,7 @@ const showPreviewLink = import.meta.env.DEV && !isDevelopmentPreview
         <HeroHandwriting />
         <RouterLink class="home-explore" to="/products">探索全部商品 <SketchIcon name="arrow-left" class="arrow-forward" :size="23" /></RouterLink>
       </section>
+      <HomeContent />
       <p v-if="showPreviewLink" class="home-dev-link"><a href="/products?preview=1">打开只读界面预览</a><span>无需启动后端，查看全部已实现页面。</span></p>
     </div>
   </PublicShell>

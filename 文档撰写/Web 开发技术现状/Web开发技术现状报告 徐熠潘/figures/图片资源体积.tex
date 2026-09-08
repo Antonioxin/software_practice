@@ -1,0 +1,30 @@
+\documentclass[border=3pt]{standalone}
+\usepackage[fontset=none]{ctex}
+\IfFileExists{/System/Library/Fonts/Supplemental/Songti.ttc}{
+\setmainfont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6]
+\setCJKmainfont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6]
+}{\setmainfont{FandolSong-Regular}\setCJKmainfont{FandolSong-Regular}}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\definecolor{wmbar}{HTML}{496C86}
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+ xbar,width=14cm,height=6.6cm,
+ xmin=0,xmax=2.1,ymin=-0.65,ymax=5.65,y dir=reverse,
+ ytick={0,1,2,3,4,5},yticklabels={平衡石,自然观察工具,彩虹拱,木质套圈,跳绳,多人协作板},
+ xtick={0,0.5,1,1.5,2},xlabel={源文件体积（MiB）},
+ tick label style={font=\fontsize{11}{14}\selectfont},
+ label style={font=\fontsize{11}{14}\selectfont},
+ axis x line*=bottom,axis y line*=left,axis line style={gray!40},
+ xmajorgrids,grid style={gray!20},tick style={draw=none},
+ bar width=12pt,
+ nodes near coords,point meta=x,
+ every node near coord/.append style={font=\fontsize{10.5}{13}\selectfont,
+ /pgf/number format/fixed,/pgf/number format/precision=2,/pgf/number format/fixed zerofill},
+ enlarge y limits=false]
+\addplot[fill=wmbar,draw=none] coordinates {(1.17579937,0) (1.82121372,1) (1.54225636,2)
+  (1.58648109,3) (1.43663979,4) (1.56748486,5)};
+\end{axis}
+\end{tikzpicture}
+\end{document}

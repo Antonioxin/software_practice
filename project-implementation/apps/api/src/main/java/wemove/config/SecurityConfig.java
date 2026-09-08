@@ -48,7 +48,9 @@ public class SecurityConfig {
                     "/api/v1/auth/register", "/api/v1/auth/login", "/error").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET,
                     "/api/v1/products/**", "/api/v1/categories", "/api/v1/product-options",
-                    "/api/v1/channels/**").permitAll()
+                    "/api/v1/channels/**", "/api/v1/site-settings", "/api/v1/home",
+                    "/api/v1/articles", "/api/v1/articles/**", "/api/v1/faqs", "/api/v1/faqs/**",
+                    "/api/v1/media/*/content", "/api/v1/files", "/api/v1/files/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors

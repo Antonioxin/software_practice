@@ -82,8 +82,18 @@ async function renderScene(label: string, state: PreviewState = 'normal') {
 const normalCases = [
   ['首页', 'Life is better'],
   ['404', '这个角落，还没有内容。'],
+  ['玩法灵感', 'Make room for play.'],
+  ['玩法文章', '把客厅变成一座小小冒险岛'],
+  ['常见问题', 'Good questions.'],
+  ['下载中心', 'Ready, set, play.'],
+  ['关于 WEMOVE', 'We move, together.'],
+  ['使用说明', 'Play by the rules.'],
+  ['隐私说明', 'A little trust.'],
+  ['内容管理', '内容管理'],
+  ['媒体与文件', '文件与媒体'],
+  ['品牌与首页', '品牌与首页'],
   ['商品目录', '探索商品'],
-  ['商品详情', '平衡石 · 示例'],
+  ['商品详情', '平衡石'],
   ['登录', '欢迎回来'],
   ['注册', '创建账户'],
   ['个人资料', '个人资料'],
@@ -101,7 +111,7 @@ const normalCases = [
   ['管理订单详情', '订单详情'],
 ] as const
 
-describe('17 个业务路由及首页、404 的真实组件渲染', () => {
+describe('27 个业务路由及首页、404 的真实组件渲染', () => {
   it.each(normalCases)('%s：读取只读样例并显示关键内容', async (label, heading) => {
     const page = await renderScene(label)
     const headings = page.findAll('main h1, main h2').map(node => node.text()).join(' ')

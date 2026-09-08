@@ -36,6 +36,7 @@ public class CatalogIntegrationService implements CatalogPort {
                                         product.getId(),
                                         product.getSku(),
                                         product.getName(),
+                                        product.getMainImageId(),
                                         price(product.getRetailUnitPriceFen()),
                                         true,
                                         stock(product.getId()) > 0))

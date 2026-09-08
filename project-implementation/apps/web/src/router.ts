@@ -4,6 +4,7 @@ import { commerceRoutes } from './features/commerce/routes'
 import { catalogRoutes } from './features/catalog/routes'
 import { dealershipRoutes } from './features/dealership/routes'
 import { supportRoutes } from './features/support/routes'
+import { contentRoutes } from './features/content/routes'
 import { useSessionStore } from './stores/session'
 
 export const router = createRouter({
@@ -14,6 +15,7 @@ export const router = createRouter({
     ...commerceRoutes,
     ...dealershipRoutes,
     ...supportRoutes,
+    ...contentRoutes,
     ...identityRoutes,
     { path: '/:pathMatch(.*)*', component: () => import('./pages/NotFoundPage.vue'), meta: { title: '页面未找到' } },
   ],

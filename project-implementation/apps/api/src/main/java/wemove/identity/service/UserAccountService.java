@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import wemove.config.WemoveProperties;
+import wemove.content.platform.ContentSettingsPort;
 import wemove.identity.api.*;
 import wemove.identity.domain.*;
 import wemove.identity.repository.*;
@@ -29,7 +29,7 @@ public class UserAccountService {
     private final UserConsentRepository consents;
     private final AccountStatusHistoryRepository histories;
     private final PasswordEncoder encoder;
-    private final WemoveProperties properties;
+    private final ContentSettingsPort contentSettings;
     private final DealerIdentityPort dealerIdentity;
     private final AuditPort audit;
     private final JdbcTemplate jdbc;
@@ -43,7 +43,7 @@ public class UserAccountService {
             UserConsentRepository consents,
             AccountStatusHistoryRepository histories,
             PasswordEncoder encoder,
-            WemoveProperties properties,
+            ContentSettingsPort contentSettings,
             DealerIdentityPort dealerIdentity,
             AuditPort audit,
             JdbcTemplate jdbc,
@@ -52,7 +52,7 @@ public class UserAccountService {
         this.consents = consents;
         this.histories = histories;
         this.encoder = encoder;
-        this.properties = properties;
+        this.contentSettings = contentSettings;
         this.dealerIdentity = dealerIdentity;
         this.audit = audit;
         this.executor = executor;
@@ -66,8 +66,9 @@ public class UserAccountService {
         String nickname = request.nickname().strip();
         validateCodePoints("nickname", nickname, 2, 30, "昵称需为 2—30 个字符。");
         validatePassword(request.password(), request.confirmPassword());
-        if (!request.termsVersion().equals(properties.registration().termsVersion())
-                || !request.privacyVersion().equals(properties.registration().privacyVersion())) {
+        var versions = contentSettings.lockDocumentVersions();
+        if (!request.termsVersion().equals(versions.termsVersion())
+                || !request.privacyVersion().equals(versions.privacyVersion())) {
             throw field("termsVersion", "CONSENT_VERSION_EXPIRED", "说明已更新，请重新阅读并确认。");
         }
         if (users.existsByEmailNormalized(normalizedEmail)) {

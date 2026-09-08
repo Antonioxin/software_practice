@@ -29,6 +29,7 @@ public class CatalogService {
     private final InventoryMovementRepository movements;
     private final AuditPort audit;
     private final ObjectMapper mapper;
+    private final wemove.content.assets.CatalogAssetBridge assets;
 
     private final wemove.platform.idempotency.IdempotencyExecutor executor;
 
@@ -41,7 +42,8 @@ public class CatalogService {
             InventoryMovementRepository movements,
             AuditPort audit,
             ObjectMapper mapper,
-            wemove.platform.idempotency.IdempotencyExecutor executor) {
+            wemove.platform.idempotency.IdempotencyExecutor executor,
+            wemove.content.assets.CatalogAssetBridge assets) {
         this.categories = categories;
         this.products = products;
         this.balances = balances;
@@ -49,6 +51,7 @@ public class CatalogService {
         this.audit = audit;
         this.executor = executor;
         this.mapper = mapper;
+        this.assets = assets;
     }
 
     @Transactional(readOnly = true)
@@ -227,6 +230,7 @@ public class CatalogService {
                                             : requireCategory(request.categoryId());
                             apply(product, request, category, now);
                             products.saveAndFlush(product);
+                            assets.replace(product.getId(), mediaIds(product), List.of(), false);
                             int initialStock =
                                     request.initialStock() == null ? 0 : request.initialStock();
                             InventoryBalanceEntity balance =
@@ -266,6 +270,7 @@ public class CatalogService {
         CatalogRules.validateDraft(request);
         ProductEntity product = products.findForUpdateById(id).orElseThrow(this::notFoundException);
         if (product.getVersion() != request.expectedVersion()) versionConflict();
+        List<String> previousMedia = mediaIds(product);
         String sku = CatalogRules.trimToNull(request.sku());
         if (product.getSku() != null && !Objects.equals(product.getSku(), sku)) {
             throw new ApiException(HttpStatus.CONFLICT, "SKU_IMMUTABLE", "SKU 首次赋值后不可修改。");
@@ -276,6 +281,7 @@ public class CatalogService {
         Instant now = clock.instant();
         apply(product, request, category, now);
         if (product.getStatus() == ProductStatus.PUBLISHED) ensurePublishable(product, balance(id));
+        assets.replace(id, mediaIds(product), previousMedia, product.getStatus() == ProductStatus.PUBLISHED);
         products.flush();
         audit.append(
                 new AuditPort.AuditEvent(
@@ -311,6 +317,7 @@ public class CatalogService {
                                 ensurePublishable(product, balance(id));
                                 product.publish(now);
                             } else product.unpublish(now);
+                            assets.replace(id, mediaIds(product), mediaIds(product), publish);
                             products.flush();
                             String action = publish ? "PRODUCT_PUBLISHED" : "PRODUCT_UNPUBLISHED";
                             audit.append(
@@ -618,6 +625,12 @@ public class CatalogService {
 
     private String normalizeName(String value) {
         return value.strip().toLowerCase(Locale.ROOT);
+    }
+
+    private List<String> mediaIds(ProductEntity product) {
+        List<String> ids = new ArrayList<>(imageIds(product.getImageIds()));
+        if (product.getMainImageId() != null) ids.add(product.getMainImageId());
+        return ids;
     }
 
     private String imageIdsText(List<String> ids) {

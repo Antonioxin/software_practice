@@ -243,7 +243,7 @@ describe('筛选参考数据和并发查询的恢复能力', () => {
 })
 
 describe('拍立得商品示意图与缺失回退', () => {
-  it('六个明确 SKU 使用对应展示图，并在相纸外标明 AI 示意而非实拍', async () => {
+  it('六个明确 SKU 使用对应展示图，保留替代文字且卡片下方不再显示图片说明', async () => {
     mockedApi.mockImplementation(async (path) => path.startsWith('/products?')
       ? { data: fixtures.products }
       : responseFor(path))
@@ -257,8 +257,7 @@ describe('拍立得商品示意图与缺失回退', () => {
       expect(image.attributes('alt')).toBe(`${fixtures.products[index]!.name}的 AI 生成商品示意图（非实拍）`)
       expect(card.get('.shop-photo-window').attributes('aria-hidden')).toBeUndefined()
       expect(card.get('.shop-name-label').text()).toBe(fixtures.products[index]!.name)
-      expect(card.get('.shop-product-info .shop-image-note').text()).toBe('AI 商品示意 · 非实拍')
-      expect(card.find('.shop-polaroid .shop-image-note').exists()).toBe(false)
+      expect(card.find('.shop-image-note').exists()).toBe(false)
       expect(card.find('.shop-photo-placeholder').exists()).toBe(false)
     }
   })

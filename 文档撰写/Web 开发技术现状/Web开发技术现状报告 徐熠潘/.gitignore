@@ -1,0 +1,11 @@
+.build/
+验证/
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.xdv
+/main.pdf

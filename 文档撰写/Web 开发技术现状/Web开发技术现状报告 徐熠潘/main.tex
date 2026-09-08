@@ -1,0 +1,155 @@
+% Web 开发技术现状报告；沿用 ../../项目需求文档/main.tex 的版式。
+% 编译：make（XeLaTeX + latexmk）。正文按章节拆分在 chapters/。
+\documentclass[12pt,a4paper]{article}
+\usepackage[fontset=none]{ctex}
+% 正文中西文均采用宋体，强调采用对应粗体；黑体仅用于标题。
+\IfFileExists{/System/Library/Fonts/Supplemental/Songti.ttc}{
+  \defaultCJKfontfeatures{}
+  \setmainfont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6,%
+    BoldFont=Songti.ttc,BoldFeatures={FontIndex=1}]
+  \setmonofont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6,%
+    BoldFont=Songti.ttc,BoldFeatures={FontIndex=1}]
+  \setCJKmainfont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6,%
+    BoldFont=Songti.ttc,BoldFeatures={FontIndex=1}]
+  \setCJKsansfont{STHeiti Light.ttc}[Path=/System/Library/Fonts/,FontIndex=1]
+  \setCJKmonofont{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6]
+  \setCJKfamilyfont{zhsong}{Songti.ttc}[Path=/System/Library/Fonts/Supplemental/,FontIndex=6,%
+    BoldFont=Songti.ttc,BoldFeatures={FontIndex=1}]
+  \setCJKfamilyfont{zhhei}{STHeiti Light.ttc}[Path=/System/Library/Fonts/,FontIndex=1]
+}{
+  \defaultCJKfontfeatures{Script=CJK}
+  \setmainfont{FandolSong-Regular}[BoldFont=FandolSong-Bold]
+  \setmonofont{FandolSong-Regular}[BoldFont=FandolSong-Bold]
+  \setCJKmainfont{FandolSong-Regular}[BoldFont=FandolSong-Bold]
+  \setCJKsansfont{FandolHei-Regular}[BoldFont=FandolHei-Bold]
+  \setCJKmonofont{FandolFang-Regular}
+  \setCJKfamilyfont{zhsong}{FandolSong-Regular}[BoldFont=FandolSong-Bold]
+  \setCJKfamilyfont{zhhei}{FandolHei-Regular}
+}
+\providecommand{\songti}{\CJKfamily{zhsong}}
+\providecommand{\heiti}{\CJKfamily{zhhei}}
+\usepackage[top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm,headheight=16pt]{geometry}
+\usepackage{graphicx,float,booktabs,tabularx,multirow,longtable,array}
+\graphicspath{{figures/}}
+\usepackage[table]{xcolor}
+\definecolor{wmnavy}{HTML}{20354A}
+\definecolor{wmaccent}{HTML}{496C86}
+\definecolor{wmdivider}{HTML}{D4D8DB}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem,caption,needspace,titlesec}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage[unicode=true,colorlinks=true,linkcolor=wmnavy,urlcolor=wmaccent,citecolor=wmnavy,%
+  bookmarksnumbered=true]{hyperref}
+\usepackage{bookmark}
+\usepackage{xurl}
+\urlstyle{same}
+\newcommand{\sourcecaption}[1]{%
+  \par\vspace{1mm}%
+  {\footnotesize\color{wmaccent} #1\par}%
+}
+\hypersetup{pdftitle={Web 开发技术现状报告：从前端入门到展示与内容交互},%
+  pdfsubject={WEMOVE-FE-RESEARCH V1.1},pdfauthor={徐熠潘},pdfkeywords={WEMOVE,前端技术,Vue,%
+  内容管理,响应式,Web性能}}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small WEMOVE SPORTS\enspace |\enspace 前端技术报告}
+\fancyhead[R]{\small\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\sectionmark}[1]{\markboth{\thesection\enspace #1}{}}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+\titleformat{\section}{\Large\heiti}{\thesection}{0.65em}{}
+\titleformat{\subsection}{\large\heiti}{\thesubsection}{0.65em}{}
+\titleformat{\subsubsection}{\normalsize\heiti}{\thesubsubsection}{0.65em}{}
+\titlespacing*{\section}{0pt}{1.2em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1em}{0.55em}
+\titlespacing*{\subsubsection}{0pt}{0.9em}{0.45em}
+\newcommand{\reqheading}[3][4]{%
+  \par\Needspace{7\baselineskip}%
+  \phantomsection\label{req:#2}%
+  \pdfbookmark[#1]{#3}{bookmark:#2}%
+  \vspace{0.65em}{\large\heiti\noindent #3\par}%
+  \nobreak\vspace{0.35em}\nobreak%
+}
+\newcommand{\code}[1]{#1}
+\newcommand{\smalltable}{%
+  \fontsize{11}{16.5}\selectfont%
+  \setlength{\tabcolsep}{8pt}%
+  \renewcommand{\arraystretch}{1.18}%
+  \setlength{\extrarowheight}{4pt}%
+  \setlength{\LTpre}{0.65em}%
+  \setlength{\LTpost}{0.9em}%
+}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\tabledivider}{\arrayrulecolor{wmdivider}\midrule[0.25pt]\arrayrulecolor{black}}
+\captionsetup{font=small,labelfont=bf,skip=8pt}
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=2.2em,labelsep=0.6em,itemsep=0.35em,parsep=0pt,%
+  topsep=0.5em}
+\setlist[enumerate,2]{label=\roman*.,leftmargin=2.7em,labelsep=0.6em,itemsep=0.25em,parsep=0pt,%
+  topsep=0.35em}
+\linespread{1.12}
+\setlength{\parskip}{0.35em}
+\setlength{\emergencystretch}{2em}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+\raggedbottom
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.85}
+
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+\vspace*{1.6cm}
+\includegraphics[width=11cm]{杭电文字 title.png}\par
+\vspace{1.45cm}
+{\fontsize{34}{46}\selectfont\heiti Web 开发技术现状报告\par}
+\vspace{0.8cm}
+{\LARGE\heiti 从前端入门到展示与内容交互\par}
+\vspace{1.8cm}
+\vspace{1.8cm}
+\newcommand{\infobox}[1]{\underline{\makebox[7.8cm][c]{\large #1}}}
+\renewcommand{\arraystretch}{1.75}
+\begin{tabular}{>{\large\heiti}p{2.6cm}l}
+课程名称 & \infobox{软件开发实践 2}\\
+项目名称 & \infobox{WEMOVE SPORTS 网站重构}\\
+报告方向 & \infobox{前端技术、内容与文件管理}\\
+姓名 & \infobox{徐熠潘}\\
+学号 & \infobox{24051133}\\
+日期 & \infobox{2026 年 9 月 7 日}\\
+\end{tabular}
+\vfill
+\end{titlepage}
+\pagenumbering{Roman}
+\hypersetup{pageanchor=true}
+\markboth{摘要}{}
+\par\vspace{1.2em}
+\noindent\makebox[\textwidth][c]{{\Large\heiti 摘\hspace{0.5em}要}}\par
+\nobreak\vspace{0.8em}
+\input{chapters/00-摘要.tex}
+\clearpage
+\markboth{目录}{}
+\begingroup
+\setlength{\parskip}{0pt}\linespread{1}\small\selectfont
+\tableofcontents
+\endgroup
+\clearpage
+\pagenumbering{arabic}
+\input{chapters/01-深入认识前端技术.tex}
+\input{chapters/02-在项目中使用前端技术.tex}
+\input{chapters/03-从卡片动效到三维展示.tex}
+\input{chapters/04-从打开文章到内容加载.tex}
+\input{chapters/05-从输入文字到内容编辑.tex}
+\input{chapters/06-让展示适应不同使用条件.tex}
+\input{chapters/07-我的学习认识与总结.tex}
+\clearpage
+\input{chapters/09-参考文献.tex}
+\end{document}

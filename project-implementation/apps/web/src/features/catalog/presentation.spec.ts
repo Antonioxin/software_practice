@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { buildCatalogQuery, formatAgeRange, formatCny } from './presentation'
+import { buildCatalogQuery, formatAgeRange, formatCny, formatProductName } from './presentation'
 
 describe('catalog presentation helpers', () => {
+  it('removes only the sample suffix and keeps meaningful product names', () => {
+    expect(formatProductName('平衡石 · 示例')).toBe('平衡石')
+    expect(formatProductName('平衡石示例')).toBe('平衡石')
+    expect(formatProductName('示例玩法套装')).toBe('示例玩法套装')
+    expect(formatProductName('彩虹拱桥')).toBe('彩虹拱桥')
+    expect(formatProductName('示例')).toBe('示例')
+  })
+
   it('formats money and open/closed age ranges consistently', () => {
     expect(formatCny(12900)).toBe('¥129.00')
     expect(formatCny(null)).toBe('—')

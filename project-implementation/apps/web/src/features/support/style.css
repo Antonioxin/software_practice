@@ -1,6 +1,7 @@
 /* Support / operations：工单、总览与审计的展示样式（纸张风格与全局样式一致）。 */
 
 .ticket-status {
+  border-radius: var(--radius-small);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -59,13 +60,14 @@
   align-items: start;
 }
 
-.support-type-grid {
+.support-type-grid { min-width: 0; padding: 0; border: 0;
   display: grid;
   gap: 10px;
   margin: 0 0 20px;
 }
 
 .support-type-option {
+  border-radius: var(--radius-control);
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 13px;
@@ -104,6 +106,7 @@
 }
 
 .support-aside-card {
+  border-radius: var(--radius-card);
   padding: 24px 26px;
   border: 1px solid var(--line);
   background: rgb(251 248 241 / 72%);
@@ -170,6 +173,7 @@
 }
 
 .support-message {
+  border-radius: var(--radius-card);
   display: grid;
   gap: 7px;
   padding: 16px 18px;
@@ -221,6 +225,7 @@
 }
 
 .support-note {
+  border-radius: var(--radius-control);
   display: grid;
   gap: 6px;
   padding: 13px 16px;
@@ -299,6 +304,7 @@
 
 /* 运营总览 */
 .dashboard-range-form {
+  border-radius: var(--radius-panel);
   display: flex;
   align-items: end;
   flex-wrap: wrap;
@@ -320,6 +326,7 @@
 }
 
 .dashboard-card {
+  border-radius: var(--radius-card);
   display: grid;
   gap: 12px;
   align-content: start;
