@@ -1,0 +1,212 @@
+% ============================================================
+% 软件开发实践：沟通讨论记录 LaTeX 模板
+% 编译方式：XeLaTeX
+% 用途：将“成员 ↔ GPT”的关键讨论整理成可读、可复用的对话记录
+% ============================================================
+
+\documentclass[12pt,a4paper]{ctexart}
+
+\usepackage[
+  top=2.5cm,
+  bottom=2.5cm,
+  left=3cm,
+  right=2.5cm
+]{geometry}
+
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!65!black,
+  urlcolor=blue!65!black
+}
+
+% -------------------- 配色 --------------------
+\definecolor{memberbg}{RGB}{239,246,255}
+\definecolor{memberborder}{RGB}{96,165,250}
+\definecolor{gptbg}{RGB}{240,253,250}
+\definecolor{gptborder}{RGB}{45,150,120}
+\definecolor{decisionbg}{RGB}{248,250,252}
+\definecolor{decisionborder}{RGB}{148,163,184}
+
+% -------------------- 对话框 --------------------
+% 成员消息：左侧
+\newtcolorbox{membermsg}[1]{
+  enhanced,
+  breakable,
+  colback=memberbg,
+  colframe=memberborder,
+  boxrule=0.6pt,
+  arc=2.5mm,
+  left=4mm,
+  right=4mm,
+  top=2.5mm,
+  bottom=2.5mm,
+  width=0.86\linewidth,
+  right skip=0.14\linewidth,
+  before skip=3mm,
+  after skip=2mm,
+  title={\faUserCircle\quad #1},
+  fonttitle=\small\bfseries,
+  coltitle=black,
+  colbacktitle=memberbg,
+  boxed title style={
+    boxrule=0pt,
+    colframe=memberbg,
+    colback=memberbg
+  },
+  attach boxed title to top left={xshift=2mm,yshift=-2mm}
+}
+
+% GPT 消息：右侧
+\newtcolorbox{gptmsg}{
+  enhanced,
+  breakable,
+  colback=gptbg,
+  colframe=gptborder,
+  boxrule=0.6pt,
+  arc=2.5mm,
+  left=4mm,
+  right=4mm,
+  top=2.5mm,
+  bottom=2.5mm,
+  width=0.86\linewidth,
+  left skip=0.14\linewidth,
+  before skip=3mm,
+  after skip=2mm,
+  title={\faRobot\quad GPT},
+  fonttitle=\small\bfseries,
+  coltitle=black,
+  colbacktitle=gptbg,
+  boxed title style={
+    boxrule=0pt,
+    colframe=gptbg,
+    colback=gptbg
+  },
+  attach boxed title to top left={xshift=2mm,yshift=-2mm}
+}
+
+% 讨论结论
+\newtcolorbox{decisionbox}{
+  enhanced,
+  breakable,
+  colback=decisionbg,
+  colframe=decisionborder,
+  boxrule=0.6pt,
+  arc=1.5mm,
+  left=4mm,
+  right=4mm,
+  top=3mm,
+  bottom=3mm,
+  before skip=3mm,
+  after skip=5mm
+}
+
+% -------------------- 文档信息 --------------------
+\title{软件开发实践\\沟通讨论记录样例}
+\author{WEMOVE 项目组}
+\date{2026 年 9 月}
+
+\begin{document}
+
+\maketitle
+
+\section{记录说明}
+
+本模板用于保留软件开发实践中的关键沟通过程。每个主题保留能够体现“提出问题、分析方案、形成结论”的核心对话，并在对话末尾给出明确的讨论结论。无需完整复制全部聊天内容。
+
+\section{成员 D 与 GPT 的项目沟通样例}
+
+\subsection{模块是否需要独立应用}
+
+\noindent
+\textbf{讨论时间：}2026 年 9 月 5 日至 9 月 8 日
+
+\begin{membermsg}{成员 D}
+经销合作模块是否需要单独创建一套后端应用、路由、数据库或登录体系？
+\end{membermsg}
+
+\begin{gptmsg}
+当前项目已经具备统一的后端、身份与数据基础设施。更合适的做法是在现有 Spring Boot 工程中扩展 \texttt{wemove.dealership} 模块，前端接入现有 Vue 应用的统一路由，并继续复用身份认证、幂等、限频和数据库迁移能力。
+\end{gptmsg}
+
+\begin{membermsg}{成员 D}
+商品、文件和运营统计这些能力也都直接接现有模块吗？
+\end{membermsg}
+
+\begin{gptmsg}
+是。经销合作模块应调用已有能力：商品信息沿用商品模块的事实数据，受保护资料沿用文件模块，审计与待办统计沿用运营模块。这样可以避免同一份业务事实被多套实现重复维护。
+\end{gptmsg}
+
+\begin{decisionbox}
+\textbf{讨论结论：}
+经销合作模块继续作为统一系统中的业务模块实现，不新增第二套用户、登录、商品、文件或审计体系。
+\end{decisionbox}
+
+
+\subsection{本地登录出现 ORIGIN\_DENIED}
+
+\begin{membermsg}{成员 D}
+本地启动前后端后，登录接口返回 \texttt{ORIGIN\_DENIED}，这个问题一般从哪里排查？
+\end{membermsg}
+
+\begin{gptmsg}
+优先核对请求的 Origin。Origin 由协议、主机和端口共同组成，因此 \texttt{http://localhost:5173} 与 \texttt{http://127.0.0.1:5173} 会被视为两个不同来源。
+\end{gptmsg}
+
+\begin{membermsg}{成员 D}
+如果前端现在使用的是 \texttt{127.0.0.1:5173} 呢？
+\end{membermsg}
+
+\begin{gptmsg}
+可以把该来源加入 \texttt{ALLOWED\_ORIGINS}，然后重启后端使配置重新加载。团队开发时最好统一使用 \texttt{http://localhost:5173}，可以减少环境差异带来的问题。
+\end{gptmsg}
+
+\begin{decisionbox}
+\textbf{讨论结论：}
+开发环境统一使用 \texttt{http://localhost:5173}；需要使用其他来源时，将完整 Origin 加入允许列表，并在修改配置后重启后端。
+\end{decisionbox}
+
+
+\subsection{数据库字段与敏感信息边界}
+
+\begin{membermsg}{成员 D}
+排查用户账户状态时，我应该查询 \texttt{status} 字段吗？
+\end{membermsg}
+
+\begin{gptmsg}
+当前 \texttt{users} 表的账户状态字段是 \texttt{account\_status}。排查时只选择实际需要的字段，例如邮箱、角色和账户状态。
+\end{gptmsg}
+
+\begin{membermsg}{成员 D}
+那 \texttt{password\_hash} 可以一起查出来方便确认账号吗？
+\end{membermsg}
+
+\begin{gptmsg}
+不需要。密码哈希与账户是否启用无关，也不应进入截图、聊天记录、日志或问题文档。查询和记录时都应控制在排查所需的最小字段范围内。
+\end{gptmsg}
+
+\begin{decisionbox}
+\textbf{讨论结论：}
+账户状态使用 \texttt{account\_status} 判断；沟通记录和排查材料中不得记录 \texttt{password\_hash} 等敏感字段。
+\end{decisionbox}
+
+
+\section{后续填写方式}
+
+复制一个讨论主题时，只需要保留以下结构：
+
+\begin{enumerate}[label=\arabic*.]
+  \item 使用 \verb|\subsection{讨论主题}| 标记本次讨论的核心问题；
+  \item 用 \verb|membermsg| 写成员提出的问题或方案；
+  \item 用 \verb|gptmsg| 写 GPT 的关键分析与建议；
+  \item 用 \verb|decisionbox| 写最终采用的方案、限制或待办事项。
+\end{enumerate}
+
+建议每个主题保留 2--6 轮关键消息。较长的原始聊天可以先提炼，再进入正式沟通记录。
+
+\end{document}
