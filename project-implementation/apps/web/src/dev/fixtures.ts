@@ -189,7 +189,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "469ec43c-559a-5040-8015-614ed58f12a6",
       "sku": "WM-BALANCE-STONES",
-      "name": "平衡石 · 示例",
+      "name": "平衡石",
       "summary": "用六块柔和色彩的平衡石，搭一条自己的小路。",
       "description": "用六块柔和色彩的平衡石，搭一条自己的小路。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 3,
@@ -225,7 +225,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
       "sku": "WM-RAINBOW-ARCH",
-      "name": "彩虹拱桥 · 示例",
+      "name": "彩虹拱桥",
       "summary": "堆叠、穿越、想象，让简单的形状连接更多玩法。",
       "description": "堆叠、穿越、想象，让简单的形状连接更多玩法。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 3,
@@ -261,7 +261,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "9b07436c-613e-53ba-b12e-f552254283fe",
       "sku": "WM-RING-TOSS",
-      "name": "环环投掷 · 示例",
+      "name": "环环投掷",
       "summary": "循序渐进的投掷挑战，练习专注与手眼协调。",
       "description": "循序渐进的投掷挑战，练习专注与手眼协调。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 4,
@@ -297,7 +297,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "d84473a5-10f5-5dad-b124-74a521a1f0f1",
       "sku": "WM-TEAM-BOARD",
-      "name": "伙伴协作板 · 示例",
+      "name": "伙伴协作板",
       "summary": "一起出发、一起保持平衡，把合作变成游戏。",
       "description": "一起出发、一起保持平衡，把合作变成游戏。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 6,
@@ -333,7 +333,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "ada916b9-cd61-5de8-89d0-1668f9869376",
       "sku": "WM-FOREST-KIT",
-      "name": "森林探索套装 · 示例",
+      "name": "森林探索套装",
       "summary": "收集色彩、观察纹理，为一次散步增添新发现。",
       "description": "收集色彩、观察纹理，为一次散步增添新发现。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 5,
@@ -369,7 +369,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "2570598e-b992-5e3f-b2cd-126b34027881",
       "sku": "WM-SKIP-ROPE",
-      "name": "轻盈跳绳 · 示例",
+      "name": "轻盈跳绳",
       "summary": "轻巧握柄与适合练习的绳长，找到自己的节奏。",
       "description": "轻巧握柄与适合练习的绳长，找到自己的节奏。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 6,
@@ -407,7 +407,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "469ec43c-559a-5040-8015-614ed58f12a6",
       "sku": "WM-BALANCE-STONES",
-      "name": "平衡石 · 示例",
+      "name": "平衡石",
       "summary": "用六块柔和色彩的平衡石，搭一条自己的小路。",
       "description": "用六块柔和色彩的平衡石，搭一条自己的小路。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 3,
@@ -441,7 +441,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
       "sku": "WM-RAINBOW-ARCH",
-      "name": "彩虹拱桥 · 示例",
+      "name": "彩虹拱桥",
       "summary": "堆叠、穿越、想象，让简单的形状连接更多玩法。",
       "description": "堆叠、穿越、想象，让简单的形状连接更多玩法。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 3,
@@ -475,7 +475,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "9b07436c-613e-53ba-b12e-f552254283fe",
       "sku": "WM-RING-TOSS",
-      "name": "环环投掷 · 示例",
+      "name": "环环投掷",
       "summary": "循序渐进的投掷挑战，练习专注与手眼协调。",
       "description": "循序渐进的投掷挑战，练习专注与手眼协调。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 4,
@@ -509,7 +509,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "d84473a5-10f5-5dad-b124-74a521a1f0f1",
       "sku": "WM-TEAM-BOARD",
-      "name": "伙伴协作板 · 示例",
+      "name": "伙伴协作板",
       "summary": "一起出发、一起保持平衡，把合作变成游戏。",
       "description": "一起出发、一起保持平衡，把合作变成游戏。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 6,
@@ -543,7 +543,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "ada916b9-cd61-5de8-89d0-1668f9869376",
       "sku": "WM-FOREST-KIT",
-      "name": "森林探索套装 · 示例",
+      "name": "森林探索套装",
       "summary": "收集色彩、观察纹理，为一次散步增添新发现。",
       "description": "收集色彩、观察纹理，为一次散步增添新发现。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 5,
@@ -577,7 +577,7 @@ export const fixtures: PreviewFixtures = {
     {
       "id": "2570598e-b992-5e3f-b2cd-126b34027881",
       "sku": "WM-SKIP-ROPE",
-      "name": "轻盈跳绳 · 示例",
+      "name": "轻盈跳绳",
       "summary": "轻巧握柄与适合练习的绳长，找到自己的节奏。",
       "description": "轻巧握柄与适合练习的绳长，找到自己的节奏。 本资料为前端展示样例，用于检查排版、筛选与详情布局。",
       "ageMin": 6,
@@ -748,7 +748,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "469ec43c-559a-5040-8015-614ed58f12a6",
           "sku": "WM-BALANCE-STONES",
-          "name": "平衡石 · 示例",
+          "name": "平衡石",
           "unitPriceFen": 25900,
           "quantity": 1,
           "subtotalFen": 25900,
@@ -760,7 +760,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "9b07436c-613e-53ba-b12e-f552254283fe",
           "sku": "WM-RING-TOSS",
-          "name": "环环投掷 · 示例",
+          "name": "环环投掷",
           "unitPriceFen": 16900,
           "quantity": 2,
           "subtotalFen": 33800,
@@ -815,7 +815,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
           "sku": "WM-RAINBOW-ARCH",
-          "name": "彩虹拱桥 · 示例",
+          "name": "彩虹拱桥",
           "unitPriceFen": 32900,
           "quantity": 1,
           "subtotalFen": 32900,
@@ -892,7 +892,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "d84473a5-10f5-5dad-b124-74a521a1f0f1",
           "sku": "WM-TEAM-BOARD",
-          "name": "伙伴协作板 · 示例",
+          "name": "伙伴协作板",
           "unitPriceFen": 28900,
           "quantity": 1,
           "subtotalFen": 28900,
@@ -904,7 +904,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "ada916b9-cd61-5de8-89d0-1668f9869376",
           "sku": "WM-FOREST-KIT",
-          "name": "森林探索套装 · 示例",
+          "name": "森林探索套装",
           "unitPriceFen": 21900,
           "quantity": 1,
           "subtotalFen": 21900,
@@ -987,7 +987,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
           "sku": "WM-RAINBOW-ARCH",
-          "name": "彩虹拱桥 · 示例",
+          "name": "彩虹拱桥",
           "unitPriceFen": 32900,
           "quantity": 1,
           "subtotalFen": 32900,
@@ -1049,13 +1049,13 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "469ec43c-559a-5040-8015-614ed58f12a6",
           "sku": "WM-BALANCE-STONES",
-          "name": "平衡石 · 示例",
+          "name": "平衡石",
           "quantity": 1
         },
         {
           "productId": "9b07436c-613e-53ba-b12e-f552254283fe",
           "sku": "WM-RING-TOSS",
-          "name": "环环投掷 · 示例",
+          "name": "环环投掷",
           "quantity": 2
         }
       ]
@@ -1073,7 +1073,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
           "sku": "WM-RAINBOW-ARCH",
-          "name": "彩虹拱桥 · 示例",
+          "name": "彩虹拱桥",
           "quantity": 1
         }
       ]
@@ -1091,13 +1091,13 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "d84473a5-10f5-5dad-b124-74a521a1f0f1",
           "sku": "WM-TEAM-BOARD",
-          "name": "伙伴协作板 · 示例",
+          "name": "伙伴协作板",
           "quantity": 1
         },
         {
           "productId": "ada916b9-cd61-5de8-89d0-1668f9869376",
           "sku": "WM-FOREST-KIT",
-          "name": "森林探索套装 · 示例",
+          "name": "森林探索套装",
           "quantity": 1
         }
       ]
@@ -1115,7 +1115,7 @@ export const fixtures: PreviewFixtures = {
         {
           "productId": "f793492f-b8c1-5703-a4d6-ea9ace37c8e8",
           "sku": "WM-RAINBOW-ARCH",
-          "name": "彩虹拱桥 · 示例",
+          "name": "彩虹拱桥",
           "quantity": 1
         }
       ]
@@ -1138,7 +1138,7 @@ export const fixtures: PreviewFixtures = {
       {
         "productId": "469ec43c-559a-5040-8015-614ed58f12a6",
         "sku": "WM-BALANCE-STONES",
-        "name": "平衡石 · 示例",
+        "name": "平衡石",
         "unitPriceFen": 25900,
         "quantity": 1,
         "subtotalFen": 25900,
@@ -1150,7 +1150,7 @@ export const fixtures: PreviewFixtures = {
       {
         "productId": "9b07436c-613e-53ba-b12e-f552254283fe",
         "sku": "WM-RING-TOSS",
-        "name": "环环投掷 · 示例",
+        "name": "环环投掷",
         "unitPriceFen": 16900,
         "quantity": 2,
         "subtotalFen": 33800,
@@ -1173,7 +1173,7 @@ export const fixtures: PreviewFixtures = {
       {
         "productId": "469ec43c-559a-5040-8015-614ed58f12a6",
         "sku": "WM-BALANCE-STONES",
-        "name": "平衡石 · 示例",
+        "name": "平衡石",
         "unitPriceFen": 25900,
         "quantity": 1,
         "subtotalFen": 25900,
@@ -1185,7 +1185,7 @@ export const fixtures: PreviewFixtures = {
       {
         "productId": "9b07436c-613e-53ba-b12e-f552254283fe",
         "sku": "WM-RING-TOSS",
-        "name": "环环投掷 · 示例",
+        "name": "环环投掷",
         "unitPriceFen": 16900,
         "quantity": 2,
         "subtotalFen": 33800,

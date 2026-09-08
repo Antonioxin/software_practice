@@ -31,14 +31,13 @@ onMounted(load)
         <p class="dealer-hero-eyebrow">OFFICIAL CHANNELS</p>
         <h1 id="channels-title" lang="en">Find your<br />WEMOVE.</h1>
         <p class="dealer-hero-subtitle">在你所在的城市，找到 WEMOVE</p>
-        <p class="dealer-hero-note">这里只展示管理员明确发布的公开渠道；合作申请中的联系方式不会自动公开。</p>
       </div>
       <BrandMark class="dealer-hero-brand" />
     </section>
     <section class="dealer-public-content">
       <form class="dealer-filter" @submit.prevent="load">
-        <label>国家／地区<input v-model="country" placeholder="例如：中国" /></label>
-        <label>城市<input v-model="city" placeholder="例如：上海市" /></label>
+        <label>国家／地区<input class="wm-search-input" v-model="country" placeholder="例如：中国" /></label>
+        <label>城市<input class="wm-search-input" v-model="city" placeholder="例如：上海市" /></label>
         <button class="primary-button" type="submit">查询渠道</button>
       </form>
       <p v-if="error" class="error-summary" role="alert">{{ error }}</p>

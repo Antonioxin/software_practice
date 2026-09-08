@@ -1,0 +1,65 @@
+\section{深入认识前端技术}
+\subsection{梳理网页组成}
+开始这次任务时，我对前端只有一些粗浅的了解，比如说：知道 three.js 能够帮助网站实现三维效果，但却不知道具体如何使用等等。真正接触项目后，我才第一次从代码层面接触了首页布局、%
+菜单展开、文章排版、图片展示和后台编辑等多种多样的前端模块。%
+因此，我首先把前端技术按解决的问题分类，然后再决定应该使用什么样的前端工具来完成本项目。
+
+通过调研我了解到：HTML 负责表达内容结构，CSS 负责布局与视觉样式，JavaScript 负责交互与逻辑，%
+这是我建立的第一层认识\cite{mdn-basics}。以一张文章卡片为例，标题、图片和链接是内容结构；%
+卡片宽度、字距与颜色是样式；点击筛选后重新获取文章是交互。这三者可以类比为展览中的展品目录、%
+空间布置与现场工作人员，它们在浏览器中共同作用，共同呈现出一个完整的可交互界面。
+
+浏览器把 HTML 解析成 DOM，即文档对象模型，可以将其理解为一棵由标题、段落、图片等节点组成的树。%
+JavaScript 通过 DOM API 读取或修改这些节点；CSS 则影响它们的尺寸、位置和显示方式。%
+理解这一点后，我才逐渐明白“把文字放到网页上”和“让网页持续回应用户操作”之间的巨大区别：前者只需呈现内容，%
+后者还需要管理事件、数据与页面状态。
+
+\begin{figure}[H]
+\centering
+\input{figures/前端学习地图.tex}
+\caption{我在任务中逐步建立的前端技术地图}%
+\label{fig:map}
+\end{figure}
+
+\subsection{从基础语言到框架和工程工具}
+第二层认识是：框架并不取代 HTML、CSS 和 JavaScript，而是帮助组织它们。%
+Vue 的单文件组件将模板、逻辑与样式放在一个组件中，配合响应式状态驱动界面更新\cite{vue-intro}。%
+例如，文章列表组件接收数据并显示卡片，公共导航组件统一处理菜单；我不必在每个页面重新写一套相同结构。
+
+我也调研了 React、Svelte 等方案。React 同样以组件组织界面，强调组件、状态和数据流；%
+Svelte 则利用编译器转换组件代码\cite{react-ui,svelte-overview}。这些框架的共同点是减少手工维护复杂
+DOM 的负担，但语法、状态机制和配套生态不同。%
+
+
+TypeScript 和 Vite 又属于不同层次。TypeScript 为 JavaScript 增加静态类型检查，%
+便于发现字段或参数使用错误；类型标注在编译后会被移除，不能自动验证服务器实际返回的
+JSON\cite{ts-basics}。Vite 提供开发服务器、模块更新和生产构建流程，%
+解决的是开发与交付效率\cite{vite-why}。
+
+\subsection{基础技术分类}
+\begin{table}[!htb]
+\centering
+\smalltable
+\caption{前端技术分别解决什么问题}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.4cm}YY}
+\toprule
+层次 & 代表技术 & 我在项目中对应的理解\\
+\midrule
+内容与样式 & HTML、CSS、Flexbox、Grid & 组织文章、排列导航和卡片，适应不同页面宽度\\
+\tabledivider
+行为与平台能力 &
+    JavaScript、DOM、Fetch、事件、动画 API &
+    读取数据、响应点击、控制加载状态和动态效果\\
+\tabledivider
+组件与状态组织 & Vue、Router、Pinia & 复用页面结构，切换地址，共享必要的会话状态\\
+\tabledivider
+工程与质量 & TypeScript、Vite、Vitest & 提前发现错误、构建资源、检查关键交互逻辑\\
+\tabledivider
+专题展示与内容生产 & Three.js、图片加载、富文本编辑器 & 为具体体验补充能力，而非每个页面全部引入\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+这次分类还帮助我区分了两个容易混淆的“响应式”：Vue 的响应式是数据变化后界面跟着更新，CSS
+的响应式设计是布局随可用空间变化。前者主要处理数据与视图的关系，后者处理内容与屏幕的关系。%
+

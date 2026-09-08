@@ -4,6 +4,10 @@ spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
   datasource:
     hikari:
       connection-init-sql: ${DB_CONNECTION_INIT_SQL:SET SESSION innodb_lock_wait_timeout=2}

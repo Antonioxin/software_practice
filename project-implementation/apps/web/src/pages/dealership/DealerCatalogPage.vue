@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -39,7 +40,7 @@ onMounted(load)
         </article>
       </div>
       <aside class="paper-section dealer-inquiry-compose">
-        <h2>询价需求</h2><p>数量可以超过当前库存，提交不会预占库存或生成订单。</p>
+        <h2 class="wm-icon-label"><SketchIcon name="chat" :size="28" /> 询价需求</h2><p>数量可以超过当前库存，提交不会预占库存或生成订单。</p>
         <label>期望交付日期（可选）<input v-model="expectedDeliveryDate" type="date" /></label>
         <label>交付说明（可选）<textarea v-model="deliveryNotes" maxlength="2000"></textarea></label>
         <label>用途（可选）<textarea v-model="purpose" maxlength="2000"></textarea></label>

@@ -1,6 +1,6 @@
 # WEMOVE 工程入口
 
-这里是 WEMOVE 的统一实现目录，包含一个 Vue 3 + TypeScript 前端、一个 Java 21 + Spring Boot 后端，以及契约、脚本、文档和测试设计。当前已接入身份账户、商品库存、零售交易和经销合作模块，后续业务继续接入这套应用。
+这里是 WEMOVE 的统一实现目录，包含一个 Vue 3 + TypeScript 前端、一个 Java 21 + Spring Boot 后端，以及契约、脚本、文档和测试设计。当前已接入身份账户、商品库存、零售交易、经销合作、内容文件和工单运营模块，后续业务继续接入这套应用。
 
 **目录按工程职责划分，业务归属按模块记录。** 前端和后端分别是可构建、可运行的应用；身份账户、商品库存等业务由各应用内部的代码共同实现。成员姓名、分工和贡献放在[团队协作规范](project-requirements/WEMOVE团队分工与协作规范.md)及[验收追踪表](project-requirements/WEMOVE需求责任与验收追踪表.md)中维护，代码位置不随负责人变化。
 
@@ -57,9 +57,10 @@ Java 根包统一为 `wemove`，`identity`、`catalog` 及后续 `commerce` 等�
 | 商品与库存 | [catalog.yaml](contracts/openapi/catalog.yaml) | [模块索引](docs/modules/catalog/README.md)、[运行与验证手册](docs/modules/catalog/运行与验证手册.md)、[验证记录](docs/modules/catalog/验证记录.md) | B |
 | 零售交易 | [commerce.yaml](contracts/openapi/commerce.yaml) | [模块索引](docs/modules/commerce/README.md)、[实现方案与 A/B 检查](docs/modules/commerce/WEMOVE角色C实现方案与AB检查.md) | C |
 | 经销合作 | [dealership.yaml](contracts/openapi/dealership.yaml) | [模块索引](docs/modules/dealership/README.md)、[运行与验证手册](docs/modules/dealership/运行与验证手册.md)、[验证记录](docs/modules/dealership/验证记录.md) | D |
+| 站点、内容与文件 | [content.yaml](contracts/openapi/content.yaml)、[files.yaml](contracts/openapi/files.yaml) | [模块索引与操作手册](docs/modules/content/README.md)、[验证记录](docs/verification/content/验证记录.md) | E |
 | 工单与运营（support/operations） | [support.yaml](contracts/openapi/support.yaml) | [模块索引](docs/modules/support/README.md)、[验证记录](docs/verification/support/README.md) | F |
 
-初版公共界面及无需后端的只读预览见[静态界面与开发预览](docs/modules/content/静态界面与开发预览.md)，覆盖现有 17 条业务路由。开发环境可访问 `http://localhost:5173/?preview=1`。
+初版公共界面及无需后端的只读预览见[静态界面与开发预览](docs/modules/content/静态界面与开发预览.md)。当前预览增加了内容、FAQ、下载与管理页面，共 27 个业务场景；开发环境可访问 `http://localhost:5173/?preview=1`。
 
 商品前端逻辑入口见 [apps/web/src/features/catalog/](apps/web/src/features/catalog/)，商品后端入口见 [apps/api/src/main/java/wemove/catalog/](apps/api/src/main/java/wemove/catalog/)。其余成员的需求归属和接入边界见[验收追踪表](project-requirements/WEMOVE需求责任与验收追踪表.md)。
 

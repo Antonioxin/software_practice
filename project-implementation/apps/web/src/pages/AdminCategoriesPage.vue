@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElDialog, ElMessage, ElMessageBox } from 'element-plus'
 import SiteShell from '../components/SiteShell.vue'
+import SketchIcon from '../components/SketchIcon.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
 import type { Category } from '../types'
 
@@ -69,7 +70,7 @@ onMounted(load)
     <section class="category-intro">
       <div><p>ONE LEVEL, CLEAR PURPOSE</p><h2>让每件商品都有清楚的归属</h2></div>
       <p>分类名称去除首尾空白后唯一。被商品引用的分类不能停用或删除，需要先迁移商品。</p>
-      <button class="light-button" type="button" @click="openCreate">＋ 新建分类</button>
+      <button class="light-button" type="button" @click="openCreate"><SketchIcon name="plus" :size="22" /> 新建分类</button>
     </section>
     <div v-if="loading" class="state-panel"><span class="loader"></span><p>正在读取分类…</p></div>
     <div v-else-if="error" class="state-panel" role="alert"><h2>加载失败</h2><p>{{ error }}</p><button class="secondary-button" @click="load">重试</button></div>
@@ -77,16 +78,16 @@ onMounted(load)
       <article v-for="(category, index) in categories" :key="category.id" class="category-card">
         <span>{{ String(index + 1).padStart(2, '0') }}</span>
         <div><p>{{ category.enabled ? 'ENABLED' : 'DISABLED' }} · ORDER {{ category.sortOrder }}</p><h3>{{ category.name }}</h3><p>{{ category.description || '暂无分类说明' }}</p></div>
-        <footer><small>版本 {{ category.version }}</small><div><button type="button" @click="openEdit(category)">编辑</button><button type="button" @click="remove(category)">删除</button></div></footer>
+        <footer><small>版本 {{ category.version }}</small><div><button type="button" @click="openEdit(category)">编辑</button><button class="wm-icon-action" type="button" @click="remove(category)"><SketchIcon name="trash" :size="20" /> 删除</button></div></footer>
       </article>
-      <button class="category-card category-add" type="button" @click="openCreate"><span>＋</span><strong>创建一个新分类</strong><small>单层分类 · 可排序 · 可停用</small></button>
+      <button class="category-card category-add" type="button" @click="openCreate"><span><SketchIcon name="plus" :size="38" /></span><strong>创建一个新分类</strong><small>单层分类 · 可排序 · 可停用</small></button>
     </div>
 
     <ElDialog v-model="dialogOpen" :title="editing ? '编辑分类' : '新建分类'" width="min(540px, 92vw)">
       <form class="identity-form" @submit.prevent="save">
         <label class="field"><span>分类名称</span><input v-model="form.name" minlength="2" maxlength="100" required /></label>
         <label class="field"><span>分类说明</span><textarea v-model="form.description" maxlength="500" rows="4"></textarea></label>
-        <div class="field-pair"><label class="field"><span>显示顺序</span><input v-model.number="form.sortOrder" type="number" min="0" required /></label><label class="toggle-field"><input v-model="form.enabled" type="checkbox" /><span>启用公开筛选</span></label></div>
+        <div class="field-pair"><label class="field"><span class="wm-icon-label"><SketchIcon name="sort" :size="20" /> 显示顺序</span><input v-model.number="form.sortOrder" type="number" min="0" required /></label><label class="toggle-field"><input v-model="form.enabled" type="checkbox" /><span>启用公开筛选</span></label></div>
       </form>
       <template #footer><button class="secondary-button" @click="dialogOpen = false">取消</button><button class="primary-button" :disabled="busy || form.name.trim().length < 2" @click="save">{{ busy ? '正在保存…' : '保存分类' }}</button></template>
     </ElDialog>

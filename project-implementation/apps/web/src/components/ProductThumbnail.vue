@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { productIllustrationSrc } from '../features/catalog/productImages'
+import { isManagedImage, productImageSrc } from '../features/catalog/productImages'
 import SketchIcon from './SketchIcon.vue'
 
-const props = defineProps<{ sku: string; name: string }>()
+const props = defineProps<{ sku: string; name: string; mainImageId?: string | null }>()
 const failed = ref(false)
-const source = computed(() => productIllustrationSrc(props.sku))
+const source = computed(() => productImageSrc(props.sku, props.mainImageId))
 
-watch(() => props.sku, () => { failed.value = false })
+watch(source, () => { failed.value = false })
 </script>
 
 <template>
   <div class="product-thumbnail">
     <img
       v-if="source && !failed"
-      :key="sku"
+      :key="source ?? sku"
       class="product-thumbnail__image"
       :src="source"
-      :alt="`${name}，AI 商品示意图，非产品实拍`"
+      :alt="isManagedImage(mainImageId) ? `${name}商品图片` : `${name}，AI 商品示意图，非产品实拍`"
       loading="lazy"
       decoding="async"
       @error="failed = true"

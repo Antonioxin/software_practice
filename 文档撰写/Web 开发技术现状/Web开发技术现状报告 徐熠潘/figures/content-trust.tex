@@ -1,0 +1,37 @@
+\begin{tikzpicture}[
+  font=\fontsize{10.5}{14}\selectfont,
+  stage/.style={draw=wmnavy!65,fill=white,rounded corners=2pt,
+    text width=3.0cm,minimum height=1.55cm,align=center,
+    inner sep=4pt,line width=0.6pt},
+  link/.style={-{Stealth[length=2mm]},draw=wmaccent,line width=0.7pt}
+]
+\node[stage] (edit) at (1.65,0)
+  {\textbf{区块编辑}\\提交结构化内容\\携带稿件版本号};
+\node[stage,fill=wmnavy!7] (check) at (5.4,0)
+  {\textbf{服务端写入校验}\\清洗与权限校验\\引用及版本校验};
+\node[stage] (published) at (9.15,0)
+  {\textbf{已发布内容}\\按发布状态提供\\结构化内容数据};
+\node[stage,fill=wmnavy!7] (render) at (12.9,0)
+  {\textbf{前端受控节点}\\白名单映射渲染\\链接与图片约束};
+\draw[link] (edit) -- (check);
+\draw[link] (check) -- (published);
+\draw[link] (published) -- (render);
+\node[draw=wmnavy!55,rounded corners=2pt,text width=5.15cm,
+  minimum height=1.05cm,align=center,inner sep=5pt]
+  (conflict) at (5.4,-2.2)
+  {\textbf{版本不匹配：返回冲突}\\重新读取、比较差异后再提交};
+\draw[link] (check.south) -- node[right,fill=white,inner sep=2pt] {拒绝覆盖} (conflict.north);
+\draw[link,dashed] (conflict.west) -| (edit.south);
+\node[text width=5.6cm,align=left,text=wmnavy,anchor=west]
+  at (9.0,-2.2)
+  {校验通过也不代表可直接插入任意 HTML；前后端分别限制内容的保存与显示。};
+\node[draw=wmnavy!55,fill=wmnavy!4,rounded corners=2pt,
+  text width=14.0cm,minimum height=1.3cm,inner sep=6pt,align=left]
+  at (7.25,-4.05)
+  {\textbf{独立媒体通道}：上传等受限操作独立鉴权，再校验文件类型、大小与资源引用。\\
+   公开读取遵循资源访问策略；内容中的媒体引用合法，不代表任意媒体操作自动获准。};
+\node[anchor=north west,text width=14.45cm,align=left,text=wmnavy]
+  at (0,-5.05)
+  {原理示意：写入权限由服务端判定；前端隐藏按钮只约束交互。%
+    具体字段、状态码与媒体策略以项目接口契约为准。};
+\end{tikzpicture}

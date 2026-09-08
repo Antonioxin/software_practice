@@ -330,7 +330,7 @@ public class DealershipService implements DealershipMetricsPort {
                     if (!expected.equals(company.cooperationStatus)) throw DealershipRules.state("企业合作状态不允许该操作。");
                     company.cooperationStatus = restore ? "ACTIVE" : "SUSPENDED";
                     company.updatedAt = clock.instant();
-                    if (!restore) repository.unpublishCompanyChannels(company.id);
+                    if (!restore) repository.unpublishCompanyChannels(company.id, company.updatedAt);
                     audit(actor, restore ? "DEALER_COMPANY_RESTORED" : "DEALER_COMPANY_SUSPENDED",
                             "DEALER_COMPANY", id, request.reason(), company.updatedAt);
                     repository.flush();

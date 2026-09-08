@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElDialog } from 'element-plus'
@@ -181,7 +182,7 @@ onMounted(() => void load())
       <div class="support-detail-layout">
         <div class="support-detail-main">
           <section class="paper-section">
-            <div class="section-heading"><div><p>01 / CONVERSATION</p><h2>公开对话</h2></div><span>{{ ticket.messages.length }} 条往来消息</span></div>
+            <div class="section-heading"><div><p>01 / CONVERSATION</p><h2 class="wm-icon-label"><SketchIcon name="chat" :size="28" /> 公开对话</h2></div><span>{{ ticket.messages.length }} 条往来消息</span></div>
             <ul class="support-message-list">
               <li class="support-message support-message--body">
                 <header><strong>用户提问</strong><time>{{ formatDateTime(ticket.createdAt) }}</time></header>
@@ -209,7 +210,7 @@ onMounted(() => void load())
           </section>
 
           <section v-if="props.admin" class="paper-section">
-            <div class="section-heading"><div><p>03 / TIMELINE</p><h2>状态时间线</h2></div><span>{{ ticket.history.length }} 个状态节点</span></div>
+            <div class="section-heading"><div><p>03 / TIMELINE</p><h2 class="wm-icon-label"><SketchIcon name="history" :size="28" /> 状态时间线</h2></div><span>{{ ticket.history.length }} 个状态节点</span></div>
             <div class="history">
               <ol>
                 <li v-for="item in ticket.history" :key="item.id">

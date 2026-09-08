@@ -67,7 +67,7 @@ class DealershipWorkflowIntegrationTest {
                 .andExpect(status().isCreated()).andReturn();
         String categoryId = mapper.readTree(categoryCreated.getResponse().getContentAsString()).path("data").path("id").asText();
         String productBody = """
-                {"sku":"TEST-D-001","name":"测试经销商品一","categoryId":"%s","summary":"测试经销商品简述","description":"用于 D 模块集成测试的经销商品。","ageMin":5,"ageMax":12,"playType":"BALANCE","scene":"BOTH","material":"测试安全材料","dimensions":"20 x 20 cm","packageContents":"测试组件一套","instructions":"请按测试说明使用","safetyNotes":"测试时需成人看护","mainImageId":"test-dealer-image","imageIds":[],"retailUnitPriceFen":2990,"dealerEnabled":true,"dealerReferenceUnitPriceFen":2000,"minInquiryQuantity":12,"leadTimeText":"测试 7 天","displayOrder":1,"initialStock":10}
+                {"sku":"TEST-D-001","name":"测试经销商品一","categoryId":"%s","summary":"测试经销商品简述","description":"用于 D 模块集成测试的经销商品。","ageMin":5,"ageMax":12,"playType":"BALANCE","scene":"BOTH","material":"测试安全材料","dimensions":"20 x 20 cm","packageContents":"测试组件一套","instructions":"请按测试说明使用","safetyNotes":"测试时需成人看护","mainImageId":"product-balance-stones","imageIds":[],"retailUnitPriceFen":2990,"dealerEnabled":true,"dealerReferenceUnitPriceFen":2000,"minInquiryQuantity":12,"leadTimeText":"测试 7 天","displayOrder":1,"initialStock":10}
                 """.formatted(categoryId);
         MvcResult productCreated = json(post("/api/v1/admin/products")
                         .header("Idempotency-Key", UUID.randomUUID()), admin, productBody)

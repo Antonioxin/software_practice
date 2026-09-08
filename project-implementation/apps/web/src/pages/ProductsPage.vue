@@ -5,7 +5,7 @@ import SketchIcon from '../components/SketchIcon.vue'
 import PublicShell from '../components/PublicShell.vue'
 import PolaroidMotion from '../components/PolaroidMotion.vue'
 import { buildCatalogQuery, formatAgeRange, formatCny } from '../features/catalog/presentation'
-import { productIllustrationSrc } from '../features/catalog/productImages'
+import { isManagedImage, productImageSrc } from '../features/catalog/productImages'
 import { api, ApiProblem } from '../services/http'
 import type { Category, PageMeta, ProductCard, ProductOptions } from '../types'
 
@@ -108,11 +108,11 @@ function tileColor(product: ProductCard) {
   return tileColors[index % tileColors.length]
 }
 function illustrationSrc(product: ProductCard) {
-  const src = productIllustrationSrc(product.sku)
+  const src = productImageSrc(product.sku, product.mainImageId)
   return src && !failedIllustrations.value.has(src) ? src : null
 }
-function illustrationFailed(sku: string) {
-  const src = productIllustrationSrc(sku)
+function illustrationFailed(product: ProductCard) {
+  const src = productImageSrc(product.sku, product.mainImageId)
   if (src) failedIllustrations.value.add(src)
 }
 
@@ -163,7 +163,7 @@ watch(() => route.query, loadProducts, { immediate: true })
       <div class="shop-collection">
         <header class="shop-toolbar">
           <div><h2>{{ collectionTitle }}</h2><span v-if="!loading && !error" aria-live="polite">{{ meta.totalItems }} 件商品</span></div>
-          <label><span>排序</span><select v-model="filters.sort" @change="search"><option value="recommended">推荐顺序</option><option value="priceAsc">价格从低到高</option><option value="priceDesc">价格从高到低</option></select></label>
+          <label><span><SketchIcon name="sort" :size="22" /> 排序</span><select v-model="filters.sort" @change="search"><option value="recommended">推荐顺序</option><option value="priceAsc">价格从低到高</option><option value="priceDesc">价格从高到低</option></select></label>
         </header>
         <div v-if="loading" class="shop-state" role="status"><SketchIcon name="package" :size="66" /><h2>正在整理商品…</h2></div>
         <div v-else-if="error" class="shop-state" role="alert"><SketchIcon name="help" :size="66" /><h2>暂时无法取得商品</h2><p>{{ error }}</p><button class="shop-state-action" type="button" @click="loadProducts">重新加载</button></div>
@@ -173,7 +173,7 @@ watch(() => route.query, loadProducts, { immediate: true })
             <PolaroidMotion>
               <div class="shop-polaroid">
                 <div class="shop-photo-window" :style="{ backgroundColor: tileColor(product) }">
-                  <img v-if="illustrationSrc(product)" class="shop-product-image" :src="illustrationSrc(product) ?? undefined" :alt="`${product.name}的 AI 生成商品示意图（非实拍）`" :loading="index < 2 ? 'eager' : 'lazy'" decoding="async" @error="illustrationFailed(product.sku)" />
+                  <img v-if="illustrationSrc(product)" class="shop-product-image" :src="illustrationSrc(product) ?? undefined" :alt="isManagedImage(product.mainImageId) ? `${product.name}商品图片` : `${product.name}的 AI 生成商品示意图（非实拍）`" :loading="index < 2 ? 'eager' : 'lazy'" decoding="async" @error="illustrationFailed(product)" />
                   <div v-else class="shop-photo-placeholder" aria-hidden="true"><SketchIcon name="package" :size="128" /><span>商品示意</span></div>
                 </div>
                 <img class="shop-polaroid-paper" src="/assets/frames/polaroid-product.png" width="1149" height="1369" alt="" aria-hidden="true" draggable="false" />
@@ -181,7 +181,6 @@ watch(() => route.query, loadProducts, { immediate: true })
               </div>
             </PolaroidMotion>
             <div class="shop-product-info">
-              <p v-if="illustrationSrc(product)" class="shop-image-note">AI 商品示意 · 非实拍</p>
               <div class="shop-tile-top"><span>{{ product.category.name }}</span><span>{{ formatAgeRange(product.ageMin, product.ageMax) }}</span></div>
               <p class="shop-product-summary">{{ product.summary }}</p>
               <div class="shop-tile-bottom"><div><span :class="{ 'shop-out-of-stock': !product.inStock }">{{ product.inStock ? '有货' : '暂时缺货' }}</span><span class="shop-sku">SKU {{ product.sku }}</span></div><strong>{{ formatCny(product.retailUnitPriceFen) }}</strong></div>
@@ -199,7 +198,7 @@ watch(() => route.query, loadProducts, { immediate: true })
 </template>
 
 <style scoped>
-.shop-layout { --shop-yellow: #ffe72c; --shop-ink: #242a26; display: grid; grid-template-columns: 250px minmax(0, 1fr); width: min(1440px, calc(100% - 48px)); margin: 28px auto 54px; background: #fff; color: var(--shop-ink); }
+.shop-layout { --shop-yellow: #ffe72c; --shop-ink: #242a26; display: grid; grid-template-columns: 250px minmax(0, 1fr); width: min(1440px, calc(100% - 48px)); margin: 28px auto 54px; border-radius: var(--radius-panel); overflow: clip; background: #fff; color: var(--shop-ink); }
 .shop-directory { min-width: 0; background: var(--shop-yellow); }
 .shop-directory-inner { position: sticky; top: calc(var(--header-height) + 20px); max-height: calc(100dvh - var(--header-height) - 40px); overflow-y: auto; padding: 35px 27px; scrollbar-width: thin; scrollbar-color: #242a2655 transparent; }
 .shop-heading p { margin: 0 0 17px; font: 600 15px/1.4 var(--font-display); letter-spacing: 1.2px; }
@@ -207,7 +206,7 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-heading > span { display: block; font-size: 16px; line-height: 1.9; }
 .shop-categories { display: grid; gap: 3px; margin: 36px 0 28px; }
 .shop-section-label { margin: 0 0 12px; font-size: 14px; color: #4d4d27; }
-.shop-categories button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% + 24px); min-height: 42px; margin-inline: -12px; padding: 8px 12px; border: 0; background: transparent; color: var(--shop-ink); font-size: 17px; text-align: left; transition: background-color 160ms ease, color 160ms ease; }
+.shop-categories button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% + 24px); min-height: 42px; margin-inline: -12px; padding: 8px 12px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--shop-ink); font-size: 17px; text-align: left; transition: background-color 160ms ease, color 160ms ease; }
 .shop-categories button:hover, .shop-categories button:focus-visible { background: var(--shop-ink); color: var(--shop-yellow); }
 .shop-categories button:focus-visible { outline: 2px solid var(--shop-ink); outline-offset: 3px; }
 .shop-categories button > span:first-child { overflow-wrap: anywhere; }
@@ -215,18 +214,18 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-categories button[aria-pressed="true"] { font-weight: 500; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 .shop-categories button[aria-pressed="true"] > span:last-child, .shop-categories button:hover > span:last-child, .shop-categories button:focus-visible > span:last-child { opacity: 1; }
 .shop-filter-form { border-top: 1px solid #242a2650; padding-top: 20px; }
-.shop-search { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #242a2666; }
+.shop-search { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #242a2666; border-radius: var(--radius-control); }
 .shop-search input { min-width: 0; width: 100%; border: 0; padding: 6px 0; background: transparent; color: var(--shop-ink); font-size: 16px; }
 .shop-search input::placeholder { color: #52502e; opacity: 1; }
-.shop-search button { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; padding: 5px; border: 0; background: none; }
+.shop-search button { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; padding: 5px; border: 0; border-radius: var(--radius-small); background: none; }
 .shop-filter-details { border-bottom: 1px solid #242a2650; }
 .shop-filter-details summary { display: flex; align-items: center; justify-content: space-between; min-height: 58px; gap: 12px; font-size: 16px; cursor: pointer; list-style: none; }
 .shop-filter-details summary::-webkit-details-marker { display: none; }
 .shop-filter-details summary small { margin-left: 6px; font: 600 15px var(--font-display); }
 .shop-filter-fields { display: grid; gap: 17px; padding: 3px 0 20px; }
 .shop-filter-fields label { display: grid; gap: 7px; font-size: 14px; }
-.shop-filter-fields input, .shop-filter-fields select { min-width: 0; width: 100%; min-height: 42px; padding: 8px 9px; border: 1px solid #242a2655; border-radius: 0; color: var(--shop-ink); background: #ffffff66; font-size: 16px; }
-.shop-apply { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--shop-ink); background: var(--shop-ink); color: #fff; font-size: 15px; }
+.shop-filter-fields input, .shop-filter-fields select { min-width: 0; width: 100%; min-height: 42px; padding: 8px 9px; border: 1px solid #242a2655; border-radius: var(--radius-control); color: var(--shop-ink); background: #ffffff66; font-size: 16px; }
+.shop-apply { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--shop-ink); border-radius: var(--radius-control); background: var(--shop-ink); color: #fff; font-size: 15px; }
 .shop-filter-fields p { margin: 0; font-size: 13px; line-height: 1.7; color: #52502e; }
 .shop-clear { margin-top: 17px; padding: 7px 0; border: 0; color: #41442b; background: none; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
 .shop-reference-note, .shop-reference-error { margin: 12px 0 0; font-size: 14px; line-height: 1.8; }
@@ -237,14 +236,14 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-toolbar h2 { margin: 0; font-size: 23px; font-weight: 500; overflow-wrap: anywhere; }
 .shop-toolbar > div > span { font-size: 14px; color: #62685e; }
 .shop-toolbar label { display: flex; align-items: center; gap: 12px; font-size: 14px; white-space: nowrap; }
-.shop-toolbar select { width: 155px; min-height: 42px; border: 0; border-bottom: 1px solid #a0a79c; border-radius: 0; padding: 8px 2px; background: transparent; color: var(--shop-ink); font-size: 15px; }
+.shop-toolbar select { width: 155px; min-height: 42px; border: 1px solid #a0a79c; border-radius: var(--radius-control); padding: 8px 10px; background: transparent; color: var(--shop-ink); font-size: 15px; }
 .shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 48px 32px; padding: 30px 32px 48px; background: #f2f1ec; }
 .shop-tile { display: flex; flex-direction: column; min-width: 0; width: 100%; max-width: 460px; justify-self: center; container-type: inline-size; color: var(--shop-ink); text-decoration: none; }
-.shop-tile:focus-visible { outline: 3px solid #294c91; outline-offset: 6px; border-radius: 3px; }
+.shop-tile:focus-visible { outline: 3px solid #294c91; outline-offset: 6px; border-radius: var(--radius-card); }
 .shop-polaroid { position: relative; isolation: isolate; width: 100%; aspect-ratio: 1149 / 1369; }
 .shop-polaroid-paper { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 /* Coordinates follow the supplied 1149 × 1369 PNG. The window extends 3px under the paper edge. */
-.shop-photo-window { position: absolute; left: 11.9234%; top: 9.1308%; width: 76.5013%; height: 66.7641%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; overflow: hidden; }
+.shop-photo-window { position: absolute; left: 11.9234%; top: 9.1308%; width: 76.5013%; height: 66.7641%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; overflow: hidden; border-radius: var(--radius-small); }
 .shop-product-image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .shop-photo-placeholder { display: flex; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
 .shop-photo-window .sketch-icon { width: 34%; height: auto; max-width: 128px; }
@@ -252,7 +251,6 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-name-label { position: absolute; z-index: 2; left: 13.0548%; top: 78.8897%; width: 74.4125%; height: 13.0022%; display: flex; align-items: center; justify-content: center; margin: 0; font: 400 25px/1.25 var(--font-hand); font-size: clamp(16px, 6cqi, 28px); text-align: center; }
 .shop-name-label > span { min-width: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .shop-product-info { display: flex; flex-direction: column; flex: 1; padding: 5px 7% 0; }
-.shop-image-note { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .shop-tile-top { display: flex; align-items: start; justify-content: space-between; gap: 16px; font-size: 14px; line-height: 1.6; }
 .shop-tile-top > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .shop-tile-top > span:last-child { flex-shrink: 0; }
@@ -265,7 +263,7 @@ watch(() => route.query, loadProducts, { immediate: true })
 .shop-state { display: grid; justify-items: center; align-content: center; min-height: 540px; padding: 48px 25px; text-align: center; background: #f5f4ef; }
 .shop-state h2 { margin: 25px 0 10px; font-size: 25px; font-weight: 500; line-height: 1.6; }
 .shop-state p { max-width: 500px; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.8; }
-.shop-state-action { min-height: 44px; margin-top: 24px; padding: 10px 22px; border: 1px solid #252b25; border-radius: 0; background: var(--shop-yellow); color: var(--shop-ink); font-size: 15px; }
+.shop-state-action { min-height: 44px; margin-top: 24px; padding: 10px 22px; border: 1px solid #252b25; border-radius: var(--radius-control); background: var(--shop-yellow); color: var(--shop-ink); font-size: 15px; }
 .shop-pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 26px 30px; font-size: 14px; }
 .shop-pagination button { min-height: 42px; border: 0; padding: 8px 0; background: none; color: var(--shop-ink); }
 @media (max-width: 1150px) {
@@ -299,7 +297,7 @@ watch(() => route.query, loadProducts, { immediate: true })
   .shop-categories button { width: auto; min-height: 36px; margin-inline: 0; padding: 5px 10px; font-size: 15px; gap: 5px; }
   .shop-reference-note { flex-basis: 100%; }
   .shop-filter-form { padding-top: 10px; }
-  .shop-search { padding: 3px 0; }
+  .shop-search { padding: 6px 10px; }
   .shop-filter-details summary { min-height: 50px; }
   .shop-filter-fields { grid-template-columns: 1fr 1fr; gap: 15px; }
   .shop-filter-fields p { grid-column: 1 / -1; }

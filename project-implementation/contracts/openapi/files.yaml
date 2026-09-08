@@ -1,0 +1,911 @@
+---
+openapi: 3.1.0
+info:
+  title: WEMOVE Media and Download Files API
+  version: 1.0.0
+  description: 成员E，FR-07/FR-29。PUBLIC对游客/用户开放，DEALER另要求当次有效合作，INTERNAL仅ADMIN。文件下载始终要求PUBLISHED。元数据与独立BLOB同数据库事务提交；上传替换不自动重试。所有引用保护素材删除。写请求需当前ADMIN及CSRF。
+servers:
+- url: "/api/v1"
+security:
+- SessionCookie: []
+paths:
+  "/files":
+    get:
+      summary: 逐条按当前权限过滤已发布资料
+      parameters:
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 12
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewPage"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - {}
+      - SessionCookie: []
+  "/files/{id}":
+    get:
+      summary: 未发布或无权查看统一404
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - {}
+      - SessionCookie: []
+  "/files/{id}/versions/{downloadId}/content":
+    get:
+      summary: 每次检查逻辑资料、当前下载ID与当前身份/经销合作；旧ID失效
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: downloadId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'Current authorized file; Cache-Control: no-store; X-Content-Type-Options:
+            nosniff; Content-Disposition attachment with safe UTF-8 filename. Only
+            PUBLISHED files can download, including administrator requests.'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - {}
+      - SessionCookie: []
+  "/admin/files":
+    get:
+      summary: 管理员资料库
+      parameters:
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+      - name: visibility
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PUBLIC
+          - DEALER
+          - INTERNAL
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 12
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewPage"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+    post:
+      summary: 上传PDF和资料元数据（初始DRAFT）；不自动重试multipart
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF <=10MiB; extension, declared MIME and PDFBox parse
+                    must agree.
+                metadata:
+                  "$ref": "#/components/schemas/FileMetadata"
+              required:
+              - file
+              - metadata
+              additionalProperties: false
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        '201':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+      parameters:
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+  "/admin/files/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: 管理员详情含草稿与下线状态
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+    patch:
+      summary: 按expectedVersion编辑元数据；可见级别变更审计
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/FileUpdate"
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+      parameters:
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+  "/admin/files/{id}/replace":
+    post:
+      summary: 原子替换当前PDF，逻辑ID/状态不变，旧downloadId即时失效
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                expectedVersion:
+                  type: integer
+                  minimum: 1
+                versionNote:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              required:
+              - file
+              - expectedVersion
+              - versionNote
+              additionalProperties: false
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+  "/admin/files/{id}/publish":
+    post:
+      summary: 发布资料
+      description: 'Key+version commands use shared transactional idempotency and
+        audit. Same key/body replays 200 with Idempotency-Replayed: true.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+  "/admin/files/{id}/unpublish":
+    post:
+      summary: 下线资料
+      description: 'Key+version commands use shared transactional idempotency and
+        audit. Same key/body replays 200 with Idempotency-Replayed: true.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VersionCommand"
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FileViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+  "/admin/media":
+    get:
+      summary: 管理员素材库与引用数量
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 24
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MediaViewPage"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+    post:
+      summary: 上传JPEG、PNG、WebP；实际解码验证，失败不创建空记录
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: "<=5MiB and <=40M decoded pixels"
+                altText:
+                  type: string
+                  maxLength: 200
+              required:
+              - file
+              additionalProperties: false
+      responses:
+        '201':
+          description: 'Success; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MediaViewEnvelope"
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+      parameters:
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+  "/admin/media/{id}":
+    delete:
+      summary: 删除未引用素材；草稿和已发布引用均保护
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: expectedVersion
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: Origin
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uri
+      responses:
+        '204':
+          description: Deleted; future media reads 404
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+      security:
+      - SessionCookie: []
+        CsrfToken: []
+  "/media/{id}/content":
+    get:
+      summary: 仅有效公开引用图片可匿名访问；管理员可预览草稿，所有响应no-store
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      security:
+      - {}
+      - SessionCookie: []
+      responses:
+        '200':
+          description: Image binary; correct MIME; no-store; nosniff; no filesystem
+            paths
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: 'RFC 7807 problem: 400 invalid syntax, 401 missing/inactive
+            session, 403 admin required, 404 missing/not visible/current download
+            invalid, 409 VERSION_CONFLICT / STATE_CONFLICT / ASSET_IN_USE / IDEMPOTENCY_CONFLICT,
+            413 file too large, 422 field/type validation. No storage path is returned.'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: WEMOVE_SESSION
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  schemas:
+    FileMetadata:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 100
+        type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        versionNote:
+          type: string
+          minLength: 1
+          maxLength: 500
+        productIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          uniqueItems: true
+        visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - DEALER
+          - INTERNAL
+      required:
+      - title
+      - type
+      - versionNote
+      - productIds
+      - visibility
+      additionalProperties: false
+    FileUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 100
+        type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        versionNote:
+          type: string
+          minLength: 1
+          maxLength: 500
+        productIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          uniqueItems: true
+        visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - DEALER
+          - INTERNAL
+        expectedVersion:
+          type: integer
+          minimum: 1
+      required:
+      - title
+      - type
+      - versionNote
+      - productIds
+      - visibility
+      - expectedVersion
+      additionalProperties: false
+    VersionCommand:
+      type: object
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+      required:
+      - expectedVersion
+      additionalProperties: false
+    FileView:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 100
+        type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        versionNote:
+          type: string
+          minLength: 1
+          maxLength: 500
+        productIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          uniqueItems: true
+        visibility:
+          type: string
+          enum:
+          - PUBLIC
+          - DEALER
+          - INTERNAL
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+          - OFFLINE
+        version:
+          type: integer
+          minimum: 1
+        downloadId:
+          type: string
+          format: uuid
+        downloadUrl:
+          type: string
+        filename:
+          type: string
+        mimeType:
+          type: string
+          const: application/pdf
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        updatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - title
+      - type
+      - versionNote
+      - productIds
+      - visibility
+      - id
+      - status
+      - version
+      - downloadId
+      - downloadUrl
+      - filename
+      - mimeType
+      - sizeBytes
+      - updatedAt
+      - createdAt
+      additionalProperties: false
+    MediaView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        altText:
+          type: string
+          maxLength: 200
+        mimeType:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+          - image/webp
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        filename:
+          type: string
+        sizeBytes:
+          type: integer
+          maximum: 5242880
+        version:
+          type: integer
+          minimum: 1
+        referenceCount:
+          type: integer
+          minimum: 0
+        publicReferenceCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - url
+      - altText
+      - mimeType
+      - width
+      - height
+      - filename
+      - sizeBytes
+      - version
+      - referenceCount
+      - publicReferenceCount
+      - createdAt
+      additionalProperties: false
+    PageMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+      - page
+      - pageSize
+      - totalItems
+      - totalPages
+      additionalProperties: false
+    FileViewEnvelope:
+      type: object
+      properties:
+        data:
+          "$ref": "#/components/schemas/FileView"
+        meta:
+          type: 'null'
+      required:
+      - data
+      - meta
+      additionalProperties: false
+    FileViewPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            "$ref": "#/components/schemas/FileView"
+        meta:
+          "$ref": "#/components/schemas/PageMeta"
+      required:
+      - data
+      - meta
+      additionalProperties: false
+    MediaViewEnvelope:
+      type: object
+      properties:
+        data:
+          "$ref": "#/components/schemas/MediaView"
+        meta:
+          type: 'null'
+      required:
+      - data
+      - meta
+      additionalProperties: false
+    MediaViewPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            "$ref": "#/components/schemas/MediaView"
+        meta:
+          "$ref": "#/components/schemas/PageMeta"
+      required:
+      - data
+      - meta
+      additionalProperties: false

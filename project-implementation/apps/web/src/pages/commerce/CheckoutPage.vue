@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
         <form v-if="preview" ref="formRef" class="checkout-grid" novalidate @submit.prevent="submit()">
           <section class="checkout-card" aria-labelledby="shipping-title">
             <header>
-              <div><p>01 / DELIVERY</p><h2 id="shipping-title">收货地址</h2></div>
+              <div><p>01 / DELIVERY</p><h2 id="shipping-title" class="wm-icon-label"><SketchIcon name="truck" :size="28" /> 收货地址</h2></div>
               <span>保存为订单快照</span>
             </header>
 

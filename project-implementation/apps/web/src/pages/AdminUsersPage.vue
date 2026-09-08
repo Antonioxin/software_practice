@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SiteShell from '../components/SiteShell.vue'
+import SketchIcon from '../components/SketchIcon.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { api, ApiProblem } from '../services/http'
 import type { PageMeta, UserSummary } from '../types'
@@ -40,11 +41,11 @@ onMounted(() => load())
 
     <section class="paper-section admin-filter">
       <form @submit.prevent="load(1)">
-        <div class="field"><label for="filter-email">邮箱</label><input id="filter-email" v-model="filters.email" placeholder="搜索邮箱" /></div>
-        <div class="field"><label for="filter-nickname">昵称</label><input id="filter-nickname" v-model="filters.nickname" placeholder="搜索昵称" /></div>
+        <div class="field"><label for="filter-email">邮箱</label><input id="filter-email" v-model="filters.email" class="wm-search-input" type="search" placeholder="搜索邮箱" /></div>
+        <div class="field"><label for="filter-nickname">昵称</label><input id="filter-nickname" v-model="filters.nickname" class="wm-search-input" type="search" placeholder="搜索昵称" /></div>
         <div class="field"><label for="filter-role">基础角色</label><select id="filter-role" v-model="filters.baseRole"><option value="">全部</option><option value="USER">普通用户</option><option value="ADMIN">管理员</option></select></div>
         <div class="field"><label for="filter-status">账户状态</label><select id="filter-status" v-model="filters.status"><option value="">全部</option><option value="ACTIVE">已启用</option><option value="DISABLED">已停用</option></select></div>
-        <div class="filter-actions"><button class="primary-button compact" type="submit">查询</button><button class="secondary-button" type="button" @click="reset">重置</button></div>
+        <div class="filter-actions"><button class="primary-button compact" type="submit">查询</button><button class="secondary-button" type="button" @click="reset"><SketchIcon name="return" :size="20" />重置</button></div>
       </form>
     </section>
 

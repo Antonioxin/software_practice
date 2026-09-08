@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElDialog, ElMessage } from 'element-plus'
 import SiteShell from '../components/SiteShell.vue'
+import SketchIcon from '../components/SketchIcon.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
 import type { UserDetail, UserSummary } from '../types'
@@ -57,7 +58,7 @@ onMounted(load)
 
 <template>
   <SiteShell title="账户详情" eyebrow="ADMIN / IDENTITY" admin>
-    <button class="back-link" type="button" @click="router.push('/admin/users')">← 返回用户列表</button>
+    <button class="back-link" type="button" @click="router.push('/admin/users')"><SketchIcon name="arrow-left" :size="22" />返回用户列表</button>
     <div v-if="loading" class="state-panel"><span class="loader"></span><p>正在读取账户…</p></div>
     <div v-else-if="error" class="state-panel error"><h2>无法访问记录</h2><p>{{ error }}</p></div>
     <template v-else-if="target">
@@ -68,8 +69,8 @@ onMounted(load)
         <button v-if="target.baseRole !== 'ADMIN'" :class="target.accountStatus === 'ACTIVE' ? 'danger-button' : 'primary-button compact'" @click="openCommand">{{ target.accountStatus === 'ACTIVE' ? '停用账户' : '恢复账户' }}</button>
       </section>
       <div class="detail-grid">
-        <section class="paper-section account-facts"><div class="section-heading"><div><p>ACCOUNT FACTS</p><h2>账户信息</h2></div></div><dl><div><dt>账户 ID</dt><dd>{{ target.id }}</dd></div><div><dt>基础角色</dt><dd>{{ target.baseRole }}</dd></div><div><dt>派生身份</dt><dd>{{ target.derivedIdentity }}</dd></div><div><dt>联系电话</dt><dd>{{ target.phone || '未填写' }}</dd></div><div><dt>资料版本</dt><dd>v{{ target.version }}</dd></div><div><dt>最后更新</dt><dd>{{ new Date(target.updatedAt).toLocaleString('zh-CN') }}</dd></div></dl></section>
-        <section class="paper-section history"><div class="section-heading"><div><p>STATUS HISTORY</p><h2>状态历史</h2></div></div><ol v-if="detail?.statusHistory.length"><li v-for="item in detail.statusHistory" :key="item.createdAt"><i></i><div><strong>{{ item.action === 'DISABLE' ? '停用账户' : '恢复账户' }}</strong><span>{{ item.previousStatus }} → {{ item.newStatus }}</span><p>{{ item.reason }}</p><time>{{ new Date(item.createdAt).toLocaleString('zh-CN') }}</time></div></li></ol><div v-else class="empty-history">暂无状态变更记录</div></section>
+        <section class="paper-section account-facts"><div class="section-heading"><div><p>ACCOUNT FACTS</p><h2><SketchIcon name="user" :size="26" />账户信息</h2></div></div><dl><div><dt>账户 ID</dt><dd>{{ target.id }}</dd></div><div><dt>基础角色</dt><dd>{{ target.baseRole }}</dd></div><div><dt>派生身份</dt><dd>{{ target.derivedIdentity }}</dd></div><div><dt>联系电话</dt><dd>{{ target.phone || '未填写' }}</dd></div><div><dt>资料版本</dt><dd>v{{ target.version }}</dd></div><div><dt>最后更新</dt><dd>{{ new Date(target.updatedAt).toLocaleString('zh-CN') }}</dd></div></dl></section>
+        <section class="paper-section history"><div class="section-heading"><div><p>STATUS HISTORY</p><h2><SketchIcon name="history" :size="26" />状态历史</h2></div></div><ol v-if="detail?.statusHistory.length"><li v-for="item in detail.statusHistory" :key="item.createdAt"><i></i><div><strong>{{ item.action === 'DISABLE' ? '停用账户' : '恢复账户' }}</strong><span>{{ item.previousStatus }} → {{ item.newStatus }}</span><p>{{ item.reason }}</p><time>{{ new Date(item.createdAt).toLocaleString('zh-CN') }}</time></div></li></ol><div v-else class="empty-history">暂无状态变更记录</div></section>
       </div>
     </template>
 

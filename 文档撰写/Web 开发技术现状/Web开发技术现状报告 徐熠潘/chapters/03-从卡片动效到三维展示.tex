@@ -1,0 +1,97 @@
+\section{从卡片动效到三维展示}
+\subsection{我在项目中接触的三维效果}
+WEMOVE 的商品展示使用拍立得风格卡片。鼠标移动时，卡片轻微倾斜，离开后平稳回到原位。%
+它给人的感觉接近拿起一张相纸，但卡片里的商品仍是二维图片。当前 PolaroidMotion 使用 Three.js 的
+CSS3DObject 和 CSS3DRenderer，将已有 DOM 放入场景并进行位置、%
+旋转和缩放变换\cite{local-code,three-css3d}。
+
+项目先把鼠标在卡片中的位置归一化。以水平方向为例，若鼠标位置为 $x$，卡片左边界为 $x_0$、宽度为
+$w$，则
+\[
+u=\operatorname{clamp}\!\left(2\frac{x-x_0}{w}-1,-1,1\right).
+\]
+当鼠标从左到右移动时，$u$ 从约 $-1$ 变化到 $1$，再映射为小角度旋转。%
+组件使用平滑跟随而不是立即跳到目标角度，因而产生柔和的回弹。这里的数学作用很具体：%
+把不同卡片尺寸下的鼠标位置转换成可比较的交互输入。
+
+动画由 requestAnimationFrame 驱动，并根据实际帧间隔调整变化。稳定后停止继续申请帧，%
+可以避免静止卡片仍持续计算。若以 60 帧每秒为例，每帧总时间约为 $1000/60\approx16.7$ 毫秒，脚本、%
+布局和绘制需要共享这段时间。项目还响应减少动画偏好，在失焦或页面可见性变化时重置运动。%
+对这种装饰性效果，静态展示本身就应该完整。
+
+\subsection{CSS 三维与 WebGL：看起来相似，工作对象不同}
+CSS transform 和 perspective 能让网页元素产生透视旋转；CSS3DRenderer 则帮助用相机、%
+场景和对象的方式管理此类 DOM 变换\cite{three-css3d}。优势是可以保留现有文字、图片与链接，%
+较容易融入页面；限制是它并不提供网格材质、真实灯光与阴影系统。官方还注明该渲染器只支持 100\%
+浏览器和显示缩放，因此放大浏览时的展示需要额外检查，装饰性效果应有静态退路。%
+对只有几张卡片的效果，直接使用 CSS 变换也可能足够，引入库的收益应与依赖成本一起考虑。
+
+WebGL 面向 GPU 加速图形，在画布上绘制几何体、纹理和着色结果。Three.js 在其上提供场景、相机、%
+几何体、材质等较高层抽象\cite{three-fundamentals}。可以把场景理解为摄影棚，相机决定观察角度，%
+几何体决定物体形状，材质与光照共同影响外观，渲染器负责形成图像。%
+图\ref{fig:three-official}展示了这些对象之间的关系。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.91\linewidth]{online/three-structure.png}
+\caption{Three.js 官方手册中的网格场景与渲染对象关系}%
+\label{fig:three-official}
+\end{figure}
+
+透视相机还有“看得见的范围”。视锥由视角、宽高比和近远裁剪平面共同限定，图\ref{fig:frustum}中的
+near、far 分别表示近端与远端边界。在简化的针孔模型中，可将正向距离记为 $z$，水平投影写成
+$x'=fx/z$：同一尺寸的物体越远，投影越小。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.73\linewidth]{online/three-frustum.png}
+\caption{Three.js 官方透视相机视锥示意}%
+\label{fig:frustum}
+\end{figure}
+
+如果任务变成“让顾客旋转查看商品背面”，就需要真实三维资产及其加载、材质和交互方案，%
+单张图片倾斜无法补出背面的形状。WebGL 适合三维产品预览、可视化场景和浏览器游戏，%
+但开发者还需管理模型体积、纹理分辨率、加载时间、设备性能及画布之外的文字说明。%
+技术升级带来的不仅是视觉自由度，也包括资产制作和维护工作。
+
+\subsection{WebGPU 与更高层的三维展示工具}
+进一步调研后，我发现网页图形正在向更现代的 GPU 接口发展。WebGPU 既提供图形渲染能力，%
+也提供计算能力；其资源与管线组织方式和 WebGL 不同\cite{mdn-webgpu}。Three.js 的 WebGPURenderer
+提供了较高层入口，并在其文档所述条件下提供 WebGL 2 回退路径\cite{three-webgpu}。%
+官方手册当前仍将这一渲染器描述为实验状态。回退是 Three.js 渲染器提供的能力，原生 WebGPU
+不会自动转换成 WebGL；节点材质与 TSL（Three.js 着色语言）等组织方式，也使基于 ShaderMaterial
+的旧自定义着色器需要迁移。
+
+另一条路线是提高抽象层级。例如 model-viewer 用 Web 组件提供模型展示和相机交互，适合围绕 glTF
+等模型资产进行产品预览\cite{model-viewer}。它减少了从零搭建场景的工作，%
+但也把能力限制在组件提供的接口范围内。由此我理解到，选择底层 API、通用三维引擎还是成品展示组件，%
+本质上是在控制自由度与实现成本之间做取舍。
+
+\begin{table}[!htb]
+\centering
+\smalltable
+\caption{三维展示路线的优缺点与适用场景}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.6cm}YY}
+\toprule
+路线 & 优点与适合任务 & 主要代价或限制\\
+\midrule
+CSS / CSS3DRenderer &
+    保留 DOM 内容，适合卡片、相册和空间化界面 &
+    不是实体模型渲染，缺少网格材质能力，并有缩放支持限制\\
+\tabledivider
+Three.js + WebGL & 适合自定义模型、材质、场景和交互 & 需要三维资产、性能优化和较多图形学知识\\
+\tabledivider
+Three.js + WebGPU &
+    面向新图形与计算能力，保留较高层场景组织 &
+    兼容性、回退及特性差异要按目标环境核查\\
+\tabledivider
+model-viewer & 较快建立模型浏览与交互入口 & 定制深度受组件接口限制，模型优化仍需负责\\
+\bottomrule
+\end{tabularx}
+\sourcecaption{根据官方资料归纳\cite{three-css3d,three-fundamentals,three-webgpu,model-viewer}。%
+    未对本项目进行跨方案跑分。}
+\end{table}
+
+对当前任务，我更认同“让效果服务于展示目标”：拍立得倾斜要突出卡片的轻盈和互动感，%
+不需要为此加载复杂商品网格；只有任务确实要求观察实体空间结构时，才值得引入完整模型链路。%
+三维效果的发展方向可以很先进，而一个小项目的合理选择仍可以很克制。

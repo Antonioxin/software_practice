@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SketchIcon from '../../components/SketchIcon.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElDialog } from 'element-plus'
@@ -9,7 +10,7 @@ import { useSessionStore } from '../../stores/session'
 import { readOrder } from '../../features/commerce/api'
 import { useCommandRecovery } from '../../features/commerce/commandRecovery'
 import { statusLabels, type Detail } from '../../features/commerce/types'
-import { formatCny } from '../../features/catalog/presentation'
+import { formatCny, formatProductName } from '../../features/catalog/presentation'
 
 const props = withDefaults(defineProps<{ admin?: boolean }>(), { admin: false })
 const route = useRoute()
@@ -192,15 +193,15 @@ onMounted(() => void load())
               <header><div><p>01 / SNAPSHOT</p><h2 id="snapshot-title">商品快照</h2></div><span>成交价格与数量已固定</span></header>
               <div class="commerce-detail-items">
                 <article v-for="item in order.items" :key="item.productId" class="commerce-detail-item">
-                  <ProductThumbnail :name="item.name" :sku="item.sku" />
-                  <div class="commerce-detail-item-copy"><strong>{{ item.name }}</strong><span>{{ item.sku }} · 数量 {{ item.quantity }} · 单价 {{ formatCny(item.unitPriceFen) }}</span></div>
+                  <ProductThumbnail :name="formatProductName(item.name)" :sku="item.sku" />
+                  <div class="commerce-detail-item-copy"><strong>{{ formatProductName(item.name) }}</strong><span>{{ item.sku }} · 数量 {{ item.quantity }} · 单价 {{ formatCny(item.unitPriceFen) }}</span></div>
                   <strong>{{ formatCny(item.subtotalFen) }}</strong>
                 </article>
               </div>
             </section>
 
             <section class="commerce-detail-section" aria-labelledby="shipping-snapshot-title">
-              <header><div><p>02 / DELIVERY</p><h2 id="shipping-snapshot-title">地址与物流</h2></div><span>订单创建时保存的收货快照</span></header>
+              <header><div><p>02 / DELIVERY</p><h2 id="shipping-snapshot-title" class="wm-icon-label"><SketchIcon name="truck" :size="28" /> 地址与物流</h2></div><span>订单创建时保存的收货快照</span></header>
               <dl class="commerce-kv-grid">
                 <div class="commerce-kv"><dt>收件人</dt><dd>{{ order.shippingAddress.recipient }}</dd></div>
                 <div class="commerce-kv"><dt>联系电话</dt><dd>{{ order.shippingAddress.phone }}</dd></div>
@@ -211,7 +212,7 @@ onMounted(() => void load())
             </section>
 
             <section class="commerce-detail-section" aria-labelledby="payments-title">
-              <header><div><p>03 / TRANSACTIONS</p><h2 id="payments-title">付款与退款</h2></div><span>模拟流水号仅用于课程核对</span></header>
+              <header><div><p>03 / TRANSACTIONS</p><h2 id="payments-title" class="wm-icon-label"><SketchIcon name="wallet" :size="28" /> 付款与退款</h2></div><span>模拟流水号仅用于课程核对</span></header>
               <p v-if="!order.paymentAttempts.length && !order.refunds.length" class="commerce-empty-events">尚无付款或退款记录。</p>
               <ul v-else class="commerce-events">
                 <li v-for="payment in order.paymentAttempts" :key="payment.id" class="commerce-event">
@@ -226,7 +227,7 @@ onMounted(() => void load())
             </section>
 
             <section class="commerce-detail-section" aria-labelledby="history-title">
-              <header><div><p>04 / TIMELINE</p><h2 id="history-title">订单时间线</h2></div><span>{{ order.history.length }} 个状态节点</span></header>
+              <header><div><p>04 / TIMELINE</p><h2 id="history-title" class="wm-icon-label"><SketchIcon name="history" :size="28" /> 订单时间线</h2></div><span>{{ order.history.length }} 个状态节点</span></header>
               <ol class="commerce-events">
                 <li v-for="history in order.history" :key="history.version" class="commerce-event">
                   <time>{{ formatDate(history.createdAt) }}</time>

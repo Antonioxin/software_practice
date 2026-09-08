@@ -47,6 +47,25 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiE
   return (await apiWithMeta<T>(path, init)).envelope
 }
 
+/** Downloads still cross the shared authentication/error boundary; never use a public storage URL. */
+export async function apiDownload(path: string): Promise<Blob> {
+  if (!/^\/files\/[^/]+\/versions\/[^/]+\/content$/.test(path)) {
+    throw new Error('无效的下载地址，请刷新资料列表后重试。')
+  }
+  if (import.meta.env.DEV && isDevelopmentPreview) {
+    throw new ApiProblem({ type: 'about:blank', title: 'Development preview', status: 403,
+      code: 'PREVIEW_READ_ONLY', detail: '当前为只读界面预览。请退出预览并连接后端后下载真实文件。' })
+  }
+  const response = await fetch(`/api/v1${path}`, {
+    credentials: 'include', cache: 'no-store', headers: { Accept: 'application/pdf, application/problem+json' },
+  })
+  if (!response.ok) throw await toProblem(response)
+  if (!response.headers.get('Content-Type')?.toLowerCase().startsWith('application/pdf')) {
+    throw new Error('下载响应不是 PDF 文件，请稍后重试。')
+  }
+  return response.blob()
+}
+
 export async function apiWithMeta<T>(path: string, init: RequestInit = {}): Promise<{
   envelope: ApiEnvelope<T>; status: number; replayed: boolean; requestId: string | null
 }> {

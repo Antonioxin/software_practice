@@ -1,0 +1,16 @@
+\begin{tikzpicture}[font=\fontsize{11}{15}\selectfont,
+ box/.style={draw=wmaccent,fill=wmnavy!4,rounded corners=2pt,%
+   text width=13.4cm,minimum height=1.15cm,align=center},
+ arr/.style={-{Stealth[length=2mm]},draw=wmaccent,line width=0.7pt}]
+\node[box] (a) at (0,0) {\textbf{基础：网页有什么，怎样呈现，如何交互}\\%
+  HTML 结构 \quad CSS 样式 \quad JavaScript 行为};
+\node[box] (b) at (0,-1.6) {\textbf{组织：页面多了以后如何协作与复用}\\%
+  Vue 组件 \quad Router 路由 \quad Pinia 共享状态};
+\node[box] (c) at (0,-3.2) {\textbf{工程：怎样开发、检查并交付}\\%
+  TypeScript 类型 \quad Vite 构建 \quad 测试与浏览器检查};
+\node[box,fill=wmaccent!12] (d) at (0,-4.8) {\textbf{任务扩展：如何改善展示和内容操作}\\%
+  三维与动效 \quad 内容与图片加载 \quad 图文编辑};
+\draw[arr] (a)--(b);%
+\draw[arr] (b)--(c);%
+\draw[arr] (c)--(d);
+\end{tikzpicture}

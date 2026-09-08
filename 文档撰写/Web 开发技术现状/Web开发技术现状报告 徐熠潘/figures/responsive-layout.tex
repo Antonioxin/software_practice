@@ -1,0 +1,49 @@
+\begin{tikzpicture}[
+  font=\fontsize{10.5}{14}\selectfont,
+  line width=0.6pt,draw=wmnavy!65,
+  labeltext/.style={text=wmnavy,align=left},
+  wire/.style={draw=wmnavy!40,line width=0.5pt}
+]
+\node[anchor=west,font=\fontsize{11}{14}\selectfont\bfseries,text=wmnavy]
+  at (0,0.55) {宽容器：图文两列};
+\node[anchor=west,font=\fontsize{11}{14}\selectfont\bfseries,text=wmnavy]
+  at (10.1,0.55) {窄容器：顺序堆叠};
+\draw[rounded corners=3pt] (0,0) rectangle (9.1,-5.0);
+\draw[rounded corners=3pt] (10.1,0) rectangle (14.6,-6.25);
+\draw[wire] (0,-0.45) -- (9.1,-0.45);
+\draw[wire] (10.1,-0.45) -- (14.6,-0.45);
+\fill[wmnavy!25] (0.24,-0.23) circle (0.035);
+\fill[wmnavy!25] (0.40,-0.23) circle (0.035);
+\fill[wmnavy!25] (0.56,-0.23) circle (0.035);
+\fill[wmnavy!25] (10.34,-0.23) circle (0.035);
+\fill[wmnavy!25] (10.50,-0.23) circle (0.035);
+\fill[wmnavy!25] (10.66,-0.23) circle (0.035);
+\node[anchor=north west,labeltext,font=\fontsize{11}{14}\selectfont\bfseries]
+  at (0.4,-0.85) {01\quad 内容标题};
+\node[anchor=north west,labeltext,text width=3.65cm]
+  at (0.4,-1.65) {02\quad 正文段落\\以语义顺序组织内容，\\保持段落层级清楚。};
+\draw[wire] (0.5,-3.55) -- (3.85,-3.55);
+\draw[wire] (0.5,-3.85) -- (3.85,-3.85);
+\draw[wire] (0.5,-4.15) -- (3.10,-4.15);
+\draw[fill=wmnavy!5,draw=wmnavy!50] (4.75,-1.0) rectangle (8.6,-3.30);
+\draw[wire] (4.75,-1.0) -- (8.6,-3.30);
+\draw[wire] (8.6,-1.0) -- (4.75,-3.30);
+\node[fill=white,text=wmnavy,inner sep=4pt] at (6.675,-2.15) {03\quad 内容图片};
+\node[anchor=north west,labeltext,text width=3.7cm] at (4.75,-3.57)
+  {04\quad 图注说明};
+\node[anchor=north west,labeltext,font=\fontsize{11}{14}\selectfont\bfseries]
+  at (10.45,-0.78) {01\quad 内容标题};
+\node[anchor=north west,labeltext,text width=3.6cm]
+  at (10.45,-1.48) {02\quad 正文段落\\以语义顺序组织内容，\\保持段落层级清楚。};
+\draw[fill=wmnavy!5,draw=wmnavy!50] (10.5,-3.42) rectangle (14.2,-5.24);
+\draw[wire] (10.5,-3.42) -- (14.2,-5.24);
+\draw[wire] (14.2,-3.42) -- (10.5,-5.24);
+\node[fill=white,text=wmnavy,inner sep=4pt] at (12.35,-4.33) {03\quad 内容图片};
+\node[anchor=north west,labeltext,text width=3.55cm] at (10.45,-5.48)
+  {04\quad 图注说明};
+\node[anchor=north west,labeltext,text width=8.65cm] at (0,-5.35)
+  {同一内容结构：标题 → 正文 → 图片 → 图注。\\视觉列数变化时，阅读与键盘访问顺序保持合理。};
+\node[anchor=north west,labeltext,text width=14.4cm] at (0,-6.65)
+  {布局响应可用宽度，并尊重“减少动态效果”偏好。图片的 alt 属性提供替代文本，图注补充可见语境；%
+    装饰性图片可使用空替代文本。};
+\end{tikzpicture}

@@ -6,6 +6,7 @@ import { useSessionStore } from '../stores/session'
 import { useCommandRecovery } from '../features/commerce/commandRecovery'
 import SiteShell from '../components/SiteShell.vue'
 import ProductArtwork from '../components/ProductArtwork.vue'
+import SketchIcon from '../components/SketchIcon.vue'
 import { api, ApiProblem, newIdempotencyKey } from '../services/http'
 import type { AdminProduct, Category, PageMeta } from '../types'
 
@@ -107,13 +108,13 @@ onMounted(() => { load(); loadCategories() })
 <template>
   <SiteShell title="商品与库存" eyebrow="OPERATIONS / CATALOG" admin>
     <div v-if="stockCommand.pending.value" role="status"><p>有库存调整结果尚未确认，请恢复原请求。</p><button :disabled="stockCommand.busy.value" @click="retryStock">重试原库存调整</button></div>
-    <section class="admin-stats catalog-admin-stats"><div><span>商品总数</span><strong>{{ meta.totalItems }}</strong><small>条记录</small></div><p>商品信息、两类价格与库存分别维护；普通编辑不会覆盖库存余额。</p><button class="light-button" type="button" @click="router.push('/admin/products/new')">＋ 新建商品</button></section>
+    <section class="admin-stats catalog-admin-stats"><div><span>商品总数</span><strong>{{ meta.totalItems }}</strong><small>条记录</small></div><p>商品信息、两类价格与库存分别维护；普通编辑不会覆盖库存余额。</p><button class="light-button" type="button" @click="router.push('/admin/products/new')"><SketchIcon name="plus" :size="22" /> 新建商品</button></section>
     <section class="paper-section admin-filter catalog-admin-filter">
       <form @submit.prevent="load(1)">
-        <label class="field"><span>名称或 SKU</span><input v-model="filters.keyword" placeholder="搜索商品" /></label>
+        <label class="field"><span>名称或 SKU</span><input v-model="filters.keyword" class="wm-search-input" type="search" placeholder="搜索商品" /></label>
         <label class="field"><span>状态</span><select v-model="filters.status"><option value="">全部状态</option><option value="DRAFT">草稿</option><option value="PUBLISHED">已上架</option><option value="UNLISTED">已下架</option></select></label>
         <label class="field"><span>分类</span><select v-model="filters.categoryId"><option value="">全部分类</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option></select></label>
-        <div class="filter-actions"><button class="primary-button compact" type="submit">查询</button><button class="secondary-button" type="button" @click="Object.assign(filters, { keyword: '', status: '', categoryId: '' }); load(1)">重置</button></div>
+        <div class="filter-actions"><button class="primary-button compact" type="submit"><SketchIcon name="filter" :size="20" /> 查询</button><button class="secondary-button" type="button" @click="Object.assign(filters, { keyword: '', status: '', categoryId: '' }); load(1)"><SketchIcon name="return" :size="20" /> 重置</button></div>
       </form>
     </section>
     <div v-if="loading" class="state-panel"><span class="loader"></span><p>正在读取商品…</p></div>
@@ -125,10 +126,10 @@ onMounted(() => { load(); loadCategories() })
           <td><div class="admin-product-cell"><ProductArtwork :name="product.name" :sku="product.sku" compact /><div><strong>{{ product.name || '未命名草稿' }}</strong><span>{{ product.sku || 'SKU 待补充' }} · {{ product.categoryName || '未分类' }}</span></div></div></td>
           <td><span class="catalog-status" :class="product.status.toLowerCase()">{{ statusLabel(product.status) }}</span></td>
           <td>{{ money(product.retailUnitPriceFen) }}</td>
-          <td><button class="stock-number" type="button" @click="openMovements(product)"><strong>{{ product.stock }}</strong><span>查看流水</span></button></td>
+          <td><button class="stock-number" type="button" @click="openMovements(product)"><strong>{{ product.stock }}</strong><span class="wm-icon-label"><SketchIcon name="history" :size="18" /> 查看流水</span></button></td>
           <td>{{ product.dealerEnabled ? money(product.dealerReferenceUnitPriceFen) : '未启用' }}</td>
           <td>{{ time(product.updatedAt) }}</td>
-          <td><div class="row-actions"><button type="button" @click="router.push(`/admin/products/${product.id}`)">编辑</button><button type="button" @click="openStock(product)">调库存</button><button type="button" @click="publication(product)">{{ product.status === 'PUBLISHED' ? '下架' : '发布' }}</button></div></td>
+          <td><div class="row-actions"><button type="button" @click="router.push(`/admin/products/${product.id}`)">编辑</button><button class="wm-icon-action" type="button" @click="openStock(product)"><SketchIcon name="package" :size="20" /> 调库存</button><button type="button" @click="publication(product)">{{ product.status === 'PUBLISHED' ? '下架' : '发布' }}</button></div></td>
         </tr></tbody>
       </table>
     </div>
