@@ -1,0 +1,48 @@
+% 对应源文档 4.1；保留全部 10 个节点、10 条箭头及两条判断标签。
+\begin{tikzpicture}[
+    font=\fontsize{10.5}{14}\selectfont,
+    node distance=5mm,
+    activity/.style={
+        rectangle, rounded corners=1.5pt,
+        draw=wmnavy, line width=0.65pt,
+        fill=wmaccent!6,
+        text=wmnavy, align=center,
+        text width=5.6cm, minimum height=7.5mm,
+        inner xsep=3mm, inner ysep=2mm
+    },
+    decision/.style={
+        diamond, aspect=2.5,
+        draw=wmnavy, line width=0.65pt,
+        fill=wmaccent!12,
+        text=wmnavy, align=center,
+        inner xsep=3mm, inner ysep=1.5mm,
+        minimum width=3.3cm, minimum height=1.15cm
+    },
+    flow/.style={-{Stealth[length=2.2mm,width=1.5mm]},
+        draw=wmnavy, line width=0.7pt},
+    edge label/.style={text=wmnavy, fill=white, inner sep=2pt,
+        font=\fontsize{10.5}{14}\selectfont}
+]
+    \node[activity] (A) {浏览与筛选商品};
+    \node[activity, below=of A] (B) {注册或登录};
+    \node[activity, below=of B] (C) {加入购物车};
+    \node[activity, below=of C] (D) {确认地址与金额};
+    \node[activity, below=of D] (E) {创建待模拟付款订单};
+    \node[decision, below=6mm of E] (F) {模拟付款};
+    \node[activity, below=10mm of F] (G) {扣库存并进入待发货};
+    \node[activity, below=of G] (H) {管理员录入模拟发货};
+    \node[activity, below=of H] (I) {用户确认收货};
+    \node[activity, below=of I] (J) {订单完成};
+
+    \draw[flow] (A) -- (B);
+    \draw[flow] (B) -- (C);
+    \draw[flow] (C) -- (D);
+    \draw[flow] (D) -- (E);
+    \draw[flow] (E) -- (F);
+    \draw[flow] (F.east) -- ++(2.4cm,0)
+        |- node[edge label, pos=0.25, right] {失败} (E.east);
+    \draw[flow] (F.south) -- node[edge label, right] {成功且库存充足} (G.north);
+    \draw[flow] (G) -- (H);
+    \draw[flow] (H) -- (I);
+    \draw[flow] (I) -- (J);
+\end{tikzpicture}

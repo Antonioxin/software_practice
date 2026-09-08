@@ -1,0 +1,88 @@
+% 根据已评审 Markdown 需求基线排版；需求语义与编号保持一致。
+\Needspace{12\baselineskip}
+\section{引言}\label{sec:1-引言}
+
+\Needspace{10\baselineskip}
+\subsection{文档目的}\label{sec:11-文档目的}
+
+本文规定系统应向各类用户提供的能力，以及在正常、异常和并发条件下应保持的业务结果。业务与产品人员据此确认范围和规则；研发人员据此开展设计与实现；测试人员据此建立验证证据；运营人员据此确认管理能力与业务处理方式。
+
+本文定义可观察的系统行为和必须满足的约束。具体框架、数据库产品、部署拓扑、物理表结构、接口路径和视觉样式由配套设计文档确定，不作为本文未明示的强制要求。
+
+\Needspace{10\baselineskip}
+\subsection{产品范围}\label{sec:12-产品范围}
+
+WEMOVE SPORTS 网站是统一的品牌展示与业务服务入口，由公开网站、个人中心、经销商中心和管理后台组成。公开网站帮助用户发现商品与获取支持；个人中心承载零售订单和咨询；经销商中心提供经审核的合作访问权限、专属资料和询价；管理后台负责商品内容维护及业务处理。
+
+本版本包括商品发现、账户与权限、模拟零售交易、经销商申请审核、专属目录与文件、询价回复、咨询工单、渠道管理和基本业务统计。正式经销订单、真实支付、第三方物流、企业子账号、多市场多币种及复杂营销能力不属于本版本交付范围，详见第 2.6 节。
+
+\Needspace{10\baselineskip}
+\subsection{术语与缩略语}\label{sec:13-术语与缩略语}
+
+\begingroup
+\smalltable
+\begin{longtable}{>{\raggedright\arraybackslash}p{\dimexpr 0.210\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash}p{\dimexpr 0.790\linewidth-2\tabcolsep\relax}}
+\caption{术语与缩略语}\label{tab:3}\\
+\toprule
+{\bfseries 术语} & {\bfseries 定义} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{r}{\footnotesize 表~\thetable~（续）}\\
+\toprule
+{\bfseries 术语} & {\bfseries 定义} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize 续下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+SRS & 软件需求规格说明书，定义产品需要提供的行为、质量和约束，以及验证依据。 \\
+\tabledivider
+B2C & 企业面向个人消费者的零售业务。本版本的交易执行使用模拟模式。 \\
+\tabledivider
+B2B & 企业面向经销商或采购机构的合作业务。本版本覆盖申请、授权信息和询价处理。 \\
+\tabledivider
+SKU & 可独立定价和管理库存的商品标识。本版本一个商品对应一个 SKU。 \\
+\tabledivider
+有效经销商 & 申请已通过、合作状态有效且账户启用的企业主账户。 \\
+\tabledivider
+经销商参考价 & 向有效经销商提供的询价参考单价，不直接构成订单成交价格。 \\
+\tabledivider
+认证／授权 & 认证确认访问者身份，授权确定其可执行动作和可访问数据；授权须同时检查角色与数据归属。 \\
+\tabledivider
+RBAC & 基于角色的访问控制；角色许可之外，系统仍需检查资源是否属于当前用户或企业。 \\
+\tabledivider
+CMS & 通过管理界面维护文章、FAQ、Banner 等内容，并向公开网站提供已发布内容的能力。 \\
+\tabledivider
+数据快照 & 业务发生时保存的商品名称、单价、地址等取值；后续主数据变化不改写历史事实。 \\
+\tabledivider
+幂等 & 同一业务请求重复执行时，不增加额外业务效果，例如重复付款请求不能重复扣减库存。 \\
+\tabledivider
+原子操作／事务 & 相关变更全部成功或全部撤销的处理边界，例如订单状态更新与库存扣减。 \\
+\tabledivider
+下架／停用／关闭 & 保留记录并限制后续动作的状态变化，分别用于商品、账户或合作关系、工单或询价。 \\
+\tabledivider
+交易验证模式 & 订单状态和库存按业务规则变化，支付、退款和物流仅记录模拟结果，不发起外部资金或物流操作。 \\
+\tabledivider
+验收条件 & 判断一项需求是否满足的可观察结果；测试用例是验证这些结果的具体操作。 \\
+\end{longtable}
+\endgroup
+
+\Needspace{10\baselineskip}
+\subsection{文档组织与表述约定}\label{sec:14-文档组织与表述约定}
+
+第 2 节说明业务目标、用户、边界及依赖；第 3 节给出功能、规则、数据和质量要求；第 4 节以流程和用例描述主要业务；第 5 节规定验证方法、追踪与验收条件；附录提供验证场景目录，文末列出参考文献。
+
+本规格的业务定位与功能范围参考项目业务构想和网站重构资料\cite{business-understanding,website-requirements}，品牌内容以 WEMOVE 网站资料作为核对依据\cite{wemove-site}。文档结构和单项需求写法参考软件需求规格说明书模板\cite{msu-srs,jam01-srs,jam01-requirement}。
+
+参考文献为信息性资料，不构成对其全部功能或技术约束的自动承诺。本版本以本文明确列出的需求与范围为准；品牌资产、商品信息与联系方式在发布前由业务负责人确认。
+
+\begin{enumerate}
+\item {\bfseries 应／必须／不得}表示必须满足的要求；{\bfseries 可}表示允许的选择；具体数值和状态表优先于一般描述。
+\item {\bfseries FR} 为功能需求，{\bfseries BR} 为业务规则，{\bfseries NFR} 为质量或实施约束，{\bfseries UC} 为业务用例，{\bfseries TC} 为验证场景。
+\item {\bfseries P0} 为本版本交付基线，覆盖 FR-01 至 FR-32、BR-01 至 BR-07、NFR-01 至 NFR-05 及其引用的接口和数据约束。
+\item {\bfseries P1} 为后续增强候选，{\bfseries P2} 为远期能力，不纳入本版本验收；纳入后续版本时需另行明确规则和验证方法。
+\item 需求编号应保持稳定，不因章节调整重排。需求变更应记录版本、原因及对关联规则和验证场景的影响。
+\item 本文“评审通过”表示需求基线已确认；验证状态“未执行”表示尚无测试结果，需求评审通过不代表实现已经完成或测试已经通过。
+\end{enumerate}

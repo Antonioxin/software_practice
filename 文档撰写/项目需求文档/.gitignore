@@ -1,0 +1,14 @@
+.build/
+
+# 仅跟踪可编译源码；文档成品与排版检查产物留在本地。
+*.pdf
+*.zip
+验证/
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.xdv
