@@ -10,6 +10,14 @@ import wemove.platform.AuditPort;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * 订单状态历史与审计编排组件。
+ *
+ * <p>将订单状态变化写入历史表，并在同一事务中发送带有请求标识、版本和状态变化摘要的持久审计事件。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Component
 public class OrderJournal {
     @org.springframework.beans.factory.annotation.Autowired

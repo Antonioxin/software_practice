@@ -15,6 +15,14 @@ import wemove.platform.idempotency.IdempotencyExecutor;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * 角色 C 交易模块的 HTTP 接口控制器。
+ *
+ * <p>负责当前身份与管理员权限校验，将购物车、结算预览、订单查询以及模拟支付、取消、发货和收货请求转交给服务层，并统一包装幂等操作响应。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class CommerceController {

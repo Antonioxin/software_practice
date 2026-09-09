@@ -10,6 +10,14 @@ import wemove.commerce.domain.*;
 
 import java.util.*;
 
+/**
+ * 交易模块的 JPA 持久化访问网关。
+ *
+ * <p>集中提供购物车、结算预览、订单快照、支付尝试、退款和状态历史的读写查询，并为购物车头与订单提供可选的悲观锁和分页查询能力。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Repository
 public class CommerceRepository {
     @PersistenceContext private EntityManager em;

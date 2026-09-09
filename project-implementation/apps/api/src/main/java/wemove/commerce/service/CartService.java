@@ -15,6 +15,14 @@ import wemove.platform.idempotency.IdempotencyExecutor;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * 购物车用例服务。
+ *
+ * <p>负责持久化购物车的读取、加购、数量更新、删除和清空；操作时锁定购物车与商品快照，校验商品可售状态、库存和数量上限，并通过购物车版本检测并发变更。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Service
 public class CartService {
     private final CommerceRepository db;

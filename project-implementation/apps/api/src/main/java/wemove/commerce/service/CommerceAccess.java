@@ -12,6 +12,14 @@ import wemove.platform.api.ApiException;
 
 import java.util.UUID;
 
+/**
+ * 交易模块的身份与资源访问辅助组件。
+ *
+ * <p>锁定当前有效身份并检查普通用户或管理员角色，同时对订单执行本人归属校验；角色不符返回禁止访问，归属不符按资源不存在处理。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Component
 public class CommerceAccess {
     private final IdentityPort identity;

@@ -6,6 +6,14 @@ import jakarta.validation.constraints.*;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * 角色 C 交易模块的请求与响应数据传输对象集合。
+ *
+ * <p>集中定义购物车、结算预览、订单摘要与详情、模拟支付、退款和履约接口的数据结构，并通过 Bean Validation 注解表达基础输入约束。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 public final class CommerceDtos {
     private CommerceDtos() {}
 

@@ -13,6 +13,14 @@ import wemove.platform.idempotency.IdempotencyExecutor;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * 订单写操作服务。
+ *
+ * <p>编排模拟付款、整单取消与退款、模拟发货和本人收货；每个命令在幂等键、身份和订单锁保护下校验版本与状态，必要时调用库存端口，并追加订单历史和审计记录。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Service
 public class OrderCommandService {
     @org.springframework.beans.factory.annotation.Autowired
