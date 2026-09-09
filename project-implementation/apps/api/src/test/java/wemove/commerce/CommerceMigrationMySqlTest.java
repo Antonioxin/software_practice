@@ -77,7 +77,22 @@ class CommerceMigrationMySqlTest {
             }
             try (var rs = s.executeQuery("SELECT count(*) FROM catalog_products")) {
                 rs.next();
-                assertThat(rs.getInt(1)).isEqualTo(18);
+                assertThat(rs.getInt(1)).isEqualTo(24);
+            }
+            try (var rs =
+                    s.executeQuery(
+                            "SELECT sku FROM catalog_products WHERE status='PUBLISHED'"
+                                + " ORDER BY display_order")) {
+                List<String> skus = new ArrayList<>();
+                while (rs.next()) skus.add(rs.getString(1));
+                assertThat(skus)
+                        .containsExactly(
+                                "WM-BALANCE-STONES",
+                                "WM-RAINBOW-ARCH",
+                                "WM-RING-TOSS",
+                                "WM-TEAM-BOARD",
+                                "WM-FOREST-KIT",
+                                "WM-SKIP-ROPE");
             }
             try (var rs = s.executeQuery("SELECT count(*) FROM SPRING_SESSION")) {
                 rs.next();
