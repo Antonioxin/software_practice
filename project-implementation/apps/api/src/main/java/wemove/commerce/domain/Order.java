@@ -5,6 +5,14 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * 订单主实体。
+ *
+ * <p>保存订单编号、买家、金额、收货地址快照、业务版本和从待付款到完成的履约时间线；状态推进由订单命令服务在锁内完成。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Entity(name = "CommerceOrder")
 @Table(name = "commerce_orders")
 public class Order {

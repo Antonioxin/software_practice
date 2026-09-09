@@ -14,6 +14,14 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * 交易模块的跨模块适配服务。
+ *
+ * <p>实现订单归属引用和交易指标两个端口：前者向其他业务提供经过本人校验的最小订单信息，后者在调用方只读事务中统计指定 UTC 时间区间的交易指标。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Service
 public class CommerceIntegrationService implements OrdersPort, CommerceMetricsPort {
     private final CommerceRepository db;

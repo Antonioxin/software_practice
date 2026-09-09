@@ -16,6 +16,14 @@ import wemove.platform.idempotency.IdempotencyExecutor;
 import java.time.*;
 import java.util.*;
 
+/**
+ * 结算预览与订单创建编排服务。
+ *
+ * <p>生成短期有效的预览令牌摘要，重新校验购物车、商品价格和库存，固化收货地址与商品快照，并在同一事务中创建订单、记录历史和清空购物车；本服务不接入真实支付，也不预占库存。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Service
 public class CheckoutService {
     @org.springframework.beans.factory.annotation.Autowired private TransactionProbe probe;

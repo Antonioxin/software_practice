@@ -13,6 +13,14 @@ import wemove.commerce.repository.CommerceRepository;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * 订单查询与视图组装服务。
+ *
+ * <p>校验筛选和分页参数，按普通用户或管理员范围查询订单，并组装订单摘要、详情、商品行、付款尝试、退款、状态历史及当前允许的操作。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 @Service
 public class OrderQueryService {
     private final CommerceRepository db;

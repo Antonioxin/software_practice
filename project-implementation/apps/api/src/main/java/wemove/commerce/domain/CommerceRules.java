@@ -7,6 +7,14 @@ import wemove.platform.api.ApiException;
 
 import java.util.*;
 
+/**
+ * 交易领域的共享校验规则与统一异常工厂。
+ *
+ * <p>集中处理金额与数量、文本和收货地址、业务版本、订单状态以及资源访问的校验，保证各交易服务返回一致的错误语义。
+ *
+ * @author junjie.xia
+ * @since 2026-09-06
+ */
 public final class CommerceRules {
     private CommerceRules() {}
 
